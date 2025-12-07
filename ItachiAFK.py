@@ -7,18 +7,18 @@ import datetime
 import logging
 from collections import defaultdict
 
-__version__ = (1, 8, 2)
+__version__ = (1, 8, 3)
 
-name = "KsenonAFK"
+name = "ItachiAFK"
 logger = logging.getLogger(name)
 
 
 @loader.tds
-class KsenonAFKMod(loader.Module):
+class ItachiAFKAFKMod(loader.Module):
     """Универсальный AFK/SLEEP модуль с подсчётом времени, статусами и расширенной причиной."""
 
     strings = {
-        "name": "KsenonAFK",
+        "name": "ItachiAFK",
         "back": "<emoji document_id=5883964170268840032>👤</emoji> <b>Больше не в режиме AFK.</b>",
         "default_afk_message": (
             "<emoji document_id=5870948572526022116>✋</emoji> <b>Сейчас я в AFK-режиме</b>\n"
@@ -27,7 +27,7 @@ class KsenonAFKMod(loader.Module):
         ),
         "sleep_on": (
             "<emoji document_id=5870729937215819584>💤</emoji> <b>SLEEP-режим включён!</b>\n"
-            "<emoji document_id=5873146865637133757>😴</emoji> <b>KsenonAFK будет отвечать этим сообщением:</b>\n\n"
+            "<emoji document_id=5873146865637133757>😴</emoji> <b>ItachiAFK будет отвечать этим сообщением:</b>\n\n"
         ),
         "sleep_msg": (
             "<emoji document_id=5870729937215819584>💤</emoji> <b>Сейчас я в Sleep-режиме</b>\n"
@@ -124,7 +124,7 @@ class KsenonAFKMod(loader.Module):
         await utils.answer(
             message,
             "<emoji document_id=5870730156259152122>😀</emoji> <b>AFK включён!</b>\n"
-            "<emoji document_id=5877700484453634587>✈️</emoji> KsenonAFK будет отвечать этим:\n\n"
+            "<emoji document_id=5877700484453634587>✈️</emoji> ItachiAFK будет отвечать этим:\n\n"
             + preview,
         )
 
