@@ -14,7 +14,7 @@ logger = logging.getLogger(name)
 
 
 @loader.tds
-class ItachiAFKAFKMod(loader.Module):
+class ItachiAFKMod(loader.Module):
     """Универсальный AFK/SLEEP модуль с подсчётом времени, статусами и расширенной причиной."""
 
     strings = {
