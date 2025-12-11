@@ -22,7 +22,7 @@ class Dangerlyoha(loader.Module):
         return
 
     async def кенгуруcmd(self, message):
-        """| Кенгуру ебучие"""
+        """| Кенгуру ебучая"""
 
         reply = await message.get_reply_message()
         await message.delete()
