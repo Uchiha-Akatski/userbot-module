@@ -427,28 +427,34 @@ class DotaStatsMod(loader.Module):
             if not matches:
                 return await utils.answer(message, "<emoji document_id=5390972675684337321>🤐</emoji> Нет данных матчей")
 
-            msg = "<blockquote><emoji document_id=5319120041780726017>🎮</emoji> Последние 10 игр:\n\n"
+            msg = (
+                "<emoji document_id=5319120041780726017>🎮</emoji> "
+                "<b>Последние 10 игр:</b>\n\n"
+            )
+
             for m in matches[:10]:
                 hero_name = self.heroes.get(m["hero_id"], f"Unknown({m['hero_id']})")
                 hero_icon = self.hero_emojis.get(hero_name, "")
                 kda = f"{m['kills']}/{m['deaths']}/{m['assists']}"
+
                 win = (
                     "<emoji document_id=5456498809875995940>🏆</emoji> Победа"
                     if (m["player_slot"] < 128 and m["radiant_win"])
                     or (m["player_slot"] >= 128 and not m["radiant_win"])
                     else "<emoji document_id=5442683076905827689>💀</emoji> Поражение"
                 )
-                
-                # Добавляем время матча
+
                 start_time = m.get("start_time", 0)
                 match_time = self._format_match_time(start_time)
-                
-                msg += f"<b>Матч {m['match_id']}</b>\n"
-                msg += f"Герой: {hero_name} {hero_icon}\n"
-                msg += f"KDA: {kda} | {win}\n"
-                msg += f"Время: {match_time}\n"
-                msg += "─" * 30 + "\n"
-            msg += "</blockquote>"
+
+                msg += (
+                    f"<blockquote>"
+                    f"<b>Матч {m['match_id']}</b>\n"
+                    f"Герой: {hero_name} {hero_icon}\n"
+                    f"KDA: {kda} | {win}\n"
+                    f"Время: {match_time}"
+                    f"</blockquote>\n\n"
+                )
 
             await utils.answer(message, msg, parse_mode="html")
 
