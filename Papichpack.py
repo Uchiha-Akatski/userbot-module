@@ -568,7 +568,7 @@ class Papichpack(loader.Module):
         return
     
     async def нахуй2cmd(self, message):
-        """| Да пошёл ты наххххуууууййй""
+        """| Да пошёл ты наххххуууууййй"""
 
         reply = await message.get_reply_message()
         await message.delete()
