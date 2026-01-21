@@ -171,6 +171,10 @@ class DotaStatsMod(loader.Module):
             "Marci": '<emoji document_id=6062225477924295349>📚</emoji>',
             "Primal Beast": '<emoji document_id=6062167156563384847>🔴</emoji>',
             "Muerta": '<emoji document_id=6061974394136171083>🔵</emoji>',
+            "Largo": '<emoji document_id=6269259626194150042>🐸</emoji>',
+            "Kez": '<emoji document_id=5442844181129104405>🤩</emoji>',
+            "Ringmaster": '<emoji document_id=6269209104493845341>🤡</emoji>',
+            
         }
 
         # ⚡ Предметы (сюда потом вставь emoji_id из набора предметов)
