@@ -594,7 +594,7 @@ class Papichpack(loader.Module):
         return
     
     async def керриcmd(self, message):
-        """| Лучший бля керри за всю историю доты"""
+        #| Лучший бля керри за всю историю доты
 
         reply = await message.get_reply_message()
         await message.delete()
