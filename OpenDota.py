@@ -20,6 +20,7 @@ class DotaStatsMod(loader.Module):
     • .profileid <id> — показать профиль по Steam ID
     • .dota2 — последние 10 игр
     • .match <id> — подробности матча
+    • .dota2id <id профиля steam> — показывает последние 10 игр чужого игрока по Steam ID
     """
 
     strings = {"name": "DotaStats"}
@@ -464,6 +465,70 @@ class DotaStatsMod(loader.Module):
 
         except Exception as e:
             await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка загрузки матчей: {str(e)}")
+
+    # ---------------- Последние игры по ID ----------------
+    async def dota2idcmd(self, message: Message):
+        """Показать последние 10 игр по Steam ID"""
+        args = utils.get_args_raw(message)
+        if not args or not args.isdigit():
+            return await utils.answer(
+                message,
+                "<emoji document_id=5390972675684337321>🤐</emoji> Используй: .dota2id <steam_id>"
+            )
+
+        raw_id = int(args)
+
+        # 🔥 Конвертация Steam64 → Steam32
+        if raw_id > 76561197960265728:
+            pid = raw_id - 76561197960265728
+        else:
+            pid = raw_id
+
+        try:
+            matches = requests.get(f"{API_URL}/players/{pid}/recentMatches").json()
+            if not matches:
+                return await utils.answer(
+                    message,
+                    "<emoji document_id=5390972675684337321>🤐</emoji> Нет данных матчей (профиль скрыт или нет игр)"
+                )
+
+            msg = (
+                "<emoji document_id=5319120041780726017>🎮</emoji> "
+                f"<b>Последние 10 игр игрока {pid}:</b>\n\n"
+            )
+
+            for m in matches[:10]:
+                hero_name = self.heroes.get(m["hero_id"], f"Unknown({m['hero_id']})")
+                hero_icon = self.hero_emojis.get(hero_name, "")
+                kda = f"{m['kills']}/{m['deaths']}/{m['assists']}"
+
+                win = (
+                    "<emoji document_id=5456498809875995940>🏆</emoji> Победа"
+                    if (m["player_slot"] < 128 and m["radiant_win"])
+                    or (m["player_slot"] >= 128 and not m["radiant_win"])
+                    else "<emoji document_id=5442683076905827689>💀</emoji> Поражение"
+                )
+
+                match_time = self._format_match_time(m.get("start_time", 0))
+
+                msg += (
+                    f"<blockquote>"
+                    f"<b>Матч {m['match_id']}</b>\n"
+                    f"Герой: {hero_name} {hero_icon}\n"
+                    f"KDA: {kda} | {win}\n"
+                    f"Время: {match_time}"
+                    f"</blockquote>\n\n"
+                )
+
+            await utils.answer(message, msg, parse_mode="html")
+
+        except Exception as e:
+            await utils.answer(
+                message,
+                f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка загрузки матчей: {str(e)}"
+            )
+
+
 
     # ---------------- Детали матча ----------------
     async def matchcmd(self, message: Message):
