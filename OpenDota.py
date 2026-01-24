@@ -1,3 +1,8 @@
+# -- version --
+__version__ = (1, 1, 5)
+# -- version --
+
+
 # meta developer: @Itachi_Uchiha_sss
 # meta banner: https://api.opendota.com
 
@@ -8,8 +13,6 @@ from datetime import datetime, timezone
 import time
 
 API_URL = "https://api.opendota.com/api"
-
-__version__ = (1, 1, 5)
 
 @loader.tds
 class DotaStatsMod(loader.Module):
