@@ -9,6 +9,7 @@ import time
 
 API_URL = "https://api.opendota.com/api"
 
+__version__ = (1, 1, 5)
 
 @loader.tds
 class DotaStatsMod(loader.Module):
@@ -443,10 +444,10 @@ class DotaStatsMod(loader.Module):
                 kda = f"{m['kills']}/{m['deaths']}/{m['assists']}"
 
                 win = (
-                    "<emoji document_id=5456498809875995940>🏆</emoji> Победа"
+                    "<emoji document_id=5429381339851796035>✅</emoji> Победа"
                     if (m["player_slot"] < 128 and m["radiant_win"])
                     or (m["player_slot"] >= 128 and not m["radiant_win"])
-                    else "<emoji document_id=5442683076905827689>💀</emoji> Поражение"
+                    else "<emoji document_id=5352703271536454445>❌</emoji> Поражение"
                 )
 
                 start_time = m.get("start_time", 0)
@@ -503,10 +504,10 @@ class DotaStatsMod(loader.Module):
                 kda = f"{m['kills']}/{m['deaths']}/{m['assists']}"
 
                 win = (
-                    "<emoji document_id=5456498809875995940>🏆</emoji> Победа"
+                    "<emoji document_id=5429381339851796035>✅</emoji> Победа"
                     if (m["player_slot"] < 128 and m["radiant_win"])
                     or (m["player_slot"] >= 128 and not m["radiant_win"])
-                    else "<emoji document_id=5442683076905827689>💀</emoji> Поражение"
+                    else "<emoji document_id=5352703271536454445>❌</emoji> Поражение"
                 )
 
                 match_time = self._format_match_time(m.get("start_time", 0))
@@ -546,7 +547,7 @@ class DotaStatsMod(loader.Module):
 
             duration = f"{r['duration'] // 60}:{r['duration'] % 60:02d}"
             radiant_win = r.get("radiant_win", False)
-            result = "<emoji document_id=5456498809875995940>🏆</emoji> Radiant Победа" if radiant_win else "<emoji document_id=5442683076905827689>💀</emoji> Dire Победа"
+            result = "<emoji document_id=5368338090660209672>🌿</emoji> Radiant Победа" if radiant_win else "<emoji document_id=5397751602956239123>🔥</emoji> Dire Победа"
 
             radiant, dire = [], []
             for p in r.get("players", []):
