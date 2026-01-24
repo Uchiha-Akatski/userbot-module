@@ -7,7 +7,7 @@ import datetime
 import logging
 from collections import defaultdict
 
-__version__ = (1, 8, 3)
+__version__ = (1, 8, 5)
 
 name = "ItachiAFK"
 logger = logging.getLogger(name)
@@ -15,7 +15,7 @@ logger = logging.getLogger(name)
 
 @loader.tds
 class ItachiAFKMod(loader.Module):
-    """Универсальный AFK/SLEEP модуль с подсчётом времени, статусами и расширенной причиной."""
+    """AFK/SLEEP модуль с логированием и кликабельными никами"""
 
     strings = {
         "name": "ItachiAFK",
@@ -62,7 +62,8 @@ class ItachiAFKMod(loader.Module):
         )
 
         self.answered_users = set()
-        self.chat_messages = defaultdict(list)
+        # user_id -> {"name": str, "count": int}
+        self.chat_messages = defaultdict(lambda: {"name": "", "count": 0})
         self._old_status = None
 
     async def client_ready(self, client, db):
@@ -70,21 +71,47 @@ class ItachiAFKMod(loader.Module):
         self._me = await client.get_me()
         self.client = client
 
+    # --- ЛОГ ---
+    def _log_message(self, user):
+        data = self.chat_messages[user.id]
+        data["name"] = utils.escape_html(user.first_name or "Без имени")
+        data["count"] += 1
+
+    def _format_afk_log(self):
+        if not self.chat_messages:
+            return ""
+
+        lines = []
+        for user_id, data in self.chat_messages.items():
+            name = data["name"]
+            count = data["count"]
+
+            lines.append(
+                f'<emoji document_id=5778575233422200567>👤</emoji> <a href="tg://user?id={user_id}">{name}</a> '
+                f'(<code>{user_id}</code>) — <b>{count}</b> сообщений'
+            )
+
+        return (
+            "\n\n<blockquote>"
+            "<b>Пока тебя не было, тебе писали:</b>\n"
+            + "\n".join(lines)
+            + "</blockquote>"
+        )
+
+
     # --- AFK ---
-    @loader.command(ru_doc="[причина] | [время] — Установить AFK режим")
+    @loader.command(ru_doc="[причина] | [время] — Установить AFK")
     async def afk(self, message):
         args = utils.get_args_raw(message)
         reason = None
         time_val = None
 
-        # Разбор "причина | время"
         if args:
             if "|" in args:
                 reason, time_val = map(str.strip, args.split("|", 1))
             else:
-                reason = args.strip()  # причина полностью
+                reason = args.strip()
 
-        # Обновление статуса
         if self.config["setPremiumStatus"]:
             try:
                 me = await self.client.get_me()
@@ -98,24 +125,23 @@ class ItachiAFKMod(loader.Module):
                     )
                 )
             except Exception as e:
-                logger.error(f"Не удалось обновить эмодзи-статус: {e}")
+                logger.error(f"Не удалось обновить статус: {e}")
 
-        # Сохранение состояния
         self._db.set(name, "afk", reason or True)
         self._db.set(name, "gone", time.time())
         self._db.set(name, "return_time", time_val)
         self.answered_users.clear()
+        self.chat_messages.clear()
 
-        # Превью
         preview = self.strings["default_afk_message"].format(
             was_online="Только что",
             reason_text=(
-                f"<emoji document_id=5870729937215819584>⏰️</emoji> <b>Причина:</b> <i>{reason}</i>\n"
-                if reason
+                f"<emoji document_id=5870729937215819584>⏰️</emoji> <b>Причина:</b> <i>{reason}</i>\n" 
+                if reason 
                 else ""
             ),
             come_time=(
-                f"<emoji document_id=5873146865637133757>🎤</emoji> <b>Прийду через:</b> <b>{time_val}</b>"
+                f"<emoji document_id=5873146865637133757>🎤</emoji> <b>Прийду через:</b> <b>{time_val}</b>" 
                 if time_val
                 else ""
             ),
@@ -128,12 +154,15 @@ class ItachiAFKMod(loader.Module):
             + preview,
         )
 
-    @loader.command(ru_doc="Отключить AFK режим")
+    @loader.command(ru_doc="Отключить AFK")
     async def unafk(self, message):
         self._db.set(name, "afk", False)
         self._db.set(name, "gone", None)
         self._db.set(name, "return_time", None)
         self.answered_users.clear()
+
+        log_text = self._format_afk_log()
+        self.chat_messages.clear()
 
         if self.config["setPremiumStatus"] and self._old_status:
             try:
@@ -145,10 +174,10 @@ class ItachiAFKMod(loader.Module):
             except Exception as e:
                 logger.error(f"Не удалось восстановить статус: {e}")
 
-        await utils.answer(message, self.strings["back"])
+        await utils.answer(message, self.strings["back"] + (log_text or ""))
 
     # --- SLEEP ---
-    @loader.command(ru_doc="[время] — Включить режим SLEEP")
+    @loader.command(ru_doc="[время] — Включить SLEEP")
     async def sleep(self, message):
         args = utils.get_args_raw(message)
         wake_time = args if args else None
@@ -166,12 +195,13 @@ class ItachiAFKMod(loader.Module):
                     )
                 )
             except Exception as e:
-                logger.error(f"Не удалось обновить статус: {e}")
+                logger.error(f"Не удалсь обновить статус: {e}")
 
         self._db.set(name, "sleep", True)
         self._db.set(name, "sleep_start", time.time())
         self._db.set(name, "wake_time", wake_time)
         self.answered_users.clear()
+        self.chat_messages.clear()
 
         wake_text = (
             self.strings["wake_text"].format(wake_time) if wake_time else ""
@@ -182,12 +212,15 @@ class ItachiAFKMod(loader.Module):
 
         await utils.answer(message, self.strings["sleep_on"] + preview)
 
-    @loader.command(ru_doc="Выключить режим SLEEP")
+    @loader.command(ru_doc="Выключить SLEEP")
     async def unsleep(self, message):
         self._db.set(name, "sleep", False)
         self._db.set(name, "sleep_start", None)
         self._db.set(name, "wake_time", None)
         self.answered_users.clear()
+
+        log_text = self._format_afk_log()
+        self.chat_messages.clear()
 
         if self.config["setPremiumStatus"] and self._old_status:
             try:
@@ -199,9 +232,9 @@ class ItachiAFKMod(loader.Module):
             except Exception as e:
                 logger.error(f"Не удалось восстановить статус: {e}")
 
-        await utils.answer(message, self.strings["sleep_off"])
+        await utils.answer(message, self.strings["sleep_off"] + (log_text or ""))
 
-    # --- Watcher ---
+    # --- WATCHER ---
     async def watcher(self, message):
         if not isinstance(message, types.Message):
             return
@@ -213,61 +246,44 @@ class ItachiAFKMod(loader.Module):
             if not afk_state and not sleep_state:
                 return
 
-            user = None
             try:
                 user = await self.client.get_entity(message.sender_id)
             except:
                 return
 
-            if (
-                not user
-                or getattr(user, "is_self", False)
-                or getattr(user, "bot", False)
-                or getattr(user, "verified", False)
-            ):
+            if user.is_self or user.bot:
                 return
+
+            self._log_message(user)
 
             if user.id in self.answered_users:
                 return
 
             self.answered_users.add(user.id)
-
             now = datetime.datetime.now().replace(microsecond=0)
 
             if sleep_state:
                 sleep_start = self._db.get(name, "sleep_start")
-                if sleep_start:
-                    diff = now - datetime.datetime.fromtimestamp(sleep_start)
-                    was_online = str(diff).split(".")[0]
-                else:
-                    was_online = "давно"
-
-                wake_time = self._db.get(name, "wake_time", None)
-                wake_text = (
-                    self.strings["wake_text"].format(wake_time)
-                    if wake_time
-                    else ""
-                )
-
+                diff = now - datetime.datetime.fromtimestamp(sleep_start)
+                was_online = str(diff).split(".")[0]
+                wake_time = self._db.get(name, "wake_time")
                 text = self.strings["sleep_msg"].format(
-                    was_online=was_online, wake_time=wake_text
+                    was_online=was_online,
+                    wake_time=self.strings["wake_text"].format(wake_time)
+                    if wake_time
+                    else "",
                 )
-
             else:
-                gone = datetime.datetime.fromtimestamp(
-                    self._db.get(name, "gone")
-                ).replace(microsecond=0)
+                gone = datetime.datetime.fromtimestamp(self._db.get(name, "gone"))
                 diff = now - gone
-                return_time = self._db.get(name, "return_time", None)
-                reason = (
-                    afk_state if isinstance(afk_state, str) else None
-                )
+                reason = afk_state if isinstance(afk_state, str) else None
+                return_time = self._db.get(name, "return_time")
 
                 text = self.strings["default_afk_message"].format(
                     was_online=str(diff).split(".")[0],
                     reason_text=(
-                        f"<emoji document_id=5870729937215819584>⏰️</emoji> <b>Причина:</b> <i>{reason}</i>\n"
-                        if reason
+                        f"<emoji document_id=5870729937215819584>⏰️</emoji> <b>Причина:</b> <i>{reason}</i>\n" 
+                        if reason 
                         else ""
                     ),
                     come_time=(
