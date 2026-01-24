@@ -18,9 +18,9 @@ class DotaStatsMod(loader.Module):
     Команды:
     • .profile2 — показать свой профиль
     • .profileid <id> — показать профиль по Steam ID
-    • .dota2 — последние 10 игр
+    • .dota2 — последние 15 игр
     • .match <id> — подробности матча
-    • .dota2id <id профиля steam> — показывает последние 10 игр чужого игрока по Steam ID
+    • .dota2id <id профиля steam> — показывает последние 15 игр чужого игрока по Steam ID
     """
 
     strings = {"name": "DotaStats"}
@@ -422,7 +422,7 @@ class DotaStatsMod(loader.Module):
 
     # ---------------- Последние игры ----------------
     async def dota2cmd(self, message: Message):
-        """Показать последние 10 игр"""
+        """Показать последние 15 игр"""
         pid = self.config["PLAYER_ID"]
         if not pid:
             return await utils.answer(message, "<emoji document_id=5390972675684337321>🤐</emoji> Не задан Steam ID")
@@ -434,10 +434,10 @@ class DotaStatsMod(loader.Module):
 
             msg = (
                 "<emoji document_id=5319120041780726017>🎮</emoji> "
-                "<b>Последние 10 игр:</b>\n\n"
+                "<b>Последние 15 игр:</b>\n\n"
             )
 
-            for m in matches[:10]:
+            for m in matches[:15]:
                 hero_name = self.heroes.get(m["hero_id"], f"Unknown({m['hero_id']})")
                 hero_icon = self.hero_emojis.get(hero_name, "")
                 kda = f"{m['kills']}/{m['deaths']}/{m['assists']}"
@@ -468,7 +468,7 @@ class DotaStatsMod(loader.Module):
 
     # ---------------- Последние игры по ID ----------------
     async def dota2idcmd(self, message: Message):
-        """Показать последние 10 игр по Steam ID"""
+        """Показать последние 15 игр по Steam ID"""
         args = utils.get_args_raw(message)
         if not args or not args.isdigit():
             return await utils.answer(
@@ -494,10 +494,10 @@ class DotaStatsMod(loader.Module):
 
             msg = (
                 "<emoji document_id=5319120041780726017>🎮</emoji> "
-                f"<b>Последние 10 игр игрока {pid}:</b>\n\n"
+                f"<b>Последние 15 игр игрока {pid}:</b>\n\n"
             )
 
-            for m in matches[:10]:
+            for m in matches[:15]:
                 hero_name = self.heroes.get(m["hero_id"], f"Unknown({m['hero_id']})")
                 hero_icon = self.hero_emojis.get(hero_name, "")
                 kda = f"{m['kills']}/{m['deaths']}/{m['assists']}"
