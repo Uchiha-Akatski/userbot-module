@@ -16,8 +16,6 @@ API_URL = "https://api.opendota.com/api"
 
 @loader.tds
 class DotaStatsMod(loader.Module):
-    """Модуль для просмотра статистки ваших игрк с сайта opendota.com"""
-    
     strings = {"name": "DotaStats"}
    
     def is_win(self, match):
