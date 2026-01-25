@@ -29,6 +29,18 @@ class DotaStatsMod(loader.Module):
         )
         self.heroes = {}
         self.items = {}
+        
+        self.rank_emojis = {
+            "Herald": '<emoji document_id=5963157659195542640>🎖</emoji>',
+            "Guardian": '<emoji document_id=5963215018483780860>🎖</emoji>',
+            "Crusader": '<emoji document_id=5960576663023523045>🎖</emoji>',
+            "Archon": '<emoji document_id=5963052342302477581>🎖</emoji>',
+            "Legend": '<emoji document_id=5963061984504056919>🎖</emoji>',
+            "Ancient": '<emoji document_id=5963027435787127662>🎖</emoji>',
+            "Divine": '<emoji document_id=5963113657255594572>🎖</emoji>',
+            "Immortal": '<emoji document_id=5960656609544768701>🎖</emoji>'
+        }
+        
         self.hero_emojis = {
             "Anti-Mage": '<emoji document_id=6062179938386055768>🟢</emoji>',
             "Axe": '<emoji document_id=6061943874098564891>🔴</emoji>',
