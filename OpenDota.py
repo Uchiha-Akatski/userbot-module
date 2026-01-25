@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (1, 1, 5)
+__version__ = (1, 1, 6)
 # -- version --
 
 
@@ -16,18 +16,12 @@ API_URL = "https://api.opendota.com/api"
 
 @loader.tds
 class DotaStatsMod(loader.Module):
-    """
-    📊 Модуль статистики Dota 2 через OpenDota API
-
-    Команды:
-    • .profile2 — показать свой профиль
-    • .profileid <id> — показать профиль по Steam ID
-    • .dota2 — последние 15 игр
-    • .match <id> — подробности матча
-    • .dota2id <id профиля steam> — показывает последние 15 игр чужого игрока по Steam ID
-    """
-
     strings = {"name": "DotaStats"}
+   
+    def is_win(self, match):
+        is_radiant = match["player_slot"] < 128
+        return match["radiant_win"] == is_radiant
+
 
     def __init__(self):
         self.config = loader.ModuleConfig(
@@ -35,22 +29,6 @@ class DotaStatsMod(loader.Module):
         )
         self.heroes = {}
         self.items = {}
-        self._load_heroes()
-        self._load_items()
-
-        # ⚡ Словарь рангов
-        self.rank_emojis = {
-            "Herald": '<emoji document_id=5963157659195542640>🎖</emoji>',
-            "Guardian": '<emoji document_id=5963215018483780860>🎖</emoji>',
-            "Crusader": '<emoji document_id=5960576663023523045>🎖</emoji>',
-            "Archon": '<emoji document_id=5963052342302477581>🎖</emoji>',
-            "Legend": '<emoji document_id=5963061984504056919>🎖</emoji>',
-            "Ancient": '<emoji document_id=5963027435787127662>🎖</emoji>',
-            "Divine": '<emoji document_id=5963113657255594572>🎖</emoji>',
-            "Immortal": '<emoji document_id=5960656609544768701>🎖</emoji>'
-        }
-
-        # ⚡ Герои (пример)
         self.hero_emojis = {
             "Anti-Mage": '<emoji document_id=6062179938386055768>🟢</emoji>',
             "Axe": '<emoji document_id=6061943874098564891>🔴</emoji>',
@@ -181,6 +159,149 @@ class DotaStatsMod(loader.Module):
             "Ringmaster": '<emoji document_id=6269209104493845341>🤡</emoji>',
             
         }
+        self._load_heroes()
+        self._load_items()
+
+    # 🔥 сюда добавляем метод конвертации SteamID -> account_id
+    def _to_account_id(self, steam_id64: int) -> int:
+        return steam_id64 - 76561197960265728
+
+    def _load_heroes(self):
+        heroes_data = [
+            {"name": "Anti-Mage", "is_radiant": True, "id": 1},
+            {"name": "Axe", "is_radiant": False, "id": 2},
+            {"name": "Invoker", "is_radiant": True, "id": 3},
+            {"name": "Pudge", "is_radiant": False, "id": 4},
+            {"name": "Invoker", "is_radiant": True, "id": 5},
+            {"name": "Bane", "is_radiant": False, "id": 6},
+            {"name": "Bloodseeker", "is_radiant": True, "id": 7},
+            {"name": "Crystal Maiden", "is_radiant": False, "id": 8},
+            {"name": "Drow Ranger", "is_radiant": True, "id": 9},
+            {"name": "Earthshaker", "is_radiant": False, "id": 10},
+            {"name": "Mirana", "is_radiant": True, "id": 11}, 
+            {"name": "Morphling", "is_radiant": False, "id": 12},
+            {"name": "Shadow Fiend", "is_radiant": True, "id": 13},
+            {"name": "Phantom Lancer", "is_radiant": False, "id": 14},
+            {"name": "Puck", "is_radiant": True, "id": 15},
+            {"name": "Razor", "is_radiant": False, "id": 16},
+            {"name": "Sand King", "is_radiant": True, "id": 17},
+            {"name": "Storm Spirit", "is_radiant": False, "id": 18},
+            {"name": "Sven", "is_radiant": True, "id": 19},
+            {"name": "Tiny", "is_radiant": False, "id": 20},
+            {"name": "Vengeful Spirit", "is_radiant": True, "id": 21},
+            {"name": "Windranger", "is_radiant": False, "id": 22},
+            {"name": "Zeus", "is_radiant": True, "id": 23},
+            {"name": "Kunkka", "is_radiant": False, "id": 24},
+            {"name": "Lina", "is_radiant": True, "id": 25},
+            {"name": "Lion", "is_radiant": False, "id": 26},
+            {"name": "Shadow Shaman", "is_radiant": True, "id": 27},
+            {"name": "Slardar", "is_radiant": False, "id": 28},
+            {"name": "Tidehunter", "is_radiant": True, "id": 29},
+            {"name": "Witch Doctor", "is_radiant": False, "id": 30},
+            {"name": "Lich", "is_radiant": True, "id": 31},
+            {"name": "Riki", "is_radiant": False, "id": 32},
+            {"name": "Enigma", "is_radiant": True, "id": 33},
+            {"name": "Tinker", "is_radiant": False, "id": 34},
+            {"name": "Sniper", "is_radiant": True, "id": 35},
+            {"name": "Necrophos", "is_radiant": False, "id": 36},
+            {"name": "Warlock", "is_radiant": True, "id": 37},
+            {"name": "Beastmaster", "is_radiant": False, "id": 38},
+            {"name": "Queen of Pain", "is_radiant": True, "id": 39},
+            {"name": "Venomancer", "is_radiant": False, "id": 40},
+            {"name": "Faceless Void", "is_radiant": True, "id": 41},
+            {"name": "Wraith King", "is_radiant": False, "id": 42},
+            {"name": "Death Prophet", "is_radiant": True, "id": 43},
+            {"name": "Phantom Assassin", "is_radiant": False, "id": 44},
+            {"name": "Pugna", "is_radiant": True, "id": 45},
+            {"name": "Templar Assassin", "is_radiant": False, "id": 46},
+            {"name": "Viper", "is_radiant": True, "id": 47},
+            {"name": "Luna", "is_radiant": False, "id": 48},
+            {"name": "Dragon Knight", "is_radiant": True, "id": 49},
+            {"name": "Dazzle", "is_radiant": False, "id": 50},
+            {"name": "Clockwerk", "is_radiant": True, "id": 51},
+            {"name": "Leshrac", "is_radiant": False, "id": 52},
+            {"name": "Nature's Prophet", "is_radiant": True, "id": 53},
+            {"name": "Lifestealer", "is_radiant": False, "id": 54},
+            {"name": "Dark Seer", "is_radiant": True, "id": 55},
+            {"name": "Clinkz", "is_radiant": False, "id": 56},
+            {"name": "Omniknight", "is_radiant": True, "id": 57},
+            {"name": "Enchantress", "is_radiant": False, "id": 58},
+            {"name": "Huskar", "is_radiant": True, "id": 59},
+            {"name": "Night Stalker", "is_radiant": False, "id": 60},
+            {"name": "Broodmother", "is_radiant": True, "id": 61},
+            {"name": "Bounty Hunter", "is_radiant": False, "id": 62},
+            {"name": "Weaver", "is_radiant": True, "id": 63},
+            {"name": "Jakiro", "is_radiant": False, "id": 64},
+            {"name": "Batrider", "is_radiant": True, "id": 65},
+            {"name": "Chen", "is_radiant": False, "id": 66},
+            {"name": "Spectre", "is_radiant": True, "id": 67},
+            {"name": "Doom", "is_radiant": False, "id": 68},
+            {"name": "Ancient Apparition", "is_radiant": True, "id": 69},
+            {"name": "Ursa", "is_radiant": False, "id": 70},
+            {"name": "Spirit Breaker", "is_radiant": True, "id": 71},
+            {"name": "Gyrocopter", "is_radiant": False, "id": 72},
+            {"name": "Alchemist", "is_radiant": True, "id": 73},
+            {"name": "Silencer", "is_radiant": False, "id": 74},
+            {"name": "Outworld Destroyer", "is_radiant": True, "id": 75},
+            {"name": "Lycan", "is_radiant": False, "id": 76},
+            {"name": "Brewmaster", "is_radiant": True, "id": 77},
+            {"name": "Shadow Demon", "is_radiant": False, "id": 78},
+            {"name": "Lone Druid", "is_radiant": True, "id": 79},
+            {"name": "Chaos Knight", "is_radiant": False, "id": 80},
+            {"name": "Meepo", "is_radiant": True, "id": 81},
+            {"name": "Treant Protector", "is_radiant": False, "id": 82},
+            {"name": "Ogre Magi", "is_radiant": True, "id": 83},
+            {"name": "Undying", "is_radiant": False, "id": 84},
+            {"name": "Rubick", "is_radiant": True, "id": 85},
+            {"name": "Disruptor", "is_radiant": False, "id": 86},
+            {"name": "Nyx Assassin", "is_radiant": True, "id": 87},
+            {"name": "Naga Siren", "is_radiant": False, "id": 88},
+            {"name": "Keeper of the Light", "is_radiant": True, "id": 89},
+            {"name": "Io", "is_radiant": False, "id": 90},
+            {"name": "Visage", "is_radiant": True, "id": 91},
+            {"name": "Slark", "is_radiant": False, "id": 92},
+            {"name": "Medusa", "is_radiant": True, "id": 93},
+            {"name": "Troll Warlord", "is_radiant": False, "id": 94},
+            {"name": "Centaur Warrunner", "is_radiant": True, "id": 95},
+            {"name": "Magnus", "is_radiant": False, "id": 96},
+            {"name": "Timbersaw", "is_radiant": True, "id": 97},
+            {"name": "Bristleback", "is_radiant": False, "id": 98},
+            {"name": "Tusk", "is_radiant": True, "id": 99},
+            {"name": "Skywrath Mage", "is_radiant": False, "id": 100},
+            {"name": "Abaddon", "is_radiant": True, "id": 101},
+            {"name": "Elder Titan", "is_radiant": False, "id": 102},
+            {"name": "Legion Commander", "is_radiant": True, "id": 103},
+            {"name": "Techies", "is_radiant": False, "id": 104},
+            {"name": "Ember Spirit", "is_radiant": True, "id": 105},
+            {"name": "Earth Spirit", "is_radiant": False, "id": 106},
+            {"name": "Underlord", "is_radiant": True, "id": 107},
+            {"name": "Terrorblade", "is_radiant": False, "id": 108},
+            {"name": "Phoenix", "is_radiant": True, "id": 109},
+            {"name": "Oracle", "is_radiant": False, "id": 110},
+            {"name": "Winter Wyvern", "is_radiant": True, "id": 111},
+            {"name": "Arc Warden", "is_radiant": False, "id": 112},
+            {"name": "Monkey King", "is_radiant": True, "id": 113},
+            {"name": "Dark Willow", "is_radiant": False, "id": 114},
+            {"name": "Pangolier", "is_radiant": True, "id": 115},
+            {"name": "Grimstroke", "is_radiant": False, "id": 116},
+            {"name": "Hoodwink", "is_radiant": True, "id": 117},
+            {"name": "Void Spirit", "is_radiant": False, "id": 118},
+            {"name": "Snapfire", "is_radiant": True, "id": 119},
+            {"name": "Mars", "is_radiant": False, "id": 120},
+            {"name": "Dawnbreaker", "is_radiant": True, "id": 121},
+            {"name": "Marci", "is_radiant": False, "id": 122},
+            {"name": "Primal Beast", "is_radiant": True, "id": 123},
+            {"name": "Muerta", "is_radiant": False, "id": 124},
+            {"name": "Largo", "is_radiant": True, "id": 125},
+            {"name": "Kez", "is_radiant": False, "id": 126},
+            {"name": "Ringmaster", "is_radiant": True, "id": 127},
+
+        ]
+
+        for data in heroes_data:
+            emoji = self.hero_emojis.get(data["name"], "❓")
+            self.heroes[data["id"]] = {"name": data["name"], "emoji": emoji}
+
 
         # ⚡ Предметы (сюда потом вставь emoji_id из набора предметов)
         self.item_emojis = {
@@ -595,3 +716,74 @@ class DotaStatsMod(loader.Module):
             await utils.answer(message, msg, parse_mode="html")
         except Exception as e:
             await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка загрузки матча: {str(e)}")
+
+    async def herocmd(self, message: Message):
+        """Показывает статистку твоего героя | Пример: .hero <name hero>"""
+        args = utils.get_args_raw(message)
+        raw_id = self.config["PLAYER_ID"]
+
+        if not raw_id:
+            return await utils.answer(message, "🤐 Не задан PLAYER_ID")
+
+        raw_id = int(raw_id)
+
+        if raw_id > 76561197960265728:
+            account_id = raw_id - 76561197960265728
+        else:
+            account_id = raw_id
+
+        try:
+            matches = requests.get(
+                f"{API_URL}/players/{account_id}/matches",
+                params={"limit": 100}
+            ).json()
+
+            if not matches:
+                return await utils.answer(message, "🤐 Нет матчей")
+
+        # ---------- выбор героя ----------
+            if not args:
+                hero_id = matches[0]["hero_id"]
+                hero_name = self.heroes.get(hero_id, "Unknown")
+            else:
+                hero_name_arg = args.strip().lower()
+                hero_id = None
+                hero_name = None
+
+                for hid, name in self.heroes.items():
+                    if name.lower() == hero_name_arg:
+                        hero_id = hid
+                        hero_name = name
+                        break
+
+                if not hero_id:
+                    return await utils.answer(message, "🤐 Герой не найден")
+
+            hero_matches = [m for m in matches if m["hero_id"] == hero_id]
+
+            if not hero_matches:
+                return await utils.answer(message, f"🤐 Ты не играл на {hero_name}")
+
+        # ---------- статистика ----------
+            games = len(hero_matches)
+            wins = sum(1 for m in hero_matches if self.is_win(m))
+            winrate = round(wins / games * 100, 1)
+
+            kills = sum(m["kills"] for m in hero_matches)
+            deaths = sum(m["deaths"] for m in hero_matches)
+            assists = sum(m["assists"] for m in hero_matches)
+            kda = round((kills + assists) / max(1, deaths), 2)
+
+            hero_emoji = self.hero_emojis.get(hero_name, "")
+
+            msg = (
+                f"<b>Герой: {hero_emoji} {hero_name}</b>\n\n"
+                f"🎮 Матчей: {games}\n"
+                f"🏆 Побед: {wins} ({winrate}%)\n"
+                f"⚔️ KDA: {kda}\n"
+            )
+
+            return await utils.answer(message, msg, parse_mode="html")
+
+        except Exception as e:
+            return await utils.answer(message, f"🤐 Ошибка hero: {e}")
