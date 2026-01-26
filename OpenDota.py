@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (1, 1, 7)
+__version__ = (1, 1, 8)
 # -- version --
 
 
@@ -21,6 +21,100 @@ class DotaStatsMod(loader.Module):
     def is_win(self, match):
         is_radiant = match["player_slot"] < 128
         return match["radiant_win"] == is_radiant
+
+    def _fmt_time(self, seconds: int) -> str:
+        m = seconds // 60
+        s = seconds % 60
+        return f"{m}:{s:02d}"
+
+    def _item_verdicts(self):
+        return {
+        # ОБЯЗАТЕЛЬНЫЕ
+            "Black King Bar": ("required", 30 * 60),
+            "Blink Dagger": ("required", 20 * 60),
+            "Force Staff": ("required", 25 * 60),
+            "Glimmer Cape": ("required", 25 * 60),
+
+        # CORE
+            "Manta": ("required", 30 * 60),
+            "Desolator": ("required", 30 * 60),
+            "Butterfly": ("required", 40 * 60),
+            "Satanic": ("required", 40 * 60),
+            "Skadi": ("required", 40 * 60),
+            "Assault Cuirass": ("required", 40 * 60),
+            "Monkey King Bar": ("required", 35 * 60),
+
+
+        # СИЛЬНЫЕ / БОНУСНЫЕ
+            "Aghanim's Scepter": ("bonus", 35 * 60),
+            "Aghanim's Shard": ("bonus", 30 * 60),
+            "Lotus Orb": ("bonus", 35 * 60),
+            "Pipe": ("bonus", 30 * 60),
+            "Assault Cuirass": ("bonus", 40 * 60),
+            "Shivas Guard": ("bonus", 40 * 60),
+            "Sheepstick": ("bonus", 40 * 60),
+            "Refresher": ("bonus", 45 * 60),
+            "Silver Edge": ("bonus", 35 * 60),
+            "Hurricane Pike": ("bonus", 35 * 60),
+            "Bloodthorn": ("bonus", 40 * 60),
+            "Nullifier": ("bonus", 40 * 60),
+
+        # СПОРНЫЕ
+            "Hand Of Midas": ("questionable", 15 * 60),
+            "Radiance": ("questionable", 25 * 60),
+            "Rapier": ("questionable", 0),
+            "Dagon": ("questionable", 20 * 60),
+        }
+    
+
+    def _build_verdict(self, hero_name: str, purchases: dict) -> str:
+        rules = self._item_verdicts()
+
+        score = 0
+        problems = []
+        bonuses = []
+
+        for item, (kind, limit) in rules.items():
+            time = purchases.get(item)
+
+            if kind == "required":
+                if not time:
+                    problems.append(f"нет {item}")
+                    score -= 3
+                elif time > limit:
+                    problems.append(f"{item} куплен поздно")
+                    score -= 2
+                else:
+                    score += 2
+
+            elif kind == "bonus":
+                if time and time <= limit:
+                    bonuses.append(item)
+                    score += 1
+
+            elif kind == "questionable":
+                if time:
+                    problems.append(f"сомнительный {item}")
+                    score -= 1
+
+    # ФИНАЛЬНЫЙ ВЕРДИКТ
+        if score >= 4:
+            verdict = "<emoji document_id=5206607081334906820>✔️</emoji> Вердикт: охуенный билд, всё по уму"
+        elif score >= 1:
+            verdict = "<emoji document_id=5447402807877452887>❗️</emoji> Вердикт: билд норм, но есть косяки"
+        else:
+            verdict = "<emoji document_id=5032973497861669622>❌</emoji> Вердикт: хуйня билд, много ошибок"
+
+        if problems:
+            verdict += "\n<emoji document_id=5447402807877452887>❗️</emoji><emoji document_id=5269531045165816230>🤡</emoji> Проблемы: " + ", ".join(problems[:3])
+
+        if bonuses:
+            verdict += "\n🔥 Бонусы: " + ", ".join(bonuses[:3])
+
+        return verdict
+
+
+
 
 
     def __init__(self):
@@ -504,7 +598,7 @@ class DotaStatsMod(loader.Module):
         await self._send_profile(message, pid)
 
     async def profileidcmd(self, message: Message):
-        """Показать профиль противника по Steam ID"""
+        """Показать профиль по Steam ID"""
         args = utils.get_args_raw(message)
         if not args or not args.isdigit():
             return await utils.answer(message, "Используй: .profileid <id>")
@@ -607,7 +701,7 @@ class DotaStatsMod(loader.Module):
 
     # ---------------- Последние игры по ID ----------------
     async def dota2idcmd(self, message: Message):
-        """Показать последние 15 игр противника по Steam ID"""
+        """Показать последние 15 игр по Steam ID"""
         args = utils.get_args_raw(message)
         if not args or not args.isdigit():
             return await utils.answer(
@@ -863,3 +957,99 @@ class DotaStatsMod(loader.Module):
         except Exception as e:
             await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка compare: {e}")
         
+
+    async def buildcmd(self, message: Message):
+        """Оценка и вердикт билда последнего матча"""
+        raw_id = self.config["PLAYER_ID"]
+
+        if not raw_id:
+            return await utils.answer(message, f"<emoji document_id=5375557664396835394>❌</emoji> Не задан PLAYER_ID")
+
+        try:
+            account_id = self._to_account_id(int(raw_id))
+
+            matches = requests.get(
+                f"{API_URL}/players/{account_id}/matches",
+                params={"limit": 1}
+            ).json()
+
+            if not matches:
+                return await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Нет матчей")
+
+            match = matches[0]
+            match_id = match["match_id"]
+            hero_id = match["hero_id"]
+            hero_name = self.heroes.get(hero_id, "Unknown")
+
+            # тянем детали матча
+            details = requests.get(
+                f"{API_URL}/matches/{match_id}"
+            ).json()
+
+        # находим нашего игрока
+            player = None
+            for p in details.get("players", []):
+                if p.get("account_id") == account_id:
+                    player = p
+                    break
+
+            if not player:
+                return await utils.answer(message, f"<emoji document_id=6021386648246294190>👤</emoji> Игрок не найден в матче")
+
+            purchase_log = player.get("purchase_log")
+
+            purchases = {}
+
+            if purchase_log:
+                for entry in purchase_log:
+                    item = entry.get("key")
+                    time = entry.get("time", 0)
+                    if item and item not in purchases:
+                        purchases[item] = time
+            else:
+                # fallback — без таймингов
+                for i in range(6):
+                    item_id = match.get(f"item_{i}")
+                    if item_id and item_id in self.items:
+                        purchases[self.items[item_id]] = None
+
+            lines = []
+
+            for item, (verdict_type, limit) in self._item_verdicts().items():
+                if item not in purchases:
+                    continue
+
+                buy_time = purchases[item]
+
+                if buy_time is None:
+                    lines.append(f"⚪ {item} — куплен (тайминг неизвестен)")
+                    continue
+
+                if verdict_type == "required":
+                    if buy_time <= limit:
+                        lines.append(f"🟢 {item} — норм ({buy_time//60}:{buy_time%60:02d})")
+                    else:
+                        lines.append(f"🔴 {item} — поздно нахуй ({buy_time//60}:{buy_time%60:02d})")
+
+                elif verdict_type == "bonus":
+                    lines.append(f"🔵 {item} — бонус ({buy_time//60}:{buy_time%60:02d})")
+
+                elif verdict_type == "questionable":
+                    lines.append(f"🟠 {item} — спорно ({buy_time//60}:{buy_time%60:02d})")
+
+
+
+            verdict = self._build_verdict(hero_name, purchases)
+
+            msg = (
+                f"<blockquote><emoji document_id=5445221832074483553>💼</emoji> Билд — последний матч\n"
+                f"<emoji document_id=6021386648246294190>👤</emoji> Герой: <b>{hero_name}</b>\n\n"
+                + "\n".join(lines[:10]) +
+                f"\n\n<b>{verdict}</b>"
+                f"</blockquote>"
+            )
+
+            await utils.answer(message, msg, parse_mode="html")
+
+        except Exception as e:
+            await utils.answer(message, f"<emoji document_id=5375557664396835394>❌</emoji> Ошибка build: {e}")  
