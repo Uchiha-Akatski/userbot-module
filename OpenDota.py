@@ -106,7 +106,7 @@ class DotaStatsMod(loader.Module):
             verdict = "<emoji document_id=5032973497861669622>❌</emoji> Вердикт: хуйня билд, много ошибок"
 
         if problems:
-            verdict += "\n<emoji document_id=5447402807877452887>❗️</emoji><emoji document_id=5269531045165816230>🤡</emoji> Проблемы: " + ", ".join(problems[:3])
+            verdict += "\n<emoji document_id=5269531045165816230>🤡</emoji> Проблемы: " + ", ".join(problems[:3])
 
         if bonuses:
             verdict += "\n🔥 Бонусы: " + ", ".join(bonuses[:3])
