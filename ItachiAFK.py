@@ -7,7 +7,7 @@ import datetime
 import logging
 from collections import defaultdict
 
-__version__ = (1, 8, 6)
+__version__ = (1, 8, 7)
 
 name = "ItachiAFK"
 logger = logging.getLogger(name)
@@ -276,14 +276,17 @@ class ItachiAFKMod(loader.Module):
                     else "",
                 )
             else:
-                now = datetime.datetime.now().replace(microsecond=0)
-                gone = datetime.datetime.fromtimestamp(self._db.get(name, "gone"))
-                diff = now - gone
+                gone = self._db.get(name, "gone")
+                diff_seconds = int(time.time() - gone)
+                if diff_seconds < 0:
+                    diff_seconds = 0
+
+                was_online = str(datetime.timedelta(seconds=diff_seconds))    
                 reason = afk_state if isinstance(afk_state, str) else None
                 return_time = self._db.get(name, "return_time")
 
                 text = self.strings["default_afk_message"].format(
-                    was_online=str(diff).split(".")[0],
+                    was_online=was_online,
                     reason_text=(
                         f"<emoji document_id=5870729937215819584>⏰️</emoji> <b>Причина:</b> <i>{reason}</i>\n" 
                         if reason 
