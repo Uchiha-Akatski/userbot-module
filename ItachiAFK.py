@@ -260,7 +260,6 @@ class ItachiAFKMod(loader.Module):
                 return
 
             self.answered_users.add(user.id)
-            now = datetime.datetime.now().replace(microsecond=0)
 
             if sleep_state:
                 sleep_start = self._db.get(name, "sleep_start")
@@ -277,6 +276,7 @@ class ItachiAFKMod(loader.Module):
                     else "",
                 )
             else:
+                now = datetime.datetime.now().replace(microsecond=0)
                 gone = datetime.datetime.fromtimestamp(self._db.get(name, "gone"))
                 diff = now - gone
                 reason = afk_state if isinstance(afk_state, str) else None
