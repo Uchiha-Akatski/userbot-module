@@ -264,8 +264,11 @@ class ItachiAFKMod(loader.Module):
 
             if sleep_state:
                 sleep_start = self._db.get(name, "sleep_start")
-                diff = now - datetime.datetime.fromtimestamp(sleep_start)
-                was_online = str(diff).split(".")[0]
+                diff_seconds = int(time.time() - sleep_start)
+                if diff_seconds < 0:
+                    diff_seconds = 0
+
+                was_online = str(datetime.timedelta(seconds=diff_seconds))
                 wake_time = self._db.get(name, "wake_time")
                 text = self.strings["sleep_msg"].format(
                     was_online=was_online,
