@@ -7,7 +7,7 @@ import datetime
 import logging
 from collections import defaultdict
 
-__version__ = (1, 8, 7)
+__version__ = (1, 8, 8)
 
 name = "ItachiAFK"
 logger = logging.getLogger(name)
@@ -156,6 +156,17 @@ class ItachiAFKMod(loader.Module):
 
     @loader.command(ru_doc="Отключить AFK")
     async def unafk(self, message):
+        gone = self._db.get(name, "gone")
+        duration_text = ""
+
+        if gone:
+            diff_seconds = time.time() - gone
+            duration_text = (
+                f"\n<emoji document_id=5870729937215819584>⏰️</emoji> "
+                f"<b>Был в AFK:</b> <code>{self._format_duration(diff_seconds)}</code>"
+
+            )
+
         self._db.set(name, "afk", False)
         self._db.set(name, "gone", None)
         self._db.set(name, "return_time", None)
@@ -174,7 +185,7 @@ class ItachiAFKMod(loader.Module):
             except Exception as e:
                 logger.error(f"Не удалось восстановить статус: {e}")
 
-        await utils.answer(message, self.strings["back"] + (log_text or ""))
+        await utils.answer(message, self.strings["back"] + duration_text + (log_text or ""))
 
     # --- SLEEP ---
     @loader.command(ru_doc="[время] — Включить SLEEP")
@@ -214,6 +225,18 @@ class ItachiAFKMod(loader.Module):
 
     @loader.command(ru_doc="Выключить SLEEP")
     async def unsleep(self, message):
+        sleep_start = self._db.get(name, "sleep_start")
+        duration_text = ""
+
+        if sleep_start:
+            diff_seconds = time.time() - sleep_start
+            duration_text = (
+                f"\n<emoji document_id=5870729937215819584>⏰️</emoji> "
+                f"<b>Спал:</b> <code>{self._format_duration(diff_seconds)}</code>"
+            )
+
+
+        
         self._db.set(name, "sleep", False)
         self._db.set(name, "sleep_start", None)
         self._db.set(name, "wake_time", None)
@@ -232,7 +255,7 @@ class ItachiAFKMod(loader.Module):
             except Exception as e:
                 logger.error(f"Не удалось восстановить статус: {e}")
 
-        await utils.answer(message, self.strings["sleep_off"] + (log_text or ""))
+        await utils.answer(message, self.strings["sleep_off"] + duration_text + (log_text or ""))
 
     # --- WATCHER ---
     async def watcher(self, message):
