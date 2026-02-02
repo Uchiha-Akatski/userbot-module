@@ -98,6 +98,12 @@ class ItachiAFKMod(loader.Module):
             + "</blockquote>"
         )
 
+    def _format_duration(self, seconds: int) -> str:
+        if seconds < 0:
+            seconds = 0
+        return str(datetime.timedelta(seconds=int(seconds)))
+
+
 
     # --- AFK ---
     @loader.command(ru_doc="[причина] | [время] — Установить AFK")
