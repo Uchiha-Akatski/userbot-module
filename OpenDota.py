@@ -710,7 +710,7 @@ class DotaStatsMod(loader.Module):
             return await utils.answer(message, "<emoji document_id=5390972675684337321>🤐</emoji> Не задан Steam ID")
 
         try:
-            matches = requests.get(f"{API_URL}/players/{pid}/recentMatches").json()
+            matches = requests.get(f"{API_URL}/players/{pid}/matches?Limit=40").json()
             if not matches:
                 return await utils.answer(message, "<emoji document_id=5390972675684337321>🤐</emoji> Нет данных матчей")
 
@@ -749,7 +749,7 @@ class DotaStatsMod(loader.Module):
             pid = raw_id
 
         try:
-            matches = requests.get(f"{API_URL}/players/{pid}/recentMatches").json()
+            matches = requests.get(f"{API_URL}/players/{pid}/matches?Limit=40").json()
             if not matches:
                 return await utils.answer(
                     message,
