@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 0, 1)
+__version__ = (2, 0, 2)
 # -- version --
 
 
@@ -968,8 +968,6 @@ class DotaStatsMod(loader.Module):
                 f"<emoji document_id=5240271820979981346>⚔️</emoji> KDA: {o_kda}\n"
                 f"</blockquote>"
             )
-
-            await self.answer_with_close(message, msg)
 
         except Exception as e:
             await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка compare: {e}")
