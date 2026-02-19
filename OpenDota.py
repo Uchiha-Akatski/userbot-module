@@ -969,6 +969,8 @@ class DotaStatsMod(loader.Module):
                 f"</blockquote>"
             )
 
+            await utils.answer(message, msg)
+
         except Exception as e:
             await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка compare: {e}")
 
