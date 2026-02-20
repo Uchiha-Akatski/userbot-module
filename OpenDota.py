@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 0, 2)
+__version__ = (2, 0, 3)
 # -- version --
 
 
@@ -842,12 +842,15 @@ class DotaStatsMod(loader.Module):
             await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка загрузки матча: {str(e)}")
 
     async def herocmd(self, message: Message):
-        """Показывает статистку твоего героя | Пример: .hero <name hero>"""
+        """Показывает статистику героя | Пример: .hero pudge"""
         args = utils.get_args_raw(message)
         raw_id = self.config["PLAYER_ID"]
 
         if not raw_id:
-            return await utils.answer(message, f"<emoji document_id=5375557664396835394>❌</emoji> Не задан PLAYER_ID")
+            return await utils.answer(
+                message,
+                "<emoji document_id=5375557664396835394>❌</emoji> Не задан PLAYER_ID"
+            )
 
         raw_id = int(raw_id)
 
@@ -857,47 +860,49 @@ class DotaStatsMod(loader.Module):
             account_id = raw_id
 
         try:
-            matches = requests.get(
+            if not args:
+                return await utils.answer(message, "Укажи имя героя: .hero pudge")
+
+            hero_name_arg = args.strip().lower()
+            hero_id = None
+
+            # Ищем героя
+            for hid, name in self.heroes.items():
+                if name.lower() == hero_name_arg:
+                    hero_id = hid
+                    hero_name = name
+                    break
+
+            if hero_id is None:
+                return await utils.answer(
+                    message,
+                    "<emoji document_id=5390972675684337321>🤐</emoji> Герой не найден"
+                )
+
+            # Берём последние 20 матчей НА ЭТОМ ГЕРОЕ
+            hero_matches = requests.get(
                 f"{API_URL}/players/{account_id}/matches",
-                params={"limit": 100}
+                params={
+                    "hero_id": hero_id,
+                    "limit": 20
+                }
             ).json()
 
-            if not matches:
-                return await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Нет матчей")
-
-        # ---------- выбор героя ----------
-            if not args:
-                hero_id = matches[0]["hero_id"]
-                hero_name = self.heroes.get(hero_id, "Unknown")
-            else:
-                hero_name_arg = args.strip().lower()
-                hero_id = None
-                hero_name = None
-
-                for hid, name in self.heroes.items():
-                    if name.lower() == hero_name_arg:
-                        hero_id = hid
-                        hero_name = name
-                        break
-
-                if not hero_id:
-                    return await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Герой не найден")
-
-            hero_matches = [m for m in matches if m["hero_id"] == hero_id]
-
             if not hero_matches:
-                return await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ты не играл на {hero_name}")
+                return await utils.answer(
+                    message,
+                    f"<emoji document_id=5390972675684337321>🤐</emoji> Ты не играл на {hero_name}"
+                )
 
-        # ---------- статистика ----------
             games = len(hero_matches)
             wins = sum(1 for m in hero_matches if self.is_win(m))
             winrate = round(wins / games * 100, 1)
+            losses = games - wins
 
             kills = sum(m["kills"] for m in hero_matches)
             deaths = sum(m["deaths"] for m in hero_matches)
             assists = sum(m["assists"] for m in hero_matches)
             kda = round((kills + assists) / max(1, deaths), 2)
-
 
             hero_icon = self.hero_emojis2.get(hero_name, "")
 
@@ -905,13 +910,17 @@ class DotaStatsMod(loader.Module):
                 f"<b>Герой: {hero_icon} {hero_name}</b>\n\n"
                 f"<emoji document_id=5375437280758496345>🎮</emoji> Матчей: {games}\n"
                 f"<emoji document_id=5456498809875995940>🏆</emoji> Побед: {wins} ({winrate}%)\n"
+                f"<emoji document_id=5352703271536454445>❌</emoji> Поражений: {losses}\n"
                 f"<emoji document_id=5240271820979981346>⚔️</emoji> KDA: {kda}\n"
             )
 
             return await utils.answer(message, msg, parse_mode="html")
 
         except Exception as e:
-            return await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка hero: {e}")
+            return await utils.answer(
+                message,
+                f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка hero: {e}"
+            )
 
     async def comparecmd(self, message: Message):
         """Сравнения статистики себя и противника .compare <id противника>"""
