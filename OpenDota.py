@@ -170,7 +170,7 @@ class DotaStatsMod(loader.Module):
             "Anti-Mage": '<tg-emoji emoji-id="6062179938386055768">🟢</tg-emoji>',
             "Axe": '<tg-emoji emoji-id="6061943874098564891">🔴</tg-emoji>',
             "Juggernaut": '<tg-emoji emoji-id="6064624766914924449">🟢</tg-emoji>',
-            "Pudge": '<tg-emoji emoji-id="6062065073780690927">🔴</tg-emoji>"',
+            "Pudge": '<tg-emoji emoji-id="6062065073780690927">🔴</tg-emoji>',
             "Invoker": '<tg-emoji emoji-id="6062314229128499676">📚</tg-emoji>',
             "Bane": '<tg-emoji emoji-id="6062010952897793745">📚</tg-emoji>',
             "Bloodseeker": '<tg-emoji emoji-id="6062032122791598368">🟢</tg-emoji>',
