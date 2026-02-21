@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 0, 3)
+__version__ = (2, 0, 4)
 # -- version --
 
 
@@ -841,86 +841,141 @@ class DotaStatsMod(loader.Module):
         except Exception as e:
             await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка загрузки матча: {str(e)}")
 
+    # ---------------- Статистика по герою ----------------
     async def herocmd(self, message: Message):
-        """Показывает статистику героя | Пример: .hero pudge"""
-        args = utils.get_args_raw(message)
-        raw_id = self.config["PLAYER_ID"]
+        """Статистика по герою (.hero <name> [-all])"""
 
-        if not raw_id:
+        args = utils.get_args_raw(message)
+        if not args:
             return await utils.answer(
                 message,
-                "<emoji document_id=5375557664396835394>❌</emoji> Не задан PLAYER_ID"
+                "Используй: .hero <имя героя> [-all]"
             )
 
-        raw_id = int(raw_id)
+        parts = args.split()
+        hero_query = parts[0].lower()
+        mode_all = "-all" in parts
 
-        if raw_id > 76561197960265728:
-            account_id = raw_id - 76561197960265728
-        else:
-            account_id = raw_id
+        # Поиск героя
+        hero_id = None
+        hero_name = None
+
+        for hid, name in self.heroes.items():
+            if hero_query in name.lower():
+                hero_id = hid
+                hero_name = name
+                break
+
+        hero_icon = self.hero_emojis2.get(hero_name, "")    
+
+        if not hero_id:
+            return await utils.answer(message, "Герой не найден")
+
+        account_id = self.config["PLAYER_ID"]
+        if not account_id:
+            return await utils.answer(message, "Не задан Steam ID")
 
         try:
-            if not args:
-                return await utils.answer(message, "Укажи имя героя: .hero pudge")
+            # ================= ВСЯ СТАТИСТИКА =================
+            if mode_all:
+                heroes_stats = requests.get(
+                    f"{API_URL}/players/{account_id}/heroes"
+                ).json()
 
-            hero_name_arg = args.strip().lower()
-            hero_id = None
-
-            # Ищем героя
-            for hid, name in self.heroes.items():
-                if name.lower() == hero_name_arg:
-                    hero_id = hid
-                    hero_name = name
-                    break
-
-            if hero_id is None:
-                return await utils.answer(
-                    message,
-                    "<emoji document_id=5390972675684337321>🤐</emoji> Герой не найден"
+                hero_data = next(
+                    (h for h in heroes_stats if h["hero_id"] == hero_id),
+                    None
                 )
 
-            # Берём последние 20 матчей НА ЭТОМ ГЕРОЕ
-            hero_matches = requests.get(
-                f"{API_URL}/players/{account_id}/matches",
-                params={
-                    "hero_id": hero_id,
-                    "limit": 20
-                }
+                if not hero_data:
+                    return await utils.answer(message, "Нет данных по герою")
+
+                games = hero_data["games"]
+                wins = hero_data["win"]
+                losses = games - wins
+                winrate = round((wins / games) * 100, 1) if games else 0
+                total_wr = winrate
+                total_wr_color = "🟢" if total_wr >= 55 else "🟡" if total_wr >= 50 else "🔴"
+
+                # Берём до 100 матчей для среднего KDA
+                matches = requests.get(
+                    f"{API_URL}/players/{account_id}/matches"
+                    f"?hero_id={hero_id}&limit=100"
+                ).json()
+
+                total_kills = sum(m["kills"] for m in matches)
+                total_deaths = sum(m["deaths"] for m in matches)
+                total_assists = sum(m["assists"] for m in matches)
+
+                total_games = len(matches)
+                avg_k = round(total_kills / total_games, 1) if total_games else 0
+                avg_d = round(total_deaths / total_games, 1) if total_games else 0
+                avg_a = round(total_assists / total_games, 1) if total_games else 0
+
+
+                text = (
+                    f"─────── ✦ ───────\n"
+                    f"<b>Герой: {hero_icon} {hero_name}</b>\n\n"
+                    f"─────── ✦ ───────\n\n"
+
+                    f"<b>〚<emoji document_id=5231200819986047254>📊</emoji>〛 Вся статистика:</b>\n"
+                    f"〚<emoji document_id=5375437280758496345>🎮</emoji>〛 Матчей➛ <b>{games}</b>\n"
+                    f"〚<emoji document_id=5429381339851796035>✅</emoji>〛 Побед➛ <b>{wins}</b>\n"
+                    f"〚<emoji document_id=5352703271536454445>❌</emoji>〛 Поражений➛ <b>{losses}</b>\n"
+                    f"〚<emoji document_id=5244837092042750681>📈</emoji>〛 Винрейт➛ {total_wr_color} <b>{total_wr}%</b>\n"
+                    f"<b>〚<emoji document_id=5240271820979981346>⚔️</emoji>〛 Средний KDA (≈100 игр)</b>\n"
+                    f"{avg_k} / {avg_d} / {avg_a}"
+                )
+
+                return await utils.answer(message, text, parse_mode="HTML")
+
+            # ================= ПОСЛЕДНИЕ 20 =================
+            matches = requests.get(
+                f"{API_URL}/players/{account_id}/matches"
+                f"?hero_id={hero_id}&limit=20"
             ).json()
 
-            if not hero_matches:
+            if not matches:
                 return await utils.answer(
                     message,
-                    f"<emoji document_id=5390972675684337321>🤐</emoji> Ты не играл на {hero_name}"
+                    "Нет матчей на этом герое"
                 )
 
-            games = len(hero_matches)
-            wins = sum(1 for m in hero_matches if self.is_win(m))
-            winrate = round(wins / games * 100, 1)
-            losses = games - wins
+            total = len(matches)
+            wins = sum(1 for m in matches if self.is_win(m))
+            losses = total - wins
+            winrate = round((wins / total) * 100, 1) if total else 0
+            recent_wr = winrate
+            recent_wr_color = "🟢" if recent_wr >= 55 else "🟡" if recent_wr >= 50 else "🔴"
 
-            kills = sum(m["kills"] for m in hero_matches)
-            deaths = sum(m["deaths"] for m in hero_matches)
-            assists = sum(m["assists"] for m in hero_matches)
-            kda = round((kills + assists) / max(1, deaths), 2)
+            total_kills = sum(m["kills"] for m in matches)
+            total_deaths = sum(m["deaths"] for m in matches)
+            total_assists = sum(m["assists"] for m in matches)
 
-            hero_icon = self.hero_emojis2.get(hero_name, "")
+            avg_k = round(total_kills / total, 1) if total else 0
+            avg_d = round(total_deaths / total, 1) if total else 0
+            avg_a = round(total_assists / total, 1) if total else 0
 
-            msg = (
+
+
+            text = (
+                f"─────── ✦ ───────\n"
                 f"<b>Герой: {hero_icon} {hero_name}</b>\n\n"
-                f"<emoji document_id=5375437280758496345>🎮</emoji> Матчей: {games}\n"
-                f"<emoji document_id=5456498809875995940>🏆</emoji> Побед: {wins} ({winrate}%)\n"
-                f"<emoji document_id=5352703271536454445>❌</emoji> Поражений: {losses}\n"
-                f"<emoji document_id=5240271820979981346>⚔️</emoji> KDA: {kda}\n"
+                f"─────── ✦ ───────\n\n"
+
+                f"<b>〚<emoji document_id=5231200819986047254>📊</emoji>〛 Последние 20 игр:</b>\n"
+                f"〚<emoji document_id=5375437280758496345>🎮</emoji>〛 Матчей➛ <b>{total}</b>\n"
+                f"〚<emoji document_id=5429381339851796035>✅</emoji>〛 Побед➛ <b>{wins}</b>\n"
+                f"〚<emoji document_id=5352703271536454445>❌</emoji>〛 Поражений➛ <b>{losses}</b>\n"
+                f"〚<emoji document_id=5244837092042750681>📈</emoji>〛 Винрейт➛ {recent_wr_color} <b>{recent_wr}%</b>\n"
+                f"<b>〚<emoji document_id=5240271820979981346>⚔️</emoji>〛 Средний KDA</b>\n"
+                f"{avg_k} / {avg_d} / {avg_a}"
             )
 
-            return await utils.answer(message, msg, parse_mode="html")
+            return await utils.answer(message, text, parse_mode="HTML")
 
         except Exception as e:
-            return await utils.answer(
-                message,
-                f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка hero: {e}"
-            )
+            return await utils.answer(message, f"Ошибка hero: {e}")
 
     async def comparecmd(self, message: Message):
         """Сравнения статистики себя и противника .compare <id противника>"""
