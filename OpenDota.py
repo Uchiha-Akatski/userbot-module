@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 0, 4)
+__version__ = (2, 0, 5)
 # -- version --
 
 
@@ -133,7 +133,11 @@ class DotaStatsMod(loader.Module):
             "Ward Dispenser": '<emoji document_id=5469962815089431997>🤩</emoji>',
             "Falcon Blade": '<emoji document_id=5467861553879473110>🤩</emoji>',
             "Mage Slayer": '<emoji document_id=5470013504293461332>🤩</emoji>',
-            "Dagon": '<emoji document_id=5469686244965374270>🤩</emoji>',
+            "Dagon": '<emoji document_id=5467488218142235587>🤩</emoji>',
+            "Dagon 2": '<emoji document_id=5469969296195082383>🤩</emoji>',
+            "Dagon 3": '<emoji document_id=5469622112513709919>🤩</emoji>',
+            "Dagon 4": '<emoji document_id=5469844480150492940>🤩</emoji>',
+            "Dagon 5": '<emoji document_id=5469686244965374270>🤩</emoji>',
             "Nullifier": '<emoji document_id=5467639448235695534>🤩</emoji>',
             "Helm Of The Dominator": '<emoji document_id=5467464140555575688>🤩</emoji>',
             "Helm Of The Overlord": '<emoji document_id=5467741569673092276>🤩</emoji>',
@@ -691,8 +695,8 @@ class DotaStatsMod(loader.Module):
 
             # Формируем сообщение со ВСЕЙ информацией
             msg = (
-                f"<blockquote><emoji document_id=5235611059909323996>⭐️</emoji> Профиль: {profile.get('personaname', 'Unknown')}</blockquote>\n"
-                f"<blockquote><emoji document_id=5422683699130933153>🪪</emoji> Steam ID: {pid}</blockquote>\n"
+                f"<blockquote><emoji document_id=5235611059909323996>⭐️</emoji> Профиль: <code>{profile.get('personaname', 'Unknown')}</code></blockquote>\n"
+                f"<blockquote><emoji document_id=5422683699130933153>🪪</emoji> Steam ID: <code>{pid}</code></blockquote>\n"
                 f"<blockquote><emoji document_id=5456498809875995940>🏆</emoji> Ранг: {rank_info}</blockquote>\n"
                 f"<blockquote><emoji document_id=5429381339851796035>✅</emoji> Победы: {win}</blockquote>\n"
                 f"<blockquote><emoji document_id=5465225015190367274>👎</emoji> Поражения: {lose}</blockquote>\n"
@@ -819,7 +823,7 @@ class DotaStatsMod(loader.Module):
                 items_str = " | ".join(items_str) if items_str else "Нет предметов"
 
                 line = (
-                    f"- {hero_name} {hero_icon} | {kda} | GPM: {gpm} | XPM: {xpm} | Net: {net} | Steam ID: {account_id}\n"
+                    f"- {hero_name} {hero_icon} | {kda} | GPM: {gpm} | XPM: {xpm} | Net: {net} | Steam ID: <code>{account_id}</code>\n"
                     f"  <emoji document_id=5445221832074483553>💼</emoji> {items_str}"
                 )
 
@@ -829,8 +833,8 @@ class DotaStatsMod(loader.Module):
                     dire.append(line)
 
             msg = (
-                f"<blockquote><emoji document_id=5217703082099498813>🤬</emoji> Матч {match_id}\n"
-                f"<emoji document_id=5373236586760651455>⏱️</emoji> Длительность: {duration}\n"
+                f"<blockquote><emoji document_id=5217703082099498813>🤬</emoji> Матч <code>{match_id}</code>\n"
+                f"<emoji document_id=5373236586760651455>⏱️</emoji> Длительность: <code>{duration}</code>\n"
                 f"Результат: {result}\n\n"
                 f"<emoji document_id=5368338090660209672>🌿</emoji> Radiant:\n" + "\n".join(radiant) +
                 f"\n\n<emoji document_id=5397751602956239123>🔥</emoji> Dire:\n" + "\n".join(dire) +
@@ -915,7 +919,7 @@ class DotaStatsMod(loader.Module):
 
                 text = (
                     f"─────── ✦ ───────\n"
-                    f"<b>Герой: {hero_icon} {hero_name}</b>\n\n"
+                    f"<b>Герой: {hero_icon} <code>{hero_name}</code></b>\n\n"
                     f"─────── ✦ ───────\n\n"
 
                     f"<b>〚<emoji document_id=5231200819986047254>📊</emoji>〛 Вся статистика:</b>\n"
@@ -960,7 +964,7 @@ class DotaStatsMod(loader.Module):
 
             text = (
                 f"─────── ✦ ───────\n"
-                f"<b>Герой: {hero_icon} {hero_name}</b>\n\n"
+                f"<b>Герой: {hero_icon} <code>{hero_name}</code></b>\n\n"
                 f"─────── ✦ ───────\n\n"
 
                 f"<b>〚<emoji document_id=5231200819986047254>📊</emoji>〛 Последние 20 игр:</b>\n"
@@ -1047,7 +1051,7 @@ class DotaStatsMod(loader.Module):
         for i in range(0, len(matches), per_page):
             chunk = matches[i:i+per_page]
 
-            text = "<b>Последние 40 игр:</b>\n\n"
+            text = "<b><emoji document_id=5319120041780726017>🎮</emoji>Последние 40 игр<emoji document_id=5319120041780726017>🎮</emoji>:</b>\n\n"
 
             for m in chunk:
                 hero_name = self.heroes.get(m["hero_id"], f"Unknown({m['hero_id']})")
@@ -1064,7 +1068,7 @@ class DotaStatsMod(loader.Module):
 
                 text += (
                     f"<blockquote>"
-                    f"<b>Матч {m['match_id']}</b>\n"
+                    f"<b>Матч <code>{m['match_id']}</code></b>\n"
                     f"Герой: {hero_name} {hero_icon}\n"
                     f"KDA: {kda} | {win}\n"
                     f"Время: {match_time}"
