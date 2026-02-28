@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 0, 6)
+__version__ = (2, 0, 7)
 # -- version --
 
 
@@ -80,7 +80,7 @@ class DotaStatsMod(loader.Module):
             "Boots": '<emoji document_id="5429649362990960283">💜</emoji>',  
             "Phase Boots": '<emoji document_id="5467564569775857363">🤩</emoji>',
             "Mask of Madness": '<emoji document_id="5467883471097585936">🤩</emoji>',  
-            "Drum of Endurance": '<emoji document_id="5467804241835876590">🤩</emoji>',
+            "Ancient Janggo": '<emoji document_id="5467804241835876590">🤩</emoji>',
             "Boots of Bearing": '<emoji document_id="5467809013544541750">🤩</emoji>', 
             "Meteor Hammer": '<emoji document_id="5469909724998687900">🤩</emoji>',  
             "Guardian Greaves": '<emoji document_id="5427047918479642257">👇</emoji>',    
@@ -158,7 +158,12 @@ class DotaStatsMod(loader.Module):
             "Mithril Hammer": '<emoji document_id="5467426739980361549">🤩</emoji>',
             "Ogre Axe": '<emoji document_id="5467868851028908643">🤩</emoji>',
             "Circlet": '<emoji document_id="5440652308994098468">👹</emoji>',
-            "Cloak": '<"emoji document_id=5438211616518734925">🤢</emoji>',
+            "Cloak": '<emoji document_id="5438211616518734925">🤢</emoji>',
+            "Clarity": '<emoji document_id="5467785249490493699">🤩</emoji>',
+            "Ring Of Health": '<emoji document_id="5467752805307539172">🤩</emoji>',
+            "Eagle": '<emoji document_id="5467582647293204653">🤩</emoji>',
+            "Branches": '<emoji document_id=5467442214747526492>🤩</emoji>',
+            "Robe": '<emoji document_id=5467691451699716884>🤩</emoji>'
         }
         self.rank_emojis = {
             "Herald": '<emoji document_id=5963157659195542640>🎖</emoji>',
