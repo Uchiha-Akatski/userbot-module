@@ -70,7 +70,7 @@ class DotaStatsMod(loader.Module):
             "Cyclone": '<emoji document_id="5469770533698556516">🤩</emoji>',
             "Wind Waker": '<emoji document_id="5467755674345690984">🤩</emoji>',  
             "Hurricane Pike": '<emoji document_id="5429505296902945143">🤗</emoji>',    
-            "Veil Оf Discord": '<emoji document_id="5467619223234698435">🤩</emoji>',  
+            "Veil Of Discord": '<emoji document_id="5467619223234698435">🤩</emoji>',  
             "Glimmer Cape": '<emoji document_id="5467869675662631035">🤩</emoji>',   
             "Shadow Amulet": '<emoji document_id="5467818432407819955">🤩</emoji>',  
             "Tranquil Boots": '<emoji document_id="5467458642997434165">🤩</emoji>',  
