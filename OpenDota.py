@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 0, 7)
+__version__ = (2, 0, 8)
 # -- version --
 
 
@@ -39,7 +39,7 @@ class DotaStatsMod(loader.Module):
             "Greater Crit": '<emoji document_id="5467526443351170991">🤩</emoji>',
             "Satanic": '<emoji document_id="5467481238820381084">🤩</emoji>',
             "Butterfly": '<emoji document_id="5467628088047197171">🤩</emoji>',
-            "Assault Cuirass": '<emoji document_id="5467467786982809436">🤩</emoji>',
+            "Assault": '<emoji document_id="5467467786982809436">🤩</emoji>',
             "Sheepstick": '<emoji document_id="5467471613798669675">🤩</emoji>',
             "Rapier": '<emoji document_id="5469940176316816456">🤩</emoji>',
             "Heart": '<emoji document_id="5469829838606982639">🤩</emoji>',
@@ -70,7 +70,7 @@ class DotaStatsMod(loader.Module):
             "Cyclone": '<emoji document_id="5469770533698556516">🤩</emoji>',
             "Wind Waker": '<emoji document_id="5467755674345690984">🤩</emoji>',  
             "Hurricane Pike": '<emoji document_id="5429505296902945143">🤗</emoji>',    
-            "Veil of Discord": '<emoji document_id="5467619223234698435">🤩</emoji>',  
+            "Veil Оf Discord": '<emoji document_id="5467619223234698435">🤩</emoji>',  
             "Glimmer Cape": '<emoji document_id="5467869675662631035">🤩</emoji>',   
             "Shadow Amulet": '<emoji document_id="5467818432407819955">🤩</emoji>',  
             "Tranquil Boots": '<emoji document_id="5467458642997434165">🤩</emoji>',  
@@ -79,9 +79,9 @@ class DotaStatsMod(loader.Module):
             "Travel Boots 2": '<emoji document_id="5467653724706986524">🤩</emoji>',
             "Boots": '<emoji document_id="5429649362990960283">💜</emoji>',  
             "Phase Boots": '<emoji document_id="5467564569775857363">🤩</emoji>',
-            "Mask of Madness": '<emoji document_id="5467883471097585936">🤩</emoji>',  
+            "Mask Of Madness": '<emoji document_id="5467883471097585936">🤩</emoji>',  
             "Ancient Janggo": '<emoji document_id="5467804241835876590">🤩</emoji>',
-            "Boots of Bearing": '<emoji document_id="5467809013544541750">🤩</emoji>', 
+            "Boots Of Bearing": '<emoji document_id="5467809013544541750">🤩</emoji>', 
             "Meteor Hammer": '<emoji document_id="5469909724998687900">🤩</emoji>',  
             "Guardian Greaves": '<emoji document_id="5427047918479642257">👇</emoji>',    
             "Ring of Aquila": '<emoji document_id="5467867145926891521">🤩</emoji>',         
@@ -117,7 +117,7 @@ class DotaStatsMod(loader.Module):
             "Rod Of Atos": '<emoji document_id="5467818376573246343">🤩</emoji>',
             "Kaya And Sange": '<emoji document_id="5467789192270470219">🤩</emoji>',
             "Phylactery": '<emoji document_id="5208510580775737094">😎</emoji>',
-            "Khanda": '<emoji document_id="5467410049737448975">🤩</emoji>',
+            "Angels Demise": '<emoji document_id="5467410049737448975">🤩</emoji>',
             "Bfury": '<emoji document_id="5469748109674306463">🤩</emoji>',
             "Monkey King Bar": '<emoji document_id="5470163106594312935">🤩</emoji>',
             "Hand Of Midas": '<emoji document_id="5429484178548752495">🤡</emoji>',
@@ -151,7 +151,7 @@ class DotaStatsMod(loader.Module):
             "Lifesteal": '<emoji document_id="5469950286669829137">🤩</emoji>',
             "Lesser Crit": '<emoji document_id="5467629917703264949">🤩</emoji>',
             "Vladmir": '<emoji document_id="5467690648540830431">🤩</emoji>',
-            " Orb Of Frost": '<emoji document_id="5429604854244872076">😶‍🌫️</emoji>',
+            "Orb Of Frost": '<emoji document_id="5429604854244872076">😶‍🌫️</emoji>',
             "Wind Lace": '<emoji document_id="5429632793007129283">🤕</emoji>',
             "Fluffy Hat": '<emoji document_id="5429599227837712299">😑</emoji>',
             "Blight Stone": '<emoji document_id="5429570795154210156">👩‍🦰</emoji>',
@@ -162,8 +162,18 @@ class DotaStatsMod(loader.Module):
             "Clarity": '<emoji document_id="5467785249490493699">🤩</emoji>',
             "Ring Of Health": '<emoji document_id="5467752805307539172">🤩</emoji>',
             "Eagle": '<emoji document_id="5467582647293204653">🤩</emoji>',
-            "Branches": '<emoji document_id=5467442214747526492>🤩</emoji>',
-            "Robe": '<emoji document_id=5467691451699716884>🤩</emoji>'
+            "Branches": '<emoji document_id="5467442214747526492">🤩</emoji>',
+            "Robe": '<emoji document_id="5467691451699716884">🤩</emoji>',
+            "Tango": '<emoji document_id="5467809876832968643">🤩</emoji>',
+            "Tiara Of Selemene": '<emoji document_id="5470172177565240449">🤩</emoji>',
+            "Aegis": '<emoji document_id="5467744176718240540">🤩</emoji>',
+            "Vitality Booster": '<emoji document_id="5467811242632567795">🤩</emoji>',
+            "Headdress": '<emoji document_id="5467884171177255427">🤩</emoji>',
+            "Pers": '<emoji document_id="5467634204080624390">🤩</emoji>',
+            "Relic": '<emoji document_id="5467765355201976698">🤩</emoji>',
+            "Void Stone": '<emoji document_id="5467395210625440792">🤩</emoji>',
+            "Ultimate Orb": '<emoji document_id="5467578854837085359">🤩</emoji>',
+            "Gauntlets": '<emoji document_id="5467430596860992009">🤩</emoji>'
         }
         self.rank_emojis = {
             "Herald": '<emoji document_id=5963157659195542640>🎖</emoji>',
