@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 0, 8)
+__version__ = (2, 0, 9)
 # -- version --
 
 
@@ -103,7 +103,7 @@ class DotaStatsMod(loader.Module):
             "Orchid": '<emoji document_id="5467520726749699874">🤩</emoji>',  
             "Bloodthorn": '<emoji document_id="5467694776004401553">🤩</emoji>',  
             "Ethereal Blade": '<emoji document_id="5467641462575358888">🤩</emoji>',  
-            "Heaven’s Halberd": '<emoji document_id="5467846439889558895">🤩</emoji>',      
+            "Heavens Halberd": '<emoji document_id="5467846439889558895">🤩</emoji>',      
             "Sange": '<emoji document_id="5469885926584898014">🤩</emoji>',  
             "Urn Of Shadows": '<emoji document_id="5467630226940910178">🤩</emoji>',  
             "Spirit Vessel": '<emoji document_id="5429261402890079825">😩</emoji>',    
@@ -121,13 +121,13 @@ class DotaStatsMod(loader.Module):
             "Bfury": '<emoji document_id="5469748109674306463">🤩</emoji>',
             "Monkey King Bar": '<emoji document_id="5470163106594312935">🤩</emoji>',
             "Hand Of Midas": '<emoji document_id="5429484178548752495">🤡</emoji>',
-            "Skull Basher": '<emoji document_id="5469746426047125184">🤩</emoji>',
+            "Basher": '<emoji document_id="5469746426047125184">🤩</emoji>',
             "Abyssal Blade": '<emoji document_id="5467666536594431270">🤩</emoji>',
             "Aeon Disk": '<emoji document_id="5467791133595686879">🤩</emoji>',
             "Armlet": '<emoji document_id="5469824396883416139">🤩</emoji>',
             "Witch Blade": '<emoji document_id="5467826399572156107">🤩</emoji>',
             "Devastator": '<emoji document_id="5467805345642470314">🤩</emoji>',
-            "Revenant's Brooch": '<emoji document_id="5469908634076992123">🤩</emoji>',
+            "Revenants Brooch": '<emoji document_id="5469908634076992123">🤩</emoji>',
             "Ward Observer": '<emoji document_id="5467632846870962993">🤩</emoji>',
             "Ward Sentry": '<emoji document_id="5467462169165586203">🤩</emoji>',
             "Ward Dispenser": '<emoji document_id="5469962815089431997">🤩</emoji>',
@@ -173,7 +173,15 @@ class DotaStatsMod(loader.Module):
             "Relic": '<emoji document_id="5467765355201976698">🤩</emoji>',
             "Void Stone": '<emoji document_id="5467395210625440792">🤩</emoji>',
             "Ultimate Orb": '<emoji document_id="5467578854837085359">🤩</emoji>',
-            "Gauntlets": '<emoji document_id="5467430596860992009">🤩</emoji>'
+            "Gauntlets": '<emoji document_id="5467430596860992009">🤩</emoji>',
+            "Point Booster": '<emoji document_id="5467599337536119160">🤩</emoji>',
+            "Famango": '<emoji document_id="5467577836929835133">🤩</emoji>',
+            "Platemail": '<emoji document_id="5467920592499924802">🤩</emoji>',
+            "Orb Of Corrosion": '<emoji document_id="5467924105783171604">🤩</emoji>',
+            "Blade Of Alacrity": '<emoji document_id="5467464917944656239">🤩</emoji>',
+            "Cheese": '<emoji document_id="5467903739048254682">🤩</emoji>',
+            "Gungir": '<emoji document_id="5467458591457827736">🤩</emoji>',
+            "Staff Of Wizardry ": '<emoji document_id="5280842580274221285">👨‍🍼</emoji>'
         }
         self.rank_emojis = {
             "Herald": '<emoji document_id=5963157659195542640>🎖</emoji>',
