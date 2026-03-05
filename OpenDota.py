@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 0, 9)
+__version__ = (2, 1, 1)
 # -- version --
 
 
@@ -181,7 +181,10 @@ class DotaStatsMod(loader.Module):
             "Blade Of Alacrity": '<emoji document_id="5467464917944656239">🤩</emoji>',
             "Cheese": '<emoji document_id="5467903739048254682">🤩</emoji>',
             "Gungir": '<emoji document_id="5467458591457827736">🤩</emoji>',
-            "Staff Of Wizardry ": '<emoji document_id="5280842580274221285">👨‍🍼</emoji>'
+            "Staff Of Wizardry": '<emoji document_id="5467822662950609346">🤩</emoji>',
+            "Diadem": '<"emoji document_id="5469685862713284861">🤩</emoji>',
+            "Blood Grenade": '<emoji document_id="5280926765928193216">👨‍🦱</emoji>',
+            "Mystic Staff": '<emoji document_id="5467388080979730073">🤩</emoji>'
         }
         self.rank_emojis = {
             "Herald": '<emoji document_id=5963157659195542640>🎖</emoji>',
