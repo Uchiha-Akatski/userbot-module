@@ -341,7 +341,7 @@ class ItachiAFKMod(loader.Module):
         )
 
     @loader.command(
-        ru_doc="[save/load/del/list/pack] [название] — Управление пресетами Примеры: .afkpreset pack - добавляет в базу данных два пака anime и  strict .afkpreset list выведит какие сохраенны присеты .afkpreset load [название] загружает ваш присет который уже сохранён в бд А чтобы создать свой присет то: .afkpreset save [название]"
+        ru_doc="[save/load/del/list/pack] [название] — Управление пресетами Примеры: .afkpreset pack - добавляет в базу данных два пака anime и  strict .afkpreset list выведит какие сохраенны присеты .afkpreset load [название] загружает ваш присет который уже сохранён в бд .afkpreset del удаляет пресет  А чтобы создать свой присет то: .afkpreset save [название] тока перед этим нужно изменить в cfg всё что вы хотите закастомить и потом это всё сохраняется с помощью команды"
     )
     async def afkpreset(self, message):
         """[save/load/del/list/pack] [название]"""
