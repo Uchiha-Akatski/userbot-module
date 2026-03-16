@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 1, 1)
+__version__ = (2, 1, 2)
 # -- version --
 
 
@@ -43,7 +43,7 @@ class DotaStatsMod(loader.Module):
             "Sheepstick": '<emoji document_id="5467471613798669675">🤩</emoji>',
             "Rapier": '<emoji document_id="5469940176316816456">🤩</emoji>',
             "Heart": '<emoji document_id="5469829838606982639">🤩</emoji>',
-            "Shadow Blade": '<emoji document_id="5469889422688278238">🤩</emoji>',
+            "Invis Sword": '<emoji document_id="5469889422688278238">🤩</emoji>',
             "Manta": '<emoji document_id="5467786310347413191">🤩</emoji>', 
             "Sphere": '<emoji document_id="5467841560806709776">🤩</emoji>',
             "Moon Shard": '<emoji document_id="5469874360237970537">🤩</emoji>',  
@@ -182,9 +182,31 @@ class DotaStatsMod(loader.Module):
             "Cheese": '<emoji document_id="5467903739048254682">🤩</emoji>',
             "Gungir": '<emoji document_id="5467458591457827736">🤩</emoji>',
             "Staff Of Wizardry": '<emoji document_id="5467822662950609346">🤩</emoji>',
-            "Diadem": '<"emoji document_id="5469685862713284861">🤩</emoji>',
+            "Diadem": '<emoji document_id="5469685862713284861">🤩</emoji>',
             "Blood Grenade": '<emoji document_id="5280926765928193216">👨‍🦱</emoji>',
-            "Mystic Staff": '<emoji document_id="5467388080979730073">🤩</emoji>'
+            "Mystic Staff": '<emoji document_id="5467388080979730073">🤩</emoji>',
+            "Gloves": '<emoji document_id="5469841349119332616">🤩</emoji>',
+            "Broadsword": '<emoji document_id="5467756065187716276">🤩</emoji>',
+            "Chainmail": '<emoji document_id="5467372309859818911">🤩</emoji>',
+            "Energy Booster": '<emoji document_id="5467828508401100211">🤩</emoji>',
+            "Cornucopia": '<emoji document_id="5467743695681904292">🤩</emoji>',
+            "Blitz Knuckles": '<emoji document_id="5467602112084990687">🤩</emoji>', 
+            "Enchanted Mango": '<emoji document_id="5467870783764192653">🤩</emoji>',
+            "Belt Of Strength": '<emoji document_id="5467715709675001734">🤩</emoji>',
+            "Javelin": '<emoji document_id="5467443365798766241">🤩</emoji>',
+            "Roshans Banner": '<emoji document_id="5467430893213734638">🤩</emoji>',
+            "Slippers": '<emoji document_id="5467824982232948778">🤩</emoji>',
+            "Hyperstone": '<emoji document_id="5469995989416825772">🤩</emoji>',
+            "Ring Of Tarrasque": '<emoji document_id="5467665836514761681">🤩</emoji>',
+            "Flask": '<emoji document_id="5467399406808492353">🤩</emoji>',
+            "Faerie Fire": '<emoji document_id="5314334224147322409">👩‍🦲</emoji>',
+            "Orb Of Venom": '<emoji document_id="5469911017783841138">🤩</emoji>',
+            "Oblivion Staff": '<emoji document_id="5467710761872678029">🤩</emoji>',
+            "Demon Edge": '<emoji document_id="5469879359579903518">🤩</emoji>',
+            "Ring Of Protection": '<emoji document_id="5467518867028859087">🤩</emoji>',
+            "Sobi Mask": '<emoji document_id="5467627091614789052">🤩</emoji>',
+            "Buckler": '<emoji document_id="5467614331266948301">🤩</emoji>',
+            "Great Famango": '<emoji document_id="5467476810709098517">🤩</emoji>'
         }
         self.rank_emojis = {
             "Herald": '<emoji document_id=5963157659195542640>🎖</emoji>',
