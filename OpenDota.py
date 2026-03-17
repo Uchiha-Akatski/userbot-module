@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 1, 2)
+__version__ = (2, 1, 3)
 # -- version --
 
 
@@ -16,7 +16,7 @@ API_URL = "https://api.opendota.com/api"
 
 @loader.tds
 class DotaStatsMod(loader.Module):
-    strings = {"name": "DotaStats"}
+    strings = {"name": "OpenDota"}
    
     def is_win(self, match):
         is_radiant = match["player_slot"] < 128
@@ -692,6 +692,11 @@ class DotaStatsMod(loader.Module):
             return "неизвестно"
 
     # ---------------- Профиль ----------------
+    @loader.command(
+        en_doc="- show your profile (uses PLAYER_ID)",
+        ru_doc="- показать свой профиль (использует PLAYER_ID)",
+        ua_doc="- показати свій профіль (використовує PLAYER_ID)",
+    )
     async def profile2cmd(self, message: Message):
         """Показать свой профиль"""
         pid = self.config["PLAYER_ID"]
@@ -699,6 +704,11 @@ class DotaStatsMod(loader.Module):
             return await utils.answer(message, "<emoji document_id=5390972675684337321>🤐</emoji> Не задан Steam ID")
         await self._send_profile(message, pid)
 
+    @loader.command(
+        en_doc="- show profile by Steam account_id",
+        ru_doc="- показать профиль по Steam account_id",
+        ua_doc="- показати профіль за Steam account_id",
+    )
     async def profileidcmd(self, message: Message):
         """Показать профиль по Steam ID"""
         args = utils.get_args_raw(message)
@@ -755,6 +765,11 @@ class DotaStatsMod(loader.Module):
             await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка загрузки профиля: {str(e)}")
 
     # ---------------- Последние игры ----------------
+    @loader.command(
+        en_doc="- last 40 matches for PLAYER_ID",
+        ru_doc="- последние 40 матчей по PLAYER_ID",
+        ua_doc="- останні 40 матчів для PLAYER_ID",
+    )
     async def dota2cmd(self, message: Message):
         """Показать последние 40 игр"""
         pid = self.config["PLAYER_ID"]
@@ -783,6 +798,11 @@ class DotaStatsMod(loader.Module):
 
 
     # ---------------- Последние игры по ID ----------------
+    @loader.command(
+        en_doc="- last 40 matches (Steam64 or account_id)",
+        ru_doc="- последние 40 матчей (Steam64 или account_id)",
+        ua_doc="- останні 40 матчів (Steam64 або account_id)",
+    )
     async def dota2idcmd(self, message: Message):
         """Показать последние 40 игр по Steam ID"""
         args = utils.get_args_raw(message)
@@ -832,6 +852,11 @@ class DotaStatsMod(loader.Module):
 
 
     # ---------------- Детали матча ----------------
+    @loader.command(
+        en_doc="- match details by match_id",
+        ru_doc="- подробности матча по match_id",
+        ua_doc="- деталі матчу за match_id",
+    )
     async def matchcmd(self, message: Message):
         """Показать подробности матча по ID"""
         args = utils.get_args_raw(message)
@@ -894,6 +919,11 @@ class DotaStatsMod(loader.Module):
             await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка загрузки матча: {str(e)}")
 
     # ---------------- Статистика по герою ----------------
+    @loader.command(
+        en_doc="- hero stats: last 20 games or all-time with -all",
+        ru_doc="- статистика героя: последние 20 игр или вся с -all",
+        ua_doc="- статистика героя: останні 20 ігор або вся з -all",
+    )
     async def herocmd(self, message: Message):
         """Статистика по герою (.hero <name> [-all])"""
 
@@ -1029,6 +1059,11 @@ class DotaStatsMod(loader.Module):
         except Exception as e:
             return await utils.answer(message, f"Ошибка hero: {e}")
 
+    @loader.command(
+        en_doc="- compare your stats with another player",
+        ru_doc="- сравнить статистику с другим игроком",
+        ua_doc="- порівняти статистику з іншим гравцем",
+    )
     async def comparecmd(self, message: Message):
         """Сравнения статистики себя и противника .compare <id противника>"""
         args = utils.get_args_raw(message)
