@@ -7,7 +7,7 @@ import datetime
 import logging
 from collections import defaultdict
 
-__version__ = (1, 8, 9)
+__version__ = (1, 9, 0)
 
 name = "ItachiAFK"
 logger = logging.getLogger(name)
@@ -184,7 +184,11 @@ class ItachiAFKMod(loader.Module):
         return str(datetime.timedelta(seconds=int(seconds)))
 
     # --- AFK ---
-    @loader.command(ru_doc="[причина] | [время] — Установить AFK")
+    @loader.command(
+        en_doc="[reason] | [time] — Enable AFK",
+        ru_doc="[причина] | [время] — Установить AFK",
+        ua_doc="[причина] | [час] — Увімкнути AFK",
+    )
     async def afk(self, message):
         args = utils.get_args_raw(message)
         reason = None
@@ -238,7 +242,11 @@ class ItachiAFKMod(loader.Module):
             + preview,
         )
 
-    @loader.command(ru_doc="Отключить AFK")
+    @loader.command(
+        en_doc="Disable AFK",
+        ru_doc="Отключить AFK",
+        ua_doc="Вимкнути AFK",
+    )
     async def unafk(self, message):
         gone = self._db.get(name, "gone")
         duration_text = ""
@@ -269,11 +277,16 @@ class ItachiAFKMod(loader.Module):
                 logger.error(f"Не удалось восстановить статус: {e}")
 
         await utils.answer(
-            message, self.config["MSG_AFK_OFF"] + duration_text + (log_text or "")
+            message,
+            self.config["MSG_AFK_OFF"] + duration_text + (log_text or ""),
         )
 
     # --- SLEEP ---
-    @loader.command(ru_doc="[время] — Включить SLEEP")
+    @loader.command(
+        en_doc="[time] — Enable SLEEP",
+        ru_doc="[время] — Включить SLEEP",
+        ua_doc="[час] — Увімкнути SLEEP",
+    )
     async def sleep(self, message):
         args = utils.get_args_raw(message)
         wake_time = args if args else None
@@ -306,7 +319,11 @@ class ItachiAFKMod(loader.Module):
 
         await utils.answer(message, self.config["MSG_SLEEP_ON"] + preview)
 
-    @loader.command(ru_doc="Выключить SLEEP")
+    @loader.command(
+        en_doc="Disable SLEEP",
+        ru_doc="Выключить SLEEP",
+        ua_doc="Вимкнути SLEEP",
+    )
     async def unsleep(self, message):
         sleep_start = self._db.get(name, "sleep_start")
         duration_text = ""
@@ -337,11 +354,35 @@ class ItachiAFKMod(loader.Module):
                 logger.error(f"Не удалось восстановить статус: {e}")
 
         await utils.answer(
-            message, self.config["MSG_SLEEP_OFF"] + duration_text + (log_text or "")
+            message,
+            self.config["MSG_SLEEP_OFF"] + duration_text + (log_text or ""),
         )
 
     @loader.command(
-        ru_doc="[save/load/del/list/pack] [название] — Управление пресетами Примеры: .afkpreset pack - добавляет в базу данных два пака anime и  strict .afkpreset list выведит какие сохраенны присеты .afkpreset load [название] загружает ваш присет который уже сохранён в бд .afkpreset del удаляет пресет  А чтобы создать свой присет то: .afkpreset save [название] тока перед этим нужно изменить в cfg всё что вы хотите закастомить и потом это всё сохраняется с помощью команды"
+        en_doc=(
+            "[save/load/del/list/pack] [name] — Preset manager. Examples: "
+            ".afkpreset pack adds two packs (anime, strict); "
+            ".afkpreset list shows saved presets; "
+            ".afkpreset load [name] loads a preset; "
+            ".afkpreset del [name] deletes a preset; "
+            ".afkpreset save [name] saves current cfg as a preset."
+        ),
+        ru_doc=(
+            "[save/load/del/list/pack] [название] — Управление пресетами. Примеры: "
+            ".afkpreset pack - добавляет в базу данных два пака anime и strict; "
+            ".afkpreset list - выводит сохранённые пресеты; "
+            ".afkpreset load [название] - загружает пресет из БД; "
+            ".afkpreset del [название] - удаляет пресет; "
+            ".afkpreset save [название] - сохраняет текущий cfg как пресет."
+        ),
+        ua_doc=(
+            "[save/load/del/list/pack] [назва] — Керування пресетами. Приклади: "
+            ".afkpreset pack додає два паки (anime, strict); "
+            ".afkpreset list показує збережені пресети; "
+            ".afkpreset load [назва] завантажує пресет; "
+            ".afkpreset del [назва] видаляє пресет; "
+            ".afkpreset save [назва] зберігає поточний cfg як пресет."
+        ),
     )
     async def afkpreset(self, message):
         """[save/load/del/list/pack] [название]"""
