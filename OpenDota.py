@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 1, 3)
+__version__ = (2, 1, 4)
 # -- version --
 
 
@@ -787,11 +787,19 @@ class DotaStatsMod(loader.Module):
 
             msg = await utils.answer(
                 message,
-                pages[0],
-                reply_markup=self._pagination_markup(0, len(pages))
+                pages[0]["text"],
+                reply_markup=self._pagination_markup(
+                    0,
+                    len(pages),
+                    pid,
+                    pages[0]["match_ids"],
+                )
             )
             
-            self._pages_cache[msg.inline_message_id] = pages
+            self._pages_cache[msg.inline_message_id] = {
+                "pages": pages,
+                "player_id": str(pid),
+            }
 
         except Exception as e:
             return await utils.answer(message, f"Ошибка: {e}")
@@ -839,11 +847,19 @@ class DotaStatsMod(loader.Module):
 
             msg = await utils.answer(
                 message,
-                pages[0],
-                reply_markup=self._pagination_markup(0, len(pages))
+                pages[0]["text"],
+                reply_markup=self._pagination_markup(
+                    0,
+                    len(pages),
+                    pid,
+                    pages[0]["match_ids"],
+                )
             )
 
-            self._pages_cache[msg.inline_message_id] = pages
+            self._pages_cache[msg.inline_message_id] = {
+                "pages": pages,
+                "player_id": str(pid),
+            }
 
 
         except Exception as e:
@@ -866,55 +882,8 @@ class DotaStatsMod(loader.Module):
 
     async def _send_match_info(self, message: Message, match_id: str):
         try:
-            r = requests.get(f"{API_URL}/matches/{match_id}").json()
-            if "match_id" not in r:
-                return await utils.answer(message, "<emoji document_id=5390972675684337321>🤐</emoji> Матч не найден")
-
-            duration = f"{r['duration'] // 60}:{r['duration'] % 60:02d}"
-            radiant_win = r.get("radiant_win", False)
-            result = "<emoji document_id=5368338090660209672>🌿</emoji> Radiant Победа" if radiant_win else "<emoji document_id=5397751602956239123>🔥</emoji> Dire Победа"
-
-            radiant, dire = [], []
-            for p in r.get("players", []):
-                hero_name = self.heroes.get(p["hero_id"], f"Unknown({p['hero_id']})")
-                hero_icon = self.hero_emojis2.get(hero_name, "")
-                kda = f"{p['kills']}/{p['deaths']}/{p['assists']}"
-                gpm, xpm, net = p.get("gold_per_min", 0), p.get("xp_per_min", 0), p.get("total_gold", 0)
-                account_id = p.get("account_id", "N/A")
-
-                # 🎒 Предметы
-                item_ids = [
-                    p.get("item_0"), p.get("item_1"), p.get("item_2"),
-                    p.get("item_3"), p.get("item_4"), p.get("item_5")
-                ]
-                items_str = []
-                for iid in item_ids:
-                    if iid in self.items:
-                        item_name = self.items[iid]
-                        item_icon = self.item_emojis.get(item_name, "🧩")
-                        items_str.append(f"{item_icon} {item_name}")
-                items_str = " | ".join(items_str) if items_str else "Нет предметов"
-
-                line = (
-                    f"- <code>{hero_name}</code> {hero_icon} | {kda} | GPM: {gpm} | XPM: {xpm} | Net: {net} | Steam ID: <code>{account_id}</code>\n"
-                    f"  <emoji document_id=5445221832074483553>💼</emoji> {items_str}"
-                )
-
-                if p["player_slot"] < 128:
-                    radiant.append(line)
-                else:
-                    dire.append(line)
-
-            msg = (
-                f"<blockquote><emoji document_id=5217703082099498813>🤬</emoji> Матч <code>{match_id}</code>\n"
-                f"<emoji document_id=5373236586760651455>⏱️</emoji> Длительность: <code>{duration}</code>\n"
-                f"Результат: {result}\n\n"
-                f"<emoji document_id=5368338090660209672>🌿</emoji> Radiant:\n" + "\n".join(radiant) +
-                f"\n\n<emoji document_id=5397751602956239123>🔥</emoji> Dire:\n" + "\n".join(dire) +
-                f"</blockquote>"
-            )
-
-            await utils.answer(message, msg)
+            r = self._get_match_data(match_id)
+            await utils.answer(message, self._format_match_text(r, str(match_id)))
         except Exception as e:
             await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка загрузки матча: {str(e)}")
 
@@ -1127,6 +1096,63 @@ class DotaStatsMod(loader.Module):
 
 
         
+    def _get_match_data(self, match_id: str):
+        data = requests.get(f"{API_URL}/matches/{match_id}").json()
+        if "match_id" not in data:
+            raise ValueError("Матч не найден")
+        return data
+
+    def _format_match_text(self, match_data, match_id: str):
+        duration = f"{match_data['duration'] // 60}:{match_data['duration'] % 60:02d}"
+        radiant_win = match_data.get("radiant_win", False)
+        result = (
+            "<emoji document_id=5368338090660209672>🌿</emoji> Radiant Победа"
+            if radiant_win
+            else "<emoji document_id=5397751602956239123>🔥</emoji> Dire Победа"
+        )
+
+        radiant, dire = [], []
+        for p in match_data.get("players", []):
+            hero_name = self.heroes.get(p["hero_id"], f"Unknown({p['hero_id']})")
+            hero_icon = self.hero_emojis2.get(hero_name, "")
+            kda = f"{p['kills']}/{p['deaths']}/{p['assists']}"
+            gpm = p.get("gold_per_min", 0)
+            xpm = p.get("xp_per_min", 0)
+            net = p.get("total_gold", 0)
+            account_id = p.get("account_id", "N/A")
+
+            item_ids = [
+                p.get("item_0"), p.get("item_1"), p.get("item_2"),
+                p.get("item_3"), p.get("item_4"), p.get("item_5")
+            ]
+            items_str = []
+            for iid in item_ids:
+                if iid in self.items:
+                    item_name = self.items[iid]
+                    item_icon = self.item_emojis.get(item_name, "🧩")
+                    items_str.append(f"{item_icon} {item_name}")
+            items_str = " | ".join(items_str) if items_str else "Нет предметов"
+
+            line = (
+                f"- <code>{hero_name}</code> {hero_icon} | {kda} | GPM: {gpm} | "
+                f"XPM: {xpm} | Net: {net} | Steam ID: <code>{account_id}</code>\n"
+                f"  <emoji document_id=5445221832074483553>💼</emoji> {items_str}"
+            )
+
+            if p["player_slot"] < 128:
+                radiant.append(line)
+            else:
+                dire.append(line)
+
+        return (
+            f"<blockquote><emoji document_id=5217703082099498813>🤬</emoji> Матч <code>{match_id}</code>\n"
+            f"<emoji document_id=5373236586760651455>⏱️</emoji> Длительность: <code>{duration}</code>\n"
+            f"Результат: {result}\n\n"
+            f"<emoji document_id=5368338090660209672>🌿</emoji> Radiant:\n" + "\n".join(radiant) +
+            f"\n\n<emoji document_id=5397751602956239123>🔥</emoji> Dire:\n" + "\n".join(dire) +
+            f"</blockquote>"
+        )
+
     def _build_pages(self, matches):
         pages = []
         per_page = 5
@@ -1158,64 +1184,105 @@ class DotaStatsMod(loader.Module):
                     f"</blockquote>\n\n"
                 )
 
-            pages.append(text)
+            pages.append(
+                {
+                    "text": text,
+                    "match_ids": [str(match["match_id"]) for match in chunk],
+                }
+            )
 
         return pages
 
 
-    def _pagination_markup(self, page, total):
-        return [
+    def _player_opendota_url(self, player_id):
+        return f"https://www.opendota.com/players/{player_id}"
+
+    def _match_opendota_url(self, match_id):
+        return f"https://www.opendota.com/matches/{match_id}"
+
+    def _btn(self, text, style="danger", **kwargs):
+        return {"text": text, "style": style,  **kwargs}
+
+    def _pagination_markup(self, page, total, player_id, match_ids):
+        first_match_id = match_ids[0] if match_ids else None
+        markup = [
             [
-                {
-                    "text": "⬅️",
-                    "callback": self.prev_page,
-                    "args": (page,)
-                },
-                {
-                    "text": f"{page+1}/{total}",
-                    "callback": self.noop
-                },
-                {
-                    "text": "➡️",
-                    "callback": self.next_page,
-                    "args": (page,)
-                },
+                self._btn(
+                    "◀️ Назад",
+                    style="primary",
+                    callback=self.prev_page,
+                    args=(page,)
+                ),
+                self._btn(
+                    f"{page+1}/{total}",
+                    style="primary",
+                    callback=self.noop
+                ),
+                self._btn(
+                    "Вперёд ▶️",
+                    style="primary",
+                    callback=self.next_page,
+                    args=(page,)
+                ),
             ],
             [
-                {
-                    "text": "❌ Закрыть",
-                    "callback": self.close_msg
-                }
-            ]
+                self._btn(
+                    "📊 Профиль OpenDota",
+                    style="success",
+                    url=self._player_opendota_url(player_id)
+                ),
+            ],
         ]
 
+        markup.append(
+            [
+                self._btn(
+                    "❌ Закрыть",
+                    style="danger",
+                    action="close"
+                )
+            ]
+        )
+
+        return markup
     async def prev_page(self, call, page: int):
-        pages = self._pages_cache.get(call.inline_message_id)
-        if not pages:
+        payload = self._pages_cache.get(call.inline_message_id)
+        if not payload:
             return
 
+        pages = payload["pages"]
         page = max(0, page - 1)
 
         await call.edit(
-            pages[page],
-            reply_markup=self._pagination_markup(page, len(pages))
+            pages[page]["text"],
+            reply_markup=self._pagination_markup(
+                page,
+                len(pages),
+                payload["player_id"],
+                pages[page]["match_ids"],
+            )
         )
 
     async def next_page(self, call, page: int):
-        pages = self._pages_cache.get(call.inline_message_id)
-        if not pages:
+        payload = self._pages_cache.get(call.inline_message_id)
+        if not payload:
             return
 
+        pages = payload["pages"]
         page = min(len(pages) - 1, page + 1)
 
         await call.edit(
-            pages[page],
-            reply_markup=self._pagination_markup(page, len(pages))
+            pages[page]["text"],
+            reply_markup=self._pagination_markup(
+                page,
+                len(pages),
+                payload["player_id"],
+                pages[page]["match_ids"],
+            )
         )
 
     async def noop(self, call):
         await call.answer()
-
 
 
     async def close_msg(self, call):
@@ -1226,8 +1293,8 @@ class DotaStatsMod(loader.Module):
 
     def _close_btn(self):
         return [[
-            {
-                "text": "❌ Закрыть",
-                "callback": self.close_msg
-            }
-        ]]                                      
+            self._btn(
+                "❌ Закрыть",
+                action="close"
+            )
+        ]]
