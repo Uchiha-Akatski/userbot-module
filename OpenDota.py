@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 1, 4)
+__version__ = (2, 1, 5)
 # -- version --
 
 
@@ -206,7 +206,10 @@ class DotaStatsMod(loader.Module):
             "Ring Of Protection": '<emoji document_id="5467518867028859087">🤩</emoji>',
             "Sobi Mask": '<emoji document_id="5467627091614789052">🤩</emoji>',
             "Buckler": '<emoji document_id="5467614331266948301">🤩</emoji>',
-            "Great Famango": '<emoji document_id="5467476810709098517">🤩</emoji>'
+            "Great Famango": '<emoji document_id="5467476810709098517">🤩</emoji>',
+            "Consecrated Wraps": '<emoji document_id="5341441218746293135">👘</emoji>',
+            "Ring Of Regen": '<emoji document_id="5467603203006685200">🤩</emoji>',
+            "Hydras Breath": '<emoji document_id="5343760363647178272">👲</emoji>'
         }
         self.rank_emojis = {
             "Herald": '<emoji document_id=5963157659195542640>🎖</emoji>',
