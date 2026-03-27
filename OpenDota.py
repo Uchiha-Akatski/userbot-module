@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 1, 5)
+__version__ = (2, 1, 6)
 # -- version --
 
 
@@ -34,6 +34,8 @@ class DotaStatsMod(loader.Module):
             "Blink": '<emoji document_id="5467710328080981143">🤩</emoji>',
             "Black King Bar": '<emoji document_id="5467828615775279955">🤩</emoji>',
             "Ultimate Scepter": '<emoji document_id="5467777522844327342">🤩</emoji>',
+            "Aghanims Scepter": '<emoji document_id="5467777522844327342">🤩</emoji>',
+            "Aghanim's Scepter": '<emoji document_id="5467777522844327342">🤩</emoji>',
             "Power Treads": '<emoji document_id="5467823212706421270">🤩</emoji>',
             "Desolator": '<emoji document_id="5467606626095619791">🤩</emoji>',
             "Greater Crit": '<emoji document_id="5467526443351170991">🤩</emoji>',
@@ -43,6 +45,7 @@ class DotaStatsMod(loader.Module):
             "Sheepstick": '<emoji document_id="5467471613798669675">🤩</emoji>',
             "Rapier": '<emoji document_id="5469940176316816456">🤩</emoji>',
             "Heart": '<emoji document_id="5469829838606982639">🤩</emoji>',
+            "Heart Of Tarrasque": '<emoji document_id="5469829838606982639">🤩</emoji>',
             "Invis Sword": '<emoji document_id="5469889422688278238">🤩</emoji>',
             "Manta": '<emoji document_id="5467786310347413191">🤩</emoji>', 
             "Sphere": '<emoji document_id="5467841560806709776">🤩</emoji>',
@@ -206,10 +209,16 @@ class DotaStatsMod(loader.Module):
             "Ring Of Protection": '<emoji document_id="5467518867028859087">🤩</emoji>',
             "Sobi Mask": '<emoji document_id="5467627091614789052">🤩</emoji>',
             "Buckler": '<emoji document_id="5467614331266948301">🤩</emoji>',
-            "Great Famango": '<emoji document_id="5467476810709098517">🤩</emoji>',
+            "Greater Famango": '<emoji document_id="5467476810709098517">🤩</emoji>',
             "Consecrated Wraps": '<emoji document_id="5341441218746293135">👘</emoji>',
             "Ring Of Regen": '<emoji document_id="5467603203006685200">🤩</emoji>',
-            "Hydras Breath": '<emoji document_id="5343760363647178272">👲</emoji>'
+            "Hydras Breath": '<emoji document_id="5343760363647178272">👲</emoji>',
+            "Essence Distiller": '<emoji document_id="5341457728600577852">💨</emoji>',
+            "Chasm Stone": '<emoji document_id="5346305063050580881">🤕</emoji>',
+            "Voodoo Mask": '<emoji document_id="5467416891620352938">🤩</emoji>',
+            "Reaver": '<emoji document_id="5346110470967303740">🥴</emoji>',
+            "Shawl": '<emoji document_id="5346268319605383344">🕺</emoji>',
+            "Specialists Array": '<emoji document_id="5341312588770743680">🧰</emoji>'
         }
         self.rank_emojis = {
             "Herald": '<emoji document_id=5963157659195542640>🎖</emoji>',
@@ -483,8 +492,19 @@ class DotaStatsMod(loader.Module):
             "Ringmaster": '<emoji document_id="6269209104493845341">🤡</emoji>',
             
         }
+        self.item_emojis_norm = {self._norm_item_name(k): v for k, v in self.item_emojis.items()}
         self._load_heroes()
         self._load_items()
+
+    def _norm_item_name(self, name: str) -> str:
+        if not name:
+            return ""
+        # Normalize to make matching resilient to punctuation/case differences from OpenDota.
+        name = name.lower().replace("’", "'")
+        name = name.replace("'", "")
+        name = name.replace("-", " ")
+        name = " ".join(name.split())
+        return name
 
     # 🔥 сюда добавляем метод конвертации SteamID -> account_id
     def _to_account_id(self, steam_id64: int) -> int:
@@ -1124,22 +1144,119 @@ class DotaStatsMod(loader.Module):
             net = p.get("total_gold", 0)
             account_id = p.get("account_id", "N/A")
 
-            item_ids = [
-                p.get("item_0"), p.get("item_1"), p.get("item_2"),
-                p.get("item_3"), p.get("item_4"), p.get("item_5")
-            ]
-            items_str = []
-            for iid in item_ids:
-                if iid in self.items:
-                    item_name = self.items[iid]
-                    item_icon = self.item_emojis.get(item_name, "🧩")
-                    items_str.append(f"{item_icon} {item_name}")
-            items_str = " | ".join(items_str) if items_str else "Нет предметов"
+            def _first_nonzero(*vals):
+                for v in vals:
+                    if v not in (None, 0):
+                        return v
+                return 0
+
+            def _extract_items(player):
+                main = [0] * 6
+                backpack = [0] * 3
+
+                def set_slot(idx, val):
+                    if val in (None, 0):
+                        return
+                    if 0 <= idx <= 5 and not main[idx]:
+                        main[idx] = val
+                    elif 6 <= idx <= 8 and not backpack[idx - 6]:
+                        backpack[idx - 6] = val
+
+                for i in range(6):
+                    set_slot(i, player.get(f"item_{i}"))
+                    set_slot(i, player.get(f"item{i}"))
+
+                for i in range(3):
+                    set_slot(6 + i, player.get(f"item_{6 + i}"))
+                    set_slot(6 + i, player.get(f"backpack_{i}"))
+                    set_slot(6 + i, player.get(f"backpack{i}"))
+
+                for k, v in player.items():
+                    if v in (None, 0) or not isinstance(k, str):
+                        continue
+                    if k.startswith("item_") and k[5:].isdigit():
+                        set_slot(int(k[5:]), v)
+                    elif k.startswith("item") and k[4:].isdigit():
+                        set_slot(int(k[4:]), v)
+                    elif k.startswith("backpack_") and k[9:].isdigit():
+                        set_slot(6 + int(k[9:]), v)
+                    elif k.startswith("backpack") and k[8:].isdigit():
+                        set_slot(6 + int(k[8:]), v)
+
+                items_list = player.get("items")
+                if isinstance(items_list, list) and items_list:
+                    for x in items_list:
+                        if isinstance(x, int):
+                            if x and x not in main and len([v for v in main if v]) < 6:
+                                idx = main.index(0)
+                                main[idx] = x
+                            elif x and x not in backpack and len([v for v in backpack if v]) < 3:
+                                idx = backpack.index(0)
+                                backpack[idx] = x
+                        elif isinstance(x, dict):
+                            iid = x.get("item_id") or x.get("itemId") or x.get("id")
+                            if iid in (None, 0):
+                                continue
+                            slot = x.get("slot") or x.get("item_slot")
+                            is_backpack = x.get("backpack") or x.get("is_backpack") or x.get("in_backpack")
+                            if isinstance(slot, int):
+                                set_slot(slot, iid)
+                            elif is_backpack:
+                                if 0 in backpack:
+                                    backpack[backpack.index(0)] = iid
+                            else:
+                                if 0 in main:
+                                    main[main.index(0)] = iid
+
+                backpack_list = player.get("backpack")
+                if isinstance(backpack_list, list) and backpack_list:
+                    for x in backpack_list:
+                        if isinstance(x, int):
+                            if x and x not in backpack and 0 in backpack:
+                                backpack[backpack.index(0)] = x
+                        elif isinstance(x, dict):
+                            iid = x.get("item_id") or x.get("itemId") or x.get("id")
+                            if iid in (None, 0):
+                                continue
+                            if 0 in backpack:
+                                backpack[backpack.index(0)] = iid
+
+                return main, backpack
+
+            main_item_ids, backpack_item_ids = _extract_items(p)
+
+            def format_items(ids):
+                out = []
+                for iid in ids:
+                    if not iid or iid == 0:
+                        continue
+                    key = iid
+                    item_name = None
+                    if key in self.items:
+                        item_name = self.items[key]
+                    else:
+                        str_key = str(key)
+                        if str_key in self.items:
+                            item_name = self.items[str_key]
+                    if item_name:
+                        item_icon = self.item_emojis.get(
+                            item_name,
+                            self.item_emojis_norm.get(self._norm_item_name(item_name), "🧩"),
+                        )
+                        out.append(f"{item_icon} {item_name}")
+                    else:
+                        # Fallback: show ID if constants not loaded or missing
+                        out.append(f"🧩 Unknown({iid})")
+                return " | ".join(out) if out else "Нет предметов"
+
+            main_items_str = format_items(main_item_ids)
+            backpack_items_str = format_items(backpack_item_ids)
 
             line = (
                 f"- <code>{hero_name}</code> {hero_icon} | {kda} | GPM: {gpm} | "
                 f"XPM: {xpm} | Net: {net} | Steam ID: <code>{account_id}</code>\n"
-                f"  <emoji document_id=5445221832074483553>💼</emoji> {items_str}"
+                f"  <emoji document_id=5445221832074483553>💼</emoji> {main_items_str}\n"
+                f"  🎒 {backpack_items_str}"
             )
 
             if p["player_slot"] < 128:
