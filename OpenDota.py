@@ -218,7 +218,8 @@ class DotaStatsMod(loader.Module):
             "Voodoo Mask": '<emoji document_id="5467416891620352938">🤩</emoji>',
             "Reaver": '<emoji document_id="5346110470967303740">🥴</emoji>',
             "Shawl": '<emoji document_id="5346268319605383344">🕺</emoji>',
-            "Specialists Array": '<emoji document_id="5341312588770743680">🧰</emoji>'
+            "Specialists Array": '<emoji document_id="5341312588770743680">🧰</emoji>',
+            "Crellas Crozier": '<emoji document_id="5341699256086465595">🧙</emoji>'
         }
         self.rank_emojis = {
             "Herald": '<emoji document_id=5963157659195542640>🎖</emoji>',
