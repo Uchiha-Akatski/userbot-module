@@ -219,7 +219,8 @@ class DotaStatsMod(loader.Module):
             "Reaver": '<emoji document_id="5346110470967303740">🥴</emoji>',
             "Shawl": '<emoji document_id="5346268319605383344">🕺</emoji>',
             "Specialists Array": '<emoji document_id="5341312588770743680">🧰</emoji>',
-            "Crellas Crozier": '<emoji document_id="5341699256086465595">🧙</emoji>'
+            "Crellas Crozier": '<emoji document_id="5341699256086465595">🧙</emoji>',
+            "Claymore": '<emoji document_id=5467518123999517884>🤩</emoji>'
         }
         self.rank_emojis = {
             "Herald": '<emoji document_id=5963157659195542640>🎖</emoji>',
