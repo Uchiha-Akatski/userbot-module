@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 1, 6)
+__version__ = (2, 1, 7)
 # -- version --
 
 
@@ -87,7 +87,7 @@ class DotaStatsMod(loader.Module):
             "Boots Of Bearing": '<emoji document_id="5467809013544541750">🤩</emoji>', 
             "Meteor Hammer": '<emoji document_id="5469909724998687900">🤩</emoji>',  
             "Guardian Greaves": '<emoji document_id="5427047918479642257">👇</emoji>',    
-            "Ring of Aquila": '<emoji document_id="5467867145926891521">🤩</emoji>',         
+            "Ring Of Basilius": '<emoji document_id="5467867145926891521">🤩</emoji>',         
             "Smoke Of Deceit": '<emoji document_id="5467832077518921780">🤩</emoji>',  
             "Dust": '<emoji document_id="5467852414189067273">🤩</emoji>',  
             "Bottle": '<emoji document_id="5467423492985085154">🤩</emoji>',  
@@ -220,7 +220,13 @@ class DotaStatsMod(loader.Module):
             "Shawl": '<emoji document_id="5346268319605383344">🕺</emoji>',
             "Specialists Array": '<emoji document_id="5341312588770743680">🧰</emoji>',
             "Crellas Crozier": '<emoji document_id="5341699256086465595">🧙</emoji>',
-            "Claymore": '<emoji document_id=5467518123999517884>🤩</emoji>'
+            "Claymore": '<emoji document_id="5467518123999517884">🤩</emoji>',
+            "Talisman Of Evasion": '<emoji document_id="5469849462312556864">🤩</emoji>',
+            "Splintmail": '<emoji document_id="5388862240424235116">🤎</emoji>',
+            "Crown": '<emoji document_id="5467598594506775207">🤩</emoji>',
+            "Wizard Hat": '<emoji document_id="5389046430096728598">🤍</emoji>',
+            "Foragers Mana": '<emoji document_id="5389065267823282566">👩‍🍼</emoji>',
+            "Foragers Health": '<emoji document_id="5389097630401859068">😐</emoji>'
         }
         self.rank_emojis = {
             "Herald": '<emoji document_id=5963157659195542640>🎖</emoji>',
@@ -902,7 +908,7 @@ class DotaStatsMod(loader.Module):
         """Показать подробности матча по ID"""
         args = utils.get_args_raw(message)
         if not args or not args.isdigit():
-            return await utils.answer(message, "Используй: .match <id>")
+            return await utils.answer(message, "Используй: .match id")
         await self._send_match_info(message, args)
 
     async def _send_match_info(self, message: Message, match_id: str):
