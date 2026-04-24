@@ -462,7 +462,7 @@ class Dota2pack(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return   
-     async def урсаcmd(self, message):
+    async def урсаcmd(self, message):
         """| Урса то медленная, но если до врага добирается, то наносит много урона"""
 
         reply = await message.get_reply_message()
