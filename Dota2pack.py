@@ -461,7 +461,8 @@ class Dota2pack(loader.Module):
             voice_note=True,
             reply_to=reply.id if reply else None,
         )
-        return   
+        return
+
     async def урсаcmd(self, message):
         """| Урса то медленная, но если до врага добирается, то наносит много урона"""
 
@@ -474,6 +475,7 @@ class Dota2pack(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+        
     async def лионcmd(self, message):
         """| Аганим на лиона(музыка)"""
 
