@@ -449,3 +449,16 @@ class Dota2pack(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+        
+    async def гнилcmd(self, message):
+        """| Я 20 СЕКУНД ГНИЛ В ТАВЕРНЕ И ЗА ТВОЕЙ СЛАБОСТИ"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/378",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return   
