@@ -226,4 +226,52 @@ class StariyBog(loader.Module):
             voice_note=True,
             reply_to=reply.id if reply else None,
         )
-        return      
+        return
+    async def птичкиcmd(self, message):
+        """| Что ты сказал? Зверя нет сильнее птички, старый бог сломал яички"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/374",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return   
+    async def соситcmd(self, message):
+        """|  Зверя нет сильнее китайца, старый бог с осином яйца"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/375",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return   
+    async def натураcmd(self, message):
+        """| Натура от старого бога"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/376",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return   
+    async def завались4cmd(self, message):
+        """| Ебало завали(Старый кок)"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/377",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return   
