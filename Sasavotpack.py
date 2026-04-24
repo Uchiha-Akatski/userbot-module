@@ -59,3 +59,16 @@ class Sasavotpack(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+        
+    async def танецcmd(self, message):
+        """| Курский танцор"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/394",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
