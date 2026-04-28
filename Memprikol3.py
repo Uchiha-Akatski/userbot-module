@@ -189,3 +189,42 @@ class  Memprikol3(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+
+    async def чундраcmd(self, message):
+        """| Чундра чучундра"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/396",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def залупаcmd(self, message):
+        """| Музыкальная пауза!"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/397",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def порно2cmd(self, message):
+        """| Секс, секс, секс, порно, сиськи, писки! Порно, порно, порно, порно! Ааааа!"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/398",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
