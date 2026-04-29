@@ -228,3 +228,42 @@ class  Memprikol3(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+
+    async def услышcmd(self, message):
+        """| Я хочу, чтобы ты услышал меня! Услышь меня! Послушай! Услышь! Слушай, пожалуйста! Возьми и послушай!"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/399",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def нупогодиcmd(self, message):
+        """| Легендарный звук с мультика Ну погоди!"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/400",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def универcmd(self, message):
+        """| Звук с сериала Универ новая общага"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/401",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
