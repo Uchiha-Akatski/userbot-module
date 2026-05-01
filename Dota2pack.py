@@ -488,3 +488,16 @@ class Dota2pack(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+
+    async def анлак2cmd(self, message):
+        """| Анлучка анлучка"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/402",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
