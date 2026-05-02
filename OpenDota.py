@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 1, 7)
+__version__ = (2, 1, 8)
 # -- version --
 
 
@@ -7,10 +7,12 @@ __version__ = (2, 1, 7)
 # meta banner: https://api.opendota.com
 
 import requests
+from requests import RequestException
 from .. import loader, utils
 from telethon.tl.types import Message 
 from datetime import datetime, timezone
 import time
+import asyncio
 
 API_URL = "https://api.opendota.com/api"
 
@@ -21,6 +23,101 @@ class DotaStatsMod(loader.Module):
     def is_win(self, match):
         is_radiant = match["player_slot"] < 128
         return match["radiant_win"] == is_radiant
+
+    def _extract_api_error(self, payload) -> str:
+        if isinstance(payload, dict):
+            for key in ("error", "message", "detail"):
+                value = payload.get(key)
+                if value:
+                    return str(value)
+        return f"unexpected response type: {type(payload).__name__}"
+
+    def _get_json(self, path: str, *, params=None, timeout: int = 15, retries: int = 2):
+        last_error = None
+
+        for attempt in range(retries + 1):
+            try:
+                response = requests.get(
+                    f"{API_URL}{path}",
+                    params=params,
+                    timeout=timeout,
+                )
+                response.raise_for_status()
+                return response.json()
+            except requests.Timeout as e:
+                last_error = e
+                if attempt == retries:
+                    raise TimeoutError(
+                        "OpenDota не ответил вовремя, попробуй ещё раз чуть позже"
+                    ) from e
+            except RequestException as e:
+                raise ConnectionError(f"Ошибка запроса к OpenDota: {e}") from e
+
+        raise ConnectionError(f"Ошибка запроса к OpenDota: {last_error}")
+
+    async def _get_json_async(self, path: str, *, params=None, timeout: int = 15, retries: int = 2):
+        return await asyncio.to_thread(
+            self._get_json,
+            path,
+            params=params,
+            timeout=timeout,
+            retries=retries,
+        )
+
+    def _fetch_player_matches(self, player_id: int, limit: int = 40):
+        payload = self._get_json(
+            f"/players/{player_id}/matches",
+            params={"limit": limit},
+        )
+
+        if not isinstance(payload, list):
+            raise ValueError(
+                f"OpenDota API returned {self._extract_api_error(payload)}"
+            )
+
+        return payload[:limit]
+
+    async def _fetch_player_matches_async(self, player_id: int, limit: int = 40):
+        return await asyncio.to_thread(
+            self._fetch_player_matches,
+            player_id,
+            limit,
+        )
+
+    def _check_endpoint(self, url: str, *, params=None, timeout: int = 10) -> dict:
+        started = time.time()
+        try:
+            response = requests.get(url, params=params, timeout=timeout)
+            elapsed = round(time.time() - started, 2)
+            return {
+                "ok": response.ok,
+                "status": response.status_code,
+                "elapsed": elapsed,
+            }
+        except requests.Timeout:
+            elapsed = round(time.time() - started, 2)
+            return {
+                "ok": False,
+                "status": "timeout",
+                "elapsed": elapsed,
+                "error": "сервер не ответил вовремя",
+            }
+        except RequestException as e:
+            elapsed = round(time.time() - started, 2)
+            return {
+                "ok": False,
+                "status": "error",
+                "elapsed": elapsed,
+                "error": str(e),
+            }
+
+    async def _check_endpoint_async(self, url: str, *, params=None, timeout: int = 10) -> dict:
+        return await asyncio.to_thread(
+            self._check_endpoint,
+            url,
+            params=params,
+            timeout=timeout,
+        )
 
 
 
@@ -747,13 +844,54 @@ class DotaStatsMod(loader.Module):
             return await utils.answer(message, "Используй: .profileid <id>")
         await self._send_profile(message, args)
 
+    @loader.command(
+        en_doc="- check OpenDota site and API availability",
+        ru_doc="- проверить доступность сайта и API OpenDota",
+        ua_doc="- перевірити доступність сайту та API OpenDota",
+    )
+    async def odcheckcmd(self, message: Message):
+        """Проверить доступность OpenDota"""
+        checks = [
+            ("Сайт", await self._check_endpoint_async("https://www.opendota.com")),
+            ("API", await self._check_endpoint_async(f"{API_URL}/heroes")),
+        ]
+
+        pid = self.config["PLAYER_ID"]
+        if pid:
+            checks.append(
+                (
+                    "Матчи игрока",
+                    await self._check_endpoint_async(
+                        f"{API_URL}/players/{pid}/matches",
+                        params={"limit": 1},
+                    ),
+                )
+            )
+
+        lines = ["<b>Проверка OpenDota</b>\n"]
+        for label, result in checks:
+            if result["ok"]:
+                lines.append(
+                    f"✅ {label}: <code>{result['status']}</code> за <code>{result['elapsed']}s</code>"
+                )
+            else:
+                error = result.get("error", "неизвестная ошибка")
+                lines.append(
+                    f"❌ {label}: <code>{result['status']}</code> за <code>{result['elapsed']}s</code> | {error}"
+                )
+
+        if not pid:
+            lines.append("\n<emoji document_id=5390972675684337321>🤐</emoji> PLAYER_ID не задан, проверка матчей игрока пропущена")
+
+        await utils.answer(message, "\n".join(lines), parse_mode="html")
+
     async def _send_profile(self, message: Message, pid: str):
         try:
-            r = requests.get(f"{API_URL}/players/{pid}").json()
+            r = await self._get_json_async(f"/players/{pid}")
             profile = r.get("profile", {})
 
             # Получаем статистику побед/поражений
-            wl = requests.get(f"{API_URL}/players/{pid}/wl").json()
+            wl = await self._get_json_async(f"/players/{pid}/wl")
             win, lose = wl.get("win", 0), wl.get("lose", 0)
             total = win + lose
             wr = round(win / total * 100, 2) if total > 0 else 0
@@ -808,11 +946,9 @@ class DotaStatsMod(loader.Module):
             return await utils.answer(message, "<emoji document_id=5390972675684337321>🤐</emoji> Не задан Steam ID")
 
         try:
-            matches = requests.get(f"{API_URL}/players/{pid}/matches?Limit=40").json()
+            matches = await self._fetch_player_matches_async(pid, limit=40)
             if not matches:
                 return await utils.answer(message, "<emoji document_id=5390972675684337321>🤐</emoji> Нет данных матчей")
-
-            matches = matches[:40]
 
             pages = self._build_pages(matches)
 
@@ -860,7 +996,7 @@ class DotaStatsMod(loader.Module):
             pid = raw_id
 
         try:
-            matches = requests.get(f"{API_URL}/players/{pid}/matches?Limit=40").json()
+            matches = await self._fetch_player_matches_async(pid, limit=40)
             if not matches:
                 return await utils.answer(
                     message,
@@ -871,8 +1007,6 @@ class DotaStatsMod(loader.Module):
                 "<emoji document_id=5319120041780726017>🎮</emoji> "
                 f"<b>Последние 40 игр игрока {pid}:</b>\n\n"
             )
-
-            matches = matches [:40]
 
             pages = self._build_pages(matches)
 
@@ -913,7 +1047,7 @@ class DotaStatsMod(loader.Module):
 
     async def _send_match_info(self, message: Message, match_id: str):
         try:
-            r = self._get_match_data(match_id)
+            r = await asyncio.to_thread(self._get_match_data, match_id)
             await utils.answer(message, self._format_match_text(r, str(match_id)))
         except Exception as e:
             await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка загрузки матча: {str(e)}")
@@ -960,9 +1094,9 @@ class DotaStatsMod(loader.Module):
         try:
             # ================= ВСЯ СТАТИСТИКА =================
             if mode_all:
-                heroes_stats = requests.get(
-                    f"{API_URL}/players/{account_id}/heroes"
-                ).json()
+                heroes_stats = await self._get_json_async(
+                    f"/players/{account_id}/heroes"
+                )
 
                 hero_data = next(
                     (h for h in heroes_stats if h["hero_id"] == hero_id),
@@ -980,10 +1114,10 @@ class DotaStatsMod(loader.Module):
                 total_wr_color = "🟢" if total_wr >= 55 else "🟡" if total_wr >= 50 else "🔴"
 
                 # Берём до 100 матчей для среднего KDA
-                matches = requests.get(
-                    f"{API_URL}/players/{account_id}/matches"
-                    f"?hero_id={hero_id}&limit=100"
-                ).json()
+                matches = await self._get_json_async(
+                    f"/players/{account_id}/matches",
+                    params={"hero_id": hero_id, "limit": 100},
+                )
 
                 total_kills = sum(m["kills"] for m in matches)
                 total_deaths = sum(m["deaths"] for m in matches)
@@ -1012,10 +1146,10 @@ class DotaStatsMod(loader.Module):
                 return await utils.answer(message, text, parse_mode="HTML")
 
             # ================= ПОСЛЕДНИЕ 20 =================
-            matches = requests.get(
-                f"{API_URL}/players/{account_id}/matches"
-                f"?hero_id={hero_id}&limit=20"
-            ).json()
+            matches = await self._get_json_async(
+                f"/players/{account_id}/matches",
+                params={"hero_id": hero_id, "limit": 20},
+            )
 
             if not matches:
                 return await utils.answer(
@@ -1079,15 +1213,15 @@ class DotaStatsMod(loader.Module):
             my_id = self._to_account_id(int(my_raw))
             other_id = self._to_account_id(int(args.strip()))
 
-            my_matches = requests.get(
-                f"{API_URL}/players/{my_id}/matches",
-                params={"limit": 100}
-            ).json()
+            my_matches = await self._get_json_async(
+                f"/players/{my_id}/matches",
+                params={"limit": 100},
+            )
 
-            other_matches = requests.get(
-                f"{API_URL}/players/{other_id}/matches",
-                params={"limit": 100}
-            ).json()
+            other_matches = await self._get_json_async(
+                f"/players/{other_id}/matches",
+                params={"limit": 100},
+            )
 
             if not my_matches or not other_matches:
                 return await utils.answer(message, "<emoji document_id=5375557664396835394>❌</emoji> У одного из игроков нет матчей")
