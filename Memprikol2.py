@@ -21,8 +21,8 @@ class Memprikol2(loader.Module):
         )
         return
 
-    async def хуйовоcmd(self, message):
-        """| Хуйово денег нет"""
+    async def хуевоcmd(self, message):
+        """| Хуево денег нет"""
 
         reply = await message.get_reply_message()
         await message.delete()
