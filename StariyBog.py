@@ -112,7 +112,7 @@ class StariyBog(loader.Module):
         )
         return
 
-    async def СУПcmd(self, message):
+    async def супcmd(self, message):
         """| Супа нет вкуснее борща старый бог ебал...."""
 
         reply = await message.get_reply_message()
@@ -239,8 +239,8 @@ class StariyBog(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return   
-    async def соситcmd(self, message):
-        """|  Зверя нет сильнее китайца, старый бог с осином яйца"""
+    async def сосиcmd(self, message):
+        """|  Зверя нет сильнее китайца, старый бог соси нам яйца"""
 
         reply = await message.get_reply_message()
         await message.delete()
@@ -275,3 +275,41 @@ class StariyBog(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return   
+    async def сынcmd(self, message):
+        """| СЫМ ЕБАНОЙ! ШЛЮХИ!"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/442",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def вовчик2cmd(self, message):
+        """| ай да вовчик ай да сукин сын блять шо он вытворяет"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/443",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def новичокcmd(self, message):
+        """|  Первое сообщение, он же сын бляди!"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/444",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
