@@ -12,7 +12,7 @@ try:
 except ImportError:
     InputMediaWebPage = None
 
-__version__ = (1, 10, 13)
+__version__ = (1, 10, 14)
 
 name = "ItachiAFK"
 logger = logging.getLogger(name)
@@ -451,6 +451,30 @@ class ItachiAFKMod(loader.Module):
             self._db.set(name, "presets", presets)
             await utils.answer(message, self.strings["preset_saved"].format(name_preset))
 
+        elif action == "load":
+            if not name_preset:
+                await utils.answer(message, "Укажите название пресета для загрузки!")
+                return
+            if name_preset not in presets:
+                await utils.answer(message, self.strings["preset_not_found"].format(name_preset))
+                return
+            preset_data = presets[name_preset]
+            for key, value in preset_data.items():
+                if key in self.config:
+                    self.config[key] = value
+            await utils.answer(message, self.strings["preset_loaded"].format(name_preset))
+
+        elif action == "del":
+            if not name_preset:
+                await utils.answer(message, "Укажите название пресета для удаления!")
+                return
+            if name_preset not in presets:
+                await utils.answer(message, self.strings["preset_not_found"].format(name_preset))
+                return
+            del presets[name_preset]
+            self._db.set(name, "presets", presets)
+            await utils.answer(message, self.strings["preset_deleted"].format(name_preset))
+
         elif action == "pack":
             count = 0
             for pk_name, pk_data in self.PRESET_PACK.items():
@@ -461,7 +485,7 @@ class ItachiAFKMod(loader.Module):
                 self._db.set(name, "presets", presets)
             await utils.answer(message, self.strings["preset_pack_added"].format(count))
 
-        else:
+        elif action == "list":
             if not presets:
                 await utils.answer(message, "Пресеты отсутствуют.")
                 return
@@ -469,6 +493,9 @@ class ItachiAFKMod(loader.Module):
             for p in presets:
                 res += f"  <emoji document_id=5870695289714643076>👤</emoji> <code>{p}</code>\n"
             await utils.answer(message, res)
+
+        else:
+            await utils.answer(message, "Неизвестное действие. Доступные: save, load, del, list, pack")
 
     # ====================== WATCHER ======================
     async def watcher(self, message):
