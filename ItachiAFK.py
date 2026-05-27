@@ -12,7 +12,7 @@ try:
 except ImportError:
     InputMediaWebPage = None
 
-__version__ = (1, 10, 14)
+__version__ = (1, 10, 15)
 
 name = "ItachiAFK"
 logger = logging.getLogger(name)
@@ -446,7 +446,16 @@ class ItachiAFKMod(loader.Module):
             if not name_preset:
                 await utils.answer(message, "Укажите название пресета!")
                 return
-            current_preset_data = {key: self.config[key] for key in self.CONFIG_KEYS_TO_SAVE if key in self.config}
+            current_preset_data = {}
+            media_keys = ["AFK_MEDIA", "AFK_OFF_MEDIA", "SLEEP_MEDIA", "SLEEP_OFF_MEDIA"]
+            for key in self.CONFIG_KEYS_TO_SAVE:
+                if key not in self.config:
+                    continue
+                value = self.config[key]
+                # Пропускаем пустые медиа-поля
+                if key in media_keys and (value is None or str(value).strip() == ""):
+                    continue
+                current_preset_data[key] = value
             presets[name_preset] = current_preset_data
             self._db.set(name, "presets", presets)
             await utils.answer(message, self.strings["preset_saved"].format(name_preset))
