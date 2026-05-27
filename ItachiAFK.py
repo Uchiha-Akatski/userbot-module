@@ -1,4 +1,4 @@
-# meta developer: @Itachi_Uchiha_sss
+# meta developer: @Itachi_Uchiha_sss, @Wers1xx
 
 from .. import loader, utils
 from telethon import types, functions
@@ -7,7 +7,7 @@ import datetime
 import logging
 from collections import defaultdict
 
-__version__ = (1, 9, 0)
+__version__ = (1, 9, 5)
 
 name = "ItachiAFK"
 logger = logging.getLogger(name)
@@ -20,22 +20,33 @@ class ItachiAFKMod(loader.Module):
     strings = {
         "name": "ItachiAFK",
         "back": "<emoji document_id=5883964170268840032>👤</emoji> <b>Больше не в режиме AFK.</b>",
+        "afk_on": (
+            "<blockquote><emoji document_id=5870730156259152122>😀</emoji> AFK включён!</blockquote>\n\n"
+
+            "<blockquote><emoji document_id=5877700484453634587>✈️</emoji> ItachiAFK будет отвечать этим:</blockquote>"
+        ),
         "default_afk_message": (
-            "<emoji document_id=5870948572526022116>✋</emoji> <b>Сейчас я в AFK-режиме</b>\n"
-            "<emoji document_id=5870695289714643076>👤</emoji> <b>Был в сети:</b> {was_online} назад\n"
+            "<blockquote><emoji document_id=5870948572526022116>✋</emoji> Сейчас я в AFK-режиме</blockquote>\n\n"
+
+            "<blockquote><emoji document_id=5870695289714643076>👤</emoji> Был в сети: {was_online} назад</blockquote>"
+            
             "{reason_text}{come_time}"
         ),
         "sleep_on": (
-            "<emoji document_id=5870729937215819584>💤</emoji> <b>SLEEP-режим включён!</b>\n"
-            "<emoji document_id=5873146865637133757>😴</emoji> <b>ItachiAFK будет отвечать этим сообщением:</b>\n\n"
+            "<blockquote><emoji document_id=5870729937215819584>💤</emoji> SLEEP-режим включён!</blockquote>\n\n"
+
+            "<blockquote><emoji document_id=5873146865637133757>😴</emoji> ItachiAFK будет отвечать этим сообщением:</blockquote>"
         ),
         "sleep_msg": (
-            "<emoji document_id=5870729937215819584>💤</emoji> <b>Сейчас я в Sleep-режиме</b>\n"
-            "<emoji document_id=5877700484453634587>🌙</emoji> <b>Не беспокоить, я сплю</b>\n"
-            "<emoji document_id=5870695289714643076>👤</emoji> <b>Был в сети:</b> {was_online} назад\n"
+            "<blockquote><emoji document_id=5870729937215819584>💤</emoji> Сейчас я в Sleep-режиме</blockquote>\n\n"
+
+            "<blockquote><emoji document_id=5877700484453634587>🌙</emoji> Не беспокоить, я сплю</blockquote>\n\n"
+
+            "<blockquote><emoji document_id=5870695289714643076>👤</emoji> Был в сети: {was_online} назад</blockquote>"
+
             "{wake_time}"
         ),
-        "wake_text": "<emoji document_id=5873146865637133757>🎤</emoji> <b>Проснусь в:</b> <b>{}</b>",
+        "wake_text": "\n\n<blockquote><emoji document_id=5873146865637133757>🎤</emoji> Проснусь в: {}</blockquote>",
         "sleep_off": "<emoji document_id=5883964170268840032>👤</emoji> <b>Проснулся, Sleep-режим отключён.</b>",
         "preset_saved": "<emoji document_id=5870730156259152122>✅</emoji> <b>Пресет '{}' сохранён!</b>",
         "preset_loaded": "<emoji document_id=5870730156259152122>✅</emoji> <b>Пресет '{}' загружен!</b>",
@@ -71,6 +82,21 @@ class ItachiAFKMod(loader.Module):
                 lambda: "Текст ответа в AFK.",
             ),
             loader.ConfigValue(
+                "MSG_AFK_ON",
+                self.strings["afk_on"],
+                lambda: "Текст включения AFK.",
+            ),
+            loader.ConfigValue(
+                "AFK_MEDIA",
+                "",
+                lambda: "Ссылка на медиа для AFK-ответа (фото/видео/гиф).",
+            ),
+            loader.ConfigValue(
+                "AFK_OFF_MEDIA",
+                "",
+                lambda: "Ссылка на медиа для сообщения отключения AFK.",
+            ),
+            loader.ConfigValue(
                 "MSG_AFK_OFF",
                 self.strings["back"],
                 lambda: "Текст выхода из AFK.",
@@ -84,6 +110,16 @@ class ItachiAFKMod(loader.Module):
                 "MSG_SLEEP_REPLY",
                 self.strings["sleep_msg"],
                 lambda: "Текст ответа в SLEEP.",
+            ),
+            loader.ConfigValue(
+                "SLEEP_MEDIA",
+                "",
+                lambda: "Ссылка на медиа для SLEEP-ответа (фото/видео/гиф).",
+            ),
+            loader.ConfigValue(
+                "SLEEP_OFF_MEDIA",
+                "",
+                lambda: "Ссылка на медиа для сообщения отключения SLEEP.",
             ),
             loader.ConfigValue(
                 "MSG_SLEEP_OFF",
@@ -106,9 +142,14 @@ class ItachiAFKMod(loader.Module):
         "customEmojiStatus",
         "customSleepEmojiStatus",
         "MSG_AFK_REPLY",
+        "MSG_AFK_ON",
+        "AFK_MEDIA",
+        "AFK_OFF_MEDIA",
         "MSG_AFK_OFF",
         "MSG_SLEEP_ON",
         "MSG_SLEEP_REPLY",
+        "SLEEP_MEDIA",
+        "SLEEP_OFF_MEDIA",
         "MSG_SLEEP_OFF",
         "MSG_WAKE_TIME",
     ]
@@ -122,6 +163,12 @@ class ItachiAFKMod(loader.Module):
                 "<emoji document_id=5870695289714643076>👤</emoji> <b>Нет в сети:</b> {was_online}\n"
                 "{reason_text}{come_time}"
             ),
+            "MSG_AFK_ON": (
+                "<blockquote><emoji document_id=5870730156259152122>😀</emoji> AFK включён!</blockquote>\n\n"
+                "<blockquote><emoji document_id=5877700484453634587>✈️</emoji> ItachiAFK будет отвечать этим:</blockquote>"
+            ),
+            "AFK_MEDIA": "",
+            "AFK_OFF_MEDIA": "",
             "MSG_AFK_OFF": "<emoji document_id=5883964170268840032>👤</emoji> <b>Я вернулся из мира аниме!</b>",
             "MSG_SLEEP_ON": "<emoji document_id=5870729937215819584>💤</emoji> <b>Ушел смотреть сны...</b>",
             "MSG_SLEEP_REPLY": (
@@ -129,6 +176,8 @@ class ItachiAFKMod(loader.Module):
                 "<emoji document_id=5870695289714643076>👤</emoji> <b>Сплю уже:</b> {was_online}\n"
                 "{wake_time}"
             ),
+            "SLEEP_MEDIA": "",
+            "SLEEP_OFF_MEDIA": "",
             "MSG_SLEEP_OFF": "<emoji document_id=5883964170268840032>👤</emoji> <b>Доброе утро!</b>",
             "MSG_WAKE_TIME": "<emoji document_id=5873146865637133757>🎤</emoji> <b>Проснусь в:</b> <b>{}</b>",
         },
@@ -138,9 +187,14 @@ class ItachiAFKMod(loader.Module):
             "MSG_AFK_REPLY": (
                 "<b>ЗАНЯТ.</b>\nОтсутствую: {was_online}\n{reason_text}{come_time}"
             ),
+            "MSG_AFK_ON": "<b>AFK ВКЛЮЧЕН.</b>",
+            "AFK_MEDIA": "",
+            "AFK_OFF_MEDIA": "",
             "MSG_AFK_OFF": "<b>ВЕРНУЛСЯ.</b>",
             "MSG_SLEEP_ON": "<b>РЕЖИМ СНА.</b>",
             "MSG_SLEEP_REPLY": ("<b>СПЛЮ.</b>\nВремя сна: {was_online}\n{wake_time}"),
+            "SLEEP_MEDIA": "",
+            "SLEEP_OFF_MEDIA": "",
             "MSG_SLEEP_OFF": "<b>ДОСТУПЕН.</b>",
             "MSG_WAKE_TIME": "Буду в: <b>{}</b>",
         },
@@ -183,6 +237,43 @@ class ItachiAFKMod(loader.Module):
             seconds = 0
         return str(datetime.timedelta(seconds=int(seconds)))
 
+    async def _answer_with_media(self, message, text: str, media_url: str = None):
+        media_url = (media_url or "").strip()
+        if not media_url:
+            await utils.answer(message, text)
+            return
+
+        try:
+            await self.client.send_file(
+                entity=message.peer_id,
+                file=media_url,
+                caption=text,
+                parse_mode="html",
+            )
+            if getattr(message, "out", False):
+                await message.delete()
+        except Exception as e:
+            logger.error(f"Не удалось отправить медиа: {e}")
+            await utils.answer(message, text)
+
+    async def _send_response(self, message, text: str, media_url: str = None):
+        media_url = (media_url or "").strip()
+        if not media_url:
+            await utils.answer(message, text, reply_to=message)
+            return
+
+        try:
+            await self.client.send_file(
+                entity=message.peer_id,
+                file=media_url,
+                caption=text,
+                reply_to=message.id,
+                parse_mode="html",
+            )
+        except Exception as e:
+            logger.error(f"Не удалось отправить медиа-ответ: {e}")
+            await utils.answer(message, text, reply_to=message)
+
     # --- AFK ---
     @loader.command(
         en_doc="[reason] | [time] — Enable AFK",
@@ -224,22 +315,21 @@ class ItachiAFKMod(loader.Module):
         preview = self.config["MSG_AFK_REPLY"].format(
             was_online="Только что",
             reason_text=(
-                f"<emoji document_id=5870729937215819584>⏰️</emoji> <b>Причина:</b> <i>{reason}</i>\n"
+                f"\n\n<blockquote><emoji document_id=5870729937215819584>⏰️</emoji> Причина: {utils.escape_html(reason)}</blockquote>"
                 if reason
                 else ""
             ),
             come_time=(
-                f"<emoji document_id=5873146865637133757>🎤</emoji> <b>Прийду через:</b> <b>{time_val}</b>"
+                f"\n\n<blockquote><emoji document_id=5873146865637133757>🎤</emoji> Прийду через: {utils.escape_html(time_val)}</blockquote>"
                 if time_val
                 else ""
             ),
         )
 
-        await utils.answer(
+        await self._answer_with_media(
             message,
-            "<emoji document_id=5870730156259152122>😀</emoji> <b>AFK включён!</b>\n"
-            "<emoji document_id=5877700484453634587>✈️</emoji> ItachiAFK будет отвечать этим:\n\n"
-            + preview,
+            self.config["MSG_AFK_ON"] + "\n\n" + preview,
+            self.config["AFK_MEDIA"],
         )
 
     @loader.command(
@@ -276,9 +366,10 @@ class ItachiAFKMod(loader.Module):
             except Exception as e:
                 logger.error(f"Не удалось восстановить статус: {e}")
 
-        await utils.answer(
+        await self._answer_with_media(
             message,
             self.config["MSG_AFK_OFF"] + duration_text + (log_text or ""),
+            self.config["AFK_OFF_MEDIA"],
         )
 
     # --- SLEEP ---
@@ -312,12 +403,20 @@ class ItachiAFKMod(loader.Module):
         self.answered_users.clear()
         self.chat_messages.clear()
 
-        wake_text = self.config["MSG_WAKE_TIME"].format(wake_time) if wake_time else ""
+        wake_text = (
+            self.config["MSG_WAKE_TIME"].format(utils.escape_html(wake_time))
+            if wake_time
+            else ""
+        )
         preview = self.config["MSG_SLEEP_REPLY"].format(
             was_online="Только что", wake_time=wake_text
         )
 
-        await utils.answer(message, self.config["MSG_SLEEP_ON"] + preview)
+        await self._answer_with_media(
+            message,
+            self.config["MSG_SLEEP_ON"] + "\n\n" + preview,
+            self.config["SLEEP_MEDIA"],
+        )
 
     @loader.command(
         en_doc="Disable SLEEP",
@@ -353,9 +452,10 @@ class ItachiAFKMod(loader.Module):
             except Exception as e:
                 logger.error(f"Не удалось восстановить статус: {e}")
 
-        await utils.answer(
+        await self._answer_with_media(
             message,
             self.config["MSG_SLEEP_OFF"] + duration_text + (log_text or ""),
+            self.config["SLEEP_OFF_MEDIA"],
         )
 
     @loader.command(
@@ -495,7 +595,9 @@ class ItachiAFKMod(loader.Module):
                 wake_time = self._db.get(name, "wake_time")
                 text = self.config["MSG_SLEEP_REPLY"].format(
                     was_online=was_online,
-                    wake_time=self.config["MSG_WAKE_TIME"].format(wake_time)
+                    wake_time=self.config["MSG_WAKE_TIME"].format(
+                        utils.escape_html(wake_time)
+                    )
                     if wake_time
                     else "",
                 )
@@ -512,15 +614,16 @@ class ItachiAFKMod(loader.Module):
                 text = self.config["MSG_AFK_REPLY"].format(
                     was_online=was_online,
                     reason_text=(
-                        f"<emoji document_id=5870729937215819584>⏰️</emoji> <b>Причина:</b> <i>{reason}</i>\n"
+                        f"\n\n<blockquote><emoji document_id=5870729937215819584>⏰️</emoji> Причина: {utils.escape_html(reason)}</blockquote>"
                         if reason
                         else ""
                     ),
                     come_time=(
-                        f"<emoji document_id=5873146865637133757>🎤</emoji> <b>Прийду через:</b> <b>{return_time}</b>"
+                        f"\n\n<blockquote><emoji document_id=5873146865637133757>🎤</emoji> Прийду через: {utils.escape_html(return_time)}</blockquote>"
                         if return_time
                         else ""
                     ),
                 )
 
-            await utils.answer(message, text, reply_to=message)
+            media_key = "SLEEP_MEDIA" if sleep_state else "AFK_MEDIA"
+            await self._send_response(message, text, self.config[media_key])
