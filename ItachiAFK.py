@@ -403,7 +403,7 @@ class ItachiAFKMod(loader.Module):
 
     # ====================== ПРЕСЕТЫ ======================
     @loader.command(
-        en_doc(
+        en_doc=(
             "[save/load/del/list/pack] [name] — Preset manager. Examples: "
             ".afkpreset pack adds two packs (anime, strict); "
             ".afkpreset list shows saved presets; "
