@@ -12,7 +12,7 @@ try:
 except ImportError:
     InputMediaWebPage = None
 
-__version__ = (1, 10, 15)
+__version__ = (1, 11, 0)
 
 name = "ItachiAFK"
 logger = logging.getLogger(name)
@@ -33,8 +33,8 @@ class ItachiAFKMod(loader.Module):
             "<blockquote><emoji document_id=5870948572526022116>✋</emoji> <b>Хозяин</b> <i>@{username}</i> <b>вышел на связь</b></blockquote>\n\n"
             "<blockquote><emoji document_id=5870695289714643076>👤</emoji> <b>Абсенс:</b> <code>{was_online}</code> назад</blockquote>\n\n"
             "{reason_text}{come_time}\n\n"
-            "<blockquote><emoji document_id=5229252352948379900>⭐️</emoji> <b>Unit Alpha Heroku</b> | <i>Powered by Heroku Userbot</i></blockquote>\n\n"
-            "<blockquote><emoji document_id=4969889971700761796>✨</emoji> <b>Статус:</b> <i>Премиум-режим активен</i> 👑</blockquote>"
+            "<blockquote><emoji document_id=5897663599819624992>🪐</emoji> <b>Unit Alpha Heroku</b> | <i>Powered by Heroku Userbot</i></blockquote>\n\n"
+            "<blockquote><emoji document_id=5469741319330996757>💫</emoji> <b>Статус:</b> <i>Премиум-режим активен</i> <emoji document_id=5431505596316665041>👑</emoji></blockquote>"
         ),
         "sleep_on": (
             "<blockquote><emoji document_id=5870729937215819584>💤</emoji> SLEEP-режим включён!</blockquote>\n\n"
@@ -45,7 +45,7 @@ class ItachiAFKMod(loader.Module):
             "<blockquote><emoji document_id=5877700484453634587>🌙</emoji> <b>Не беспокоить, идёт техобслуживание</b></blockquote>\n\n"
             "<blockquote><emoji document_id=5870695289714643076>👤</emoji> <b>Сплю уже:</b> <code>{was_online}</code></blockquote>\n\n"
             "{wake_time}\n\n"
-            "<blockquote><emoji document_id=5229252352948379900>⭐️</emoji> <b>Unit Alpha Heroku</b> | <i>Sleep Mode Activated</i></blockquote>"
+            "<blockquote><emoji document_id=5897663599819624992>🪐</emoji> <b>Unit Alpha Heroku</b> | <i>Sleep Mode Activated</i></blockquote>"
         ),
         "wake_text": "\n\n<blockquote><emoji document_id=5873146865637133757>🎤</emoji> <b>Проснусь через:</b> <code>{}</code></blockquote>",
         "sleep_off": "<emoji document_id=5883964170268840032>👤</emoji> <b>@{username} проснулся и готов к бою!</b>",
@@ -403,7 +403,7 @@ class ItachiAFKMod(loader.Module):
 
     # ====================== ПРЕСЕТЫ ======================
     @loader.command(
-        en_doc=(
+        en_doc(
             "[save/load/del/list/pack] [name] — Preset manager. Examples: "
             ".afkpreset pack adds two packs (anime, strict); "
             ".afkpreset list shows saved presets; "
@@ -446,16 +446,7 @@ class ItachiAFKMod(loader.Module):
             if not name_preset:
                 await utils.answer(message, "Укажите название пресета!")
                 return
-            current_preset_data = {}
-            media_keys = ["AFK_MEDIA", "AFK_OFF_MEDIA", "SLEEP_MEDIA", "SLEEP_OFF_MEDIA"]
-            for key in self.CONFIG_KEYS_TO_SAVE:
-                if key not in self.config:
-                    continue
-                value = self.config[key]
-                # Пропускаем пустые медиа-поля
-                if key in media_keys and (value is None or str(value).strip() == ""):
-                    continue
-                current_preset_data[key] = value
+            current_preset_data = {key: self.config[key] for key in self.CONFIG_KEYS_TO_SAVE if key in self.config}
             presets[name_preset] = current_preset_data
             self._db.set(name, "presets", presets)
             await utils.answer(message, self.strings["preset_saved"].format(name_preset))
