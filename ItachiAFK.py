@@ -12,7 +12,7 @@ try:
 except ImportError:
     InputMediaWebPage = None
 
-__version__ = (1, 11, 0)
+__version__ = (1, 12, 0)
 
 name = "ItachiAFK"
 logger = logging.getLogger(name)
@@ -61,7 +61,7 @@ class ItachiAFKMod(loader.Module):
         self.config = loader.ModuleConfig(
             loader.ConfigValue("setPremiumStatus", True, "Ставить премиум-статус при AFK/SLEEP.", validator=loader.validators.Boolean()),
             loader.ConfigValue("customEmojiStatus", 4969889971700761796, "Кастомный премиум-статус для AFK.", validator=loader.validators.Integer()),
-            loader.ConfigValue("customSleepEmojiStatus", 5229252352948379900, "Кастомный премиум-статус для SLEEP.", validator=loader.validators.Integer()),
+            loader.ConfigValue("customSleepEmojiStatus", 5433709773532962414, "Кастомный премиум-статус для SLEEP.", validator=loader.validators.Integer()),
             loader.ConfigValue("MSG_AFK_REPLY", self.strings["default_afk_message"], "Текст ответа в AFK."),
             loader.ConfigValue("MSG_AFK_ON", self.strings["afk_on"], "Текст включения AFK."),
             loader.ConfigValue("AFK_MEDIA", "", "Ссылка на медиа для AFK."),
@@ -82,16 +82,20 @@ class ItachiAFKMod(loader.Module):
         self._old_status = None
 
     CONFIG_KEYS_TO_SAVE = [
-        "customEmojiStatus", "customSleepEmojiStatus", "MSG_AFK_REPLY", "MSG_AFK_ON",
-        "AFK_MEDIA", "AFK_OFF_MEDIA", "MSG_AFK_OFF", "MSG_SLEEP_ON", "MSG_SLEEP_REPLY",
-        "SLEEP_MEDIA", "SLEEP_OFF_MEDIA", "MSG_SLEEP_OFF", "MSG_WAKE_TIME",
+        "setPremiumStatus", "customEmojiStatus", "customSleepEmojiStatus", 
+        "MSG_AFK_REPLY", "MSG_AFK_ON",
+        "AFK_MEDIA", "AFK_OFF_MEDIA", "MSG_AFK_OFF", 
+        "MSG_SLEEP_ON", "MSG_SLEEP_REPLY",
+        "SLEEP_MEDIA", "SLEEP_OFF_MEDIA", "MSG_SLEEP_OFF", 
+        "MSG_WAKE_TIME",
         "quote_media", "invert_media",
     ]
 
     PRESET_PACK = {
         "anime": {
+            "setPremiumStatus": True,
             "customEmojiStatus": 4969889971700761796,
-            "customSleepEmojiStatus": 5229252352948379900,
+            "customSleepEmojiStatus": 5433709773532962414,
             "MSG_AFK_REPLY": (
                 "<blockquote><emoji document_id=5870948572526022116>✋</emoji> <b>Хозяин</b> <i>@{username}</i> <b>ушёл в мир аниме</b></blockquote>\n\n"
                 "<blockquote><emoji document_id=5870695289714643076>👤</emoji> <b>Нет в сети:</b> <code>{was_online}</code></blockquote>\n\n"
@@ -116,8 +120,9 @@ class ItachiAFKMod(loader.Module):
             "invert_media": True,
         },
         "strict": {
+            "setPremiumStatus": True,
             "customEmojiStatus": 5229252352948379900,
-            "customSleepEmojiStatus": 5229252352948379900,
+            "customSleepEmojiStatus": 5433709773532962414,
             "MSG_AFK_REPLY": (
                 "<blockquote><b>⚠️ ВНИМАНИЕ ⚠️</b></blockquote>\n\n"
                 "<blockquote><b>Хозяин</b> <i>@{username}</i> <b>ОТСУТСТВУЕТ</b></blockquote>\n\n"
@@ -154,6 +159,15 @@ class ItachiAFKMod(loader.Module):
     def _get_username(self):
         return self._me.username or self._me.first_name or "Хозяин"
 
+    def _get_config_value(self, key, default=None):
+        """Безопасное получение значения из конфига"""
+        try:
+            if key in self.config:
+                return self.config[key]
+            return default
+        except Exception:
+            return default
+
     def _log_message(self, user):
         data = self.chat_messages[user.id]
         data["name"] = utils.escape_html(user.first_name or "Без имени")
@@ -175,14 +189,13 @@ class ItachiAFKMod(loader.Module):
     def _format_duration(self, seconds: int) -> str:
         return str(datetime.timedelta(seconds=max(0, int(seconds))))
 
-    # ====================== ОСНОВНАЯ ОТПРАВКА С ИНВЕРСИЕЙ ======================
     async def _prepare_media(self, media_url: str):
         """Подготовка медиа как в Heroku"""
         media_url = (media_url or "").strip()
         if not media_url or media_url.lower() in {"", "none", "null", "false"}:
             return None
         media = str(media_url)
-        if self.config.get("quote_media", False) and InputMediaWebPage is not None:
+        if self._get_config_value("quote_media", False) and InputMediaWebPage is not None:
             try:
                 return InputMediaWebPage(url=media, optional=True)
             except Exception:
@@ -190,10 +203,9 @@ class ItachiAFKMod(loader.Module):
         return media
 
     async def _send_with_invert(self, message, text: str, media_url: str = None, reply_to=None):
-        """Отправка с инверсией через двухэтапный метод (как в Heroku)"""
+        """Отправка с инверсией через двухэтапный метод"""
         media = await self._prepare_media(media_url)
         
-        # Нет медиа — отправляем сразу
         if media is None:
             if reply_to:
                 await utils.answer(message, text, reply_to=reply_to)
@@ -201,26 +213,22 @@ class ItachiAFKMod(loader.Module):
                 await utils.answer(message, text)
             return
         
-        # Как в Heroku: сначала отправляем заглушку
         if reply_to:
             temp_msg = await self.client.send_message(message.chat_id, "🔄", reply_to=reply_to)
         else:
             temp_msg = await utils.answer(message, "🔄")
         
-        # Потом редактируем её с медиа и invert_media
         await utils.answer(
             temp_msg,
             text,
             file=media,
-            invert_media=self.config.get("invert_media", False),
+            invert_media=self._get_config_value("invert_media", False),
         )
 
     async def _send_response(self, message, text: str, media_url: str = None):
-        """Ответ пользователю в watcher"""
         await self._send_with_invert(message, text, media_url, reply_to=message.id)
 
     async def _send_command_response(self, message, text: str, media_url: str = None):
-        """Ответ на команду"""
         await self._send_with_invert(message, text, media_url, reply_to=None)
 
     # ====================== AFK КОМАНДЫ ======================
@@ -241,7 +249,7 @@ class ItachiAFKMod(loader.Module):
             else:
                 reason = args.strip()
 
-        if self.config["setPremiumStatus"]:
+        if self._get_config_value("setPremiumStatus", True):
             try:
                 me = await self.client.get_me()
                 if me.emoji_status:
@@ -249,7 +257,7 @@ class ItachiAFKMod(loader.Module):
                 await self.client(
                     functions.account.UpdateEmojiStatusRequest(
                         emoji_status=types.EmojiStatus(
-                            document_id=self.config["customEmojiStatus"]
+                            document_id=self._get_config_value("customEmojiStatus", 4969889971700761796)
                         )
                     )
                 )
@@ -270,15 +278,15 @@ class ItachiAFKMod(loader.Module):
         if time_val:
             come_time_text = f"<blockquote><emoji document_id=5873146865637133757>🎤</emoji> <b>Прийду через:</b> {utils.escape_html(time_val)}</blockquote>"
 
-        preview = self.config["MSG_AFK_REPLY"].format(
+        preview = self._get_config_value("MSG_AFK_REPLY", self.strings["default_afk_message"]).format(
             was_online="Только что",
             username=username,
             reason_text=reason_text,
             come_time=come_time_text,
         )
 
-        full_text = self.config["MSG_AFK_ON"] + "\n\n" + preview
-        await self._send_command_response(message, full_text, self.config["AFK_MEDIA"])
+        full_text = self._get_config_value("MSG_AFK_ON", self.strings["afk_on"]) + "\n\n" + preview
+        await self._send_command_response(message, full_text, self._get_config_value("AFK_MEDIA", ""))
 
     @loader.command(
         ru_doc="Выключить AFK режим",
@@ -305,7 +313,7 @@ class ItachiAFKMod(loader.Module):
         log_text = self._format_afk_log()
         self.chat_messages.clear()
 
-        if self.config["setPremiumStatus"] and self._old_status:
+        if self._get_config_value("setPremiumStatus", True) and self._old_status:
             try:
                 await self.client(
                     functions.account.UpdateEmojiStatusRequest(
@@ -316,8 +324,8 @@ class ItachiAFKMod(loader.Module):
                 logger.error(f"Не удалось восстановить статус: {e}")
 
         username = self._get_username()
-        full_text = self.config["MSG_AFK_OFF"].format(username=username) + duration_text + (log_text or "")
-        await self._send_command_response(message, full_text, self.config["AFK_OFF_MEDIA"])
+        full_text = self._get_config_value("MSG_AFK_OFF", self.strings["back"]).format(username=username) + duration_text + (log_text or "")
+        await self._send_command_response(message, full_text, self._get_config_value("AFK_OFF_MEDIA", ""))
 
     # ====================== SLEEP КОМАНДЫ ======================
     @loader.command(
@@ -330,7 +338,7 @@ class ItachiAFKMod(loader.Module):
         args = utils.get_args_raw(message)
         wake_time = args if args else None
 
-        if self.config["setPremiumStatus"]:
+        if self._get_config_value("setPremiumStatus", True):
             try:
                 me = await self.client.get_me()
                 if me.emoji_status:
@@ -338,7 +346,7 @@ class ItachiAFKMod(loader.Module):
                 await self.client(
                     functions.account.UpdateEmojiStatusRequest(
                         emoji_status=types.EmojiStatus(
-                            document_id=self.config["customSleepEmojiStatus"]
+                            document_id=self._get_config_value("customSleepEmojiStatus", 5229252352948379900)
                         )
                     )
                 )
@@ -352,15 +360,15 @@ class ItachiAFKMod(loader.Module):
         self.chat_messages.clear()
 
         username = self._get_username()
-        wake_text = self.config["MSG_WAKE_TIME"].format(utils.escape_html(wake_time)) if wake_time else ""
-        preview = self.config["MSG_SLEEP_REPLY"].format(
+        wake_text = self._get_config_value("MSG_WAKE_TIME", self.strings["wake_text"]).format(utils.escape_html(wake_time)) if wake_time else ""
+        preview = self._get_config_value("MSG_SLEEP_REPLY", self.strings["sleep_msg"]).format(
             was_online="Только что",
             username=username,
             wake_time=wake_text
         )
 
-        full_text = self.config["MSG_SLEEP_ON"] + "\n\n" + preview
-        await self._send_command_response(message, full_text, self.config["SLEEP_MEDIA"])
+        full_text = self._get_config_value("MSG_SLEEP_ON", self.strings["sleep_on"]) + "\n\n" + preview
+        await self._send_command_response(message, full_text, self._get_config_value("SLEEP_MEDIA", ""))
 
     @loader.command(
         ru_doc="Выключить SLEEP режим",
@@ -387,7 +395,7 @@ class ItachiAFKMod(loader.Module):
         log_text = self._format_afk_log()
         self.chat_messages.clear()
 
-        if self.config["setPremiumStatus"] and self._old_status:
+        if self._get_config_value("setPremiumStatus", True) and self._old_status:
             try:
                 await self.client(
                     functions.account.UpdateEmojiStatusRequest(
@@ -398,8 +406,8 @@ class ItachiAFKMod(loader.Module):
                 logger.error(f"Не удалось восстановить статус: {e}")
 
         username = self._get_username()
-        full_text = self.config["MSG_SLEEP_OFF"].format(username=username) + duration_text + (log_text or "")
-        await self._send_command_response(message, full_text, self.config["SLEEP_OFF_MEDIA"])
+        full_text = self._get_config_value("MSG_SLEEP_OFF", self.strings["sleep_off"]).format(username=username) + duration_text + (log_text or "")
+        await self._send_command_response(message, full_text, self._get_config_value("SLEEP_OFF_MEDIA", ""))
 
     # ====================== ПРЕСЕТЫ ======================
     @loader.command(
@@ -446,7 +454,10 @@ class ItachiAFKMod(loader.Module):
             if not name_preset:
                 await utils.answer(message, "Укажите название пресета!")
                 return
-            current_preset_data = {key: self.config[key] for key in self.CONFIG_KEYS_TO_SAVE if key in self.config}
+            current_preset_data = {}
+            for key in self.CONFIG_KEYS_TO_SAVE:
+                if key in self.config:
+                    current_preset_data[key] = self.config[key]
             presets[name_preset] = current_preset_data
             self._db.set(name, "presets", presets)
             await utils.answer(message, self.strings["preset_saved"].format(name_preset))
@@ -459,10 +470,22 @@ class ItachiAFKMod(loader.Module):
                 await utils.answer(message, self.strings["preset_not_found"].format(name_preset))
                 return
             preset_data = presets[name_preset]
+            loaded_keys = []
+            missing_keys = []
+            
             for key, value in preset_data.items():
                 if key in self.config:
                     self.config[key] = value
-            await utils.answer(message, self.strings["preset_loaded"].format(name_preset))
+                    loaded_keys.append(key)
+                else:
+                    missing_keys.append(key)
+            
+            result_msg = self.strings["preset_loaded"].format(name_preset)
+            if loaded_keys:
+                result_msg += f"\n\n<emoji document_id=5870730156259152122>✅</emoji> <b>Загружено:</b> {', '.join(loaded_keys)}"
+            if missing_keys:
+                result_msg += f"\n\n<emoji document_id=5870730156259152122>⚠️</emoji> <b>Не загружены (неизвестные ключи):</b> {', '.join(missing_keys)}"
+            await utils.answer(message, result_msg)
 
         elif action == "del":
             if not name_preset:
@@ -534,13 +557,13 @@ class ItachiAFKMod(loader.Module):
 
                 was_online = str(datetime.timedelta(seconds=diff_seconds))
                 wake_time = self._db.get(name, "wake_time")
-                wake_text = self.config["MSG_WAKE_TIME"].format(utils.escape_html(wake_time)) if wake_time else ""
-                text = self.config["MSG_SLEEP_REPLY"].format(
+                wake_text = self._get_config_value("MSG_WAKE_TIME", self.strings["wake_text"]).format(utils.escape_html(wake_time)) if wake_time else ""
+                text = self._get_config_value("MSG_SLEEP_REPLY", self.strings["sleep_msg"]).format(
                     was_online=was_online,
                     username=username,
                     wake_time=wake_text,
                 )
-                media_url = self.config["SLEEP_MEDIA"]
+                media_url = self._get_config_value("SLEEP_MEDIA", "")
             else:
                 gone = self._db.get(name, "gone")
                 diff_seconds = int(time.time() - gone) if gone else 0
@@ -558,12 +581,12 @@ class ItachiAFKMod(loader.Module):
                 if return_time:
                     come_time_text = f"<blockquote><emoji document_id=5873146865637133757>🎤</emoji> <b>Прийду через:</b> {utils.escape_html(return_time)}</blockquote>"
 
-                text = self.config["MSG_AFK_REPLY"].format(
+                text = self._get_config_value("MSG_AFK_REPLY", self.strings["default_afk_message"]).format(
                     was_online=was_online,
                     username=username,
                     reason_text=reason_text,
                     come_time=come_time_text,
                 )
-                media_url = self.config["AFK_MEDIA"]
+                media_url = self._get_config_value("AFK_MEDIA", "")
 
             await self._send_response(message, text, media_url)
