@@ -12,7 +12,7 @@ try:
 except ImportError:
     InputMediaWebPage = None
 
-__version__ = (1, 13, 0)
+__version__ = (1, 13, 1)
 
 name = "ItachiAFK"
 logger = logging.getLogger(name)
@@ -99,7 +99,6 @@ class ItachiAFKMod(loader.Module):
             loader.ConfigValue("cooldown_seconds", 60, "Кулдаун между AFK-ответами одному пользователю (секунд, минимум 5)", validator=loader.validators.Integer()),
         )
 
-        self.answered_users = set()
         self.chat_messages = defaultdict(lambda: {"name": "", "count": 0})
         self._old_status = None
         
@@ -296,6 +295,7 @@ class ItachiAFKMod(loader.Module):
     @loader.command(
         ru_doc="Ответь на медиа - Установить баннер для AFK режима",
         en_doc="Reply to media - Set banner for AFK mode",
+        ua_doc="Відповісти на медіа  — Встановити банер для режиму AFK",
     )
     async def add_afk_banner(self, message):
         """Ответь на медиа - Установить баннер для AFK режима"""
@@ -304,6 +304,7 @@ class ItachiAFKMod(loader.Module):
     @loader.command(
         ru_doc="Ответь на медиа - Установить баннер для SLEEP режима",
         en_doc="Reply to media - Set banner for SLEEP mode",
+        ua_doc="Відповісти на медіа  — Встановити банер для режиму SLEEP",
     )
     async def add_sleep_banner(self, message):
         """Ответь на медиа - Установить баннер для SLEEP режима"""
@@ -312,6 +313,7 @@ class ItachiAFKMod(loader.Module):
     @loader.command(
         ru_doc="Ответь на медиа - Установить баннер для выхода из AFK",
         en_doc="Reply to media - Set banner for AFK OFF mode",
+        ua_doc="Відповісти на медіа - Встановити банер для виходу з AFK",
     )
     async def add_afkoff_banner(self, message):
         """Ответь на медиа - Установить баннер для выхода из AFK"""
@@ -320,6 +322,7 @@ class ItachiAFKMod(loader.Module):
     @loader.command(
         ru_doc="Ответь на медиа - Установить баннер для выхода из SLEEP",
         en_doc="Reply to media - Set banner for SLEEP OFF mode",
+        ua_doc="Відповісти на медіа - Встановити банер для виходу із SLEEP",
     )
     async def add_sleepoff_banner(self, message):
         """Ответь на медиа - Установить баннер для выхода из SLEEP"""
@@ -328,6 +331,7 @@ class ItachiAFKMod(loader.Module):
     @loader.command(
         ru_doc="Показать текущий баннер AFK",
         en_doc="Show current AFK banner",
+        ua_doc="Показати поточний банер AFK",
     )
     async def show_afk_banner(self, message):
         """Показать текущий баннер AFK"""
@@ -336,6 +340,7 @@ class ItachiAFKMod(loader.Module):
     @loader.command(
         ru_doc="Показать текущий баннер SLEEP",
         en_doc="Show current SLEEP banner",
+        ua_doc="Показати поточний банер SLEEP",
     )
     async def show_sleep_banner(self, message):
         """Показать текущий баннер SLEEP"""
@@ -344,6 +349,7 @@ class ItachiAFKMod(loader.Module):
     @loader.command(
         ru_doc="Показать текущий баннер AFK OFF",
         en_doc="Show current AFK OFF banner",
+        ua_doc="Показати поточний банер AFK OFF",
     )
     async def show_afkoff_banner(self, message):
         """Показать текущий баннер AFK OFF"""
@@ -352,6 +358,7 @@ class ItachiAFKMod(loader.Module):
     @loader.command(
         ru_doc="Показать текущий баннер SLEEP OFF",
         en_doc="Show current SLEEP OFF banner",
+        ua_doc="Показати поточний банер SLEEP OFF",
     )
     async def show_sleepoff_banner(self, message):
         """Показать текущий баннер SLEEP OFF"""
@@ -360,6 +367,7 @@ class ItachiAFKMod(loader.Module):
     @loader.command(
         ru_doc="Удалить баннер AFK",
         en_doc="Delete AFK banner",
+        ua_doc="Видалити банер AFK",
     )
     async def del_afk_banner(self, message):
         """Удалить баннер AFK"""
@@ -370,6 +378,7 @@ class ItachiAFKMod(loader.Module):
     @loader.command(
         ru_doc="Удалить баннер SLEEP",
         en_doc="Delete SLEEP banner",
+        ua_doc="Видалити банер SLEEP",
     )
     async def del_sleep_banner(self, message):
         """Удалить баннер SLEEP"""
@@ -380,6 +389,7 @@ class ItachiAFKMod(loader.Module):
     @loader.command(
         ru_doc="Удалить баннер AFK OFF",
         en_doc="Delete AFK OFF banner",
+        ua_doc="Видалити банер AFK OFF",
     )
     async def del_afkoff_banner(self, message):
         """Удалить баннер AFK OFF"""
@@ -390,6 +400,7 @@ class ItachiAFKMod(loader.Module):
     @loader.command(
         ru_doc="Удалить баннер SLEEP OFF",
         en_doc="Delete SLEEP OFF banner",
+        ua_doc="Видалити банер SLEEP OFF",
     )
     async def del_sleepoff_banner(self, message):
         """Удалить баннер SLEEP OFF"""
@@ -544,7 +555,6 @@ class ItachiAFKMod(loader.Module):
         self._db.set(name, "afk", reason or True)
         self._db.set(name, "gone", time.time())
         self._db.set(name, "return_time", time_val)
-        self.answered_users.clear()
         self.chat_messages.clear()
         
         # Сброс кулдаунов при новом AFK
@@ -589,7 +599,6 @@ class ItachiAFKMod(loader.Module):
         self._db.set(name, "afk", False)
         self._db.set(name, "gone", None)
         self._db.set(name, "return_time", None)
-        self.answered_users.clear()
         
         # Очищаем кулдауны при выходе из AFK
         self.afk_cooldowns = {}
@@ -641,7 +650,6 @@ class ItachiAFKMod(loader.Module):
         self._db.set(name, "sleep", True)
         self._db.set(name, "sleep_start", time.time())
         self._db.set(name, "wake_time", wake_time)
-        self.answered_users.clear()
         self.chat_messages.clear()
         
         # Сброс кулдаунов SLEEP при новом режиме
@@ -679,7 +687,6 @@ class ItachiAFKMod(loader.Module):
         self._db.set(name, "sleep", False)
         self._db.set(name, "sleep_start", None)
         self._db.set(name, "wake_time", None)
-        self.answered_users.clear()
         
         # Очищаем кулдауны при выходе из SLEEP
         self.sleep_cooldowns = {}
@@ -863,12 +870,6 @@ class ItachiAFKMod(loader.Module):
                 if not can_reply:
                     logger.debug(f"Кулдаун для пользователя {user.id} в AFK режиме, пропускаем ответ")
                     return
-
-            # Дополнительная проверка через answered_users для обратной совместимости
-            if user.id in self.answered_users:
-                return
-
-            self.answered_users.add(user.id)
 
             username = self._get_username()
 
