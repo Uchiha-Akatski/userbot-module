@@ -12,7 +12,7 @@ try:
 except ImportError:
     InputMediaWebPage = None
 
-__version__ = (1, 12, 0)
+__version__ = (1, 13, 0)
 
 name = "ItachiAFK"
 logger = logging.getLogger(name)
@@ -20,7 +20,7 @@ logger = logging.getLogger(name)
 
 @loader.tds
 class ItachiAFKMod(loader.Module):
-    """AFK/SLEEP модуль с логированием и кликабельными никами"""
+    """AFK/SLEEP модуль с логированием, кликабельными никами, кулдауном и баннерами"""
 
     strings = {
         "name": "ItachiAFK",
@@ -55,6 +55,27 @@ class ItachiAFKMod(loader.Module):
         "preset_not_found": "<emoji document_id=5870730156259152122>❌</emoji> <b>Пресет '{}' не найден!</b>",
         "preset_pack_added": "<emoji document_id=5870730156259152122>✅</emoji> <b>Добавлено {} дефолтных пресетов!</b>",
         "presets_list": "<emoji document_id=5870730156259152122>📋</emoji> <b>Список пресетов:</b>\n\n",
+        "cooldown_set": "<emoji document_id=5870730156259152122>⏰</emoji> <b>Кулдаун между AFK-ответами установлен на: {} секунд</b>",
+        "cooldown_invalid": "<emoji document_id=5870730156259152122>❌</emoji> <b>Кулдаун должен быть целым числом и не менее 5 секунд!</b>",
+        # Баннер команды
+        "no_reply": "❌ <b>Нужно ответить на медиа</b>",
+        "no_media": "❌ <b>В ответе нет медиа</b>",
+        "uploading": "📤 <b>Загружаю баннер...</b>",
+        "added_afk": "✅ <b>Баннер для AFK установлен!</b>",
+        "added_sleep": "✅ <b>Баннер для SLEEP установлен!</b>",
+        "added_afk_off": "✅ <b>Баннер для AFK OFF установлен!</b>",
+        "added_sleep_off": "✅ <b>Баннер для SLEEP OFF установлен!</b>",
+        "failed": "❌ <b>Не удалось загрузить баннер</b>",
+        "no_requests": "❌ <b>Установи requests: pip install requests</b>",
+        "showing_afk": "🖼️ <b>Текущий баннер AFK:</b>",
+        "showing_sleep": "🖼️ <b>Текущий баннер SLEEP:</b>",
+        "showing_afk_off": "🖼️ <b>Текущий баннер AFK OFF:</b>",
+        "showing_sleep_off": "🖼️ <b>Текущий баннер SLEEP OFF:</b>",
+        "no_banner": "📭 <b>Баннер для этого типа не установлен</b>",
+        "cleared_afk": "🗑️ <b>Баннер AFK удалён</b>",
+        "cleared_sleep": "🗑️ <b>Баннер SLEEP удалён</b>",
+        "cleared_afk_off": "🗑️ <b>Баннер AFK OFF удалён</b>",
+        "cleared_sleep_off": "🗑️ <b>Баннер SLEEP OFF удалён</b>",
     }
 
     def __init__(self):
@@ -75,11 +96,16 @@ class ItachiAFKMod(loader.Module):
             loader.ConfigValue("MSG_WAKE_TIME", self.strings["wake_text"], "Формат текста времени просыпания."),
             loader.ConfigValue("quote_media", False, "Switch preview media to quote", validator=loader.validators.Boolean()),
             loader.ConfigValue("invert_media", False, "Invert media (медиа сверху)", validator=loader.validators.Boolean()),
+            loader.ConfigValue("cooldown_seconds", 60, "Кулдаун между AFK-ответами одному пользователю (секунд, минимум 5)", validator=loader.validators.Integer()),
         )
 
         self.answered_users = set()
         self.chat_messages = defaultdict(lambda: {"name": "", "count": 0})
         self._old_status = None
+        
+        # Инициализация словарей для кулдаунов
+        self.afk_cooldowns = {}
+        self.sleep_cooldowns = {}
 
     CONFIG_KEYS_TO_SAVE = [
         "setPremiumStatus", "customEmojiStatus", "customSleepEmojiStatus", 
@@ -88,7 +114,7 @@ class ItachiAFKMod(loader.Module):
         "MSG_SLEEP_ON", "MSG_SLEEP_REPLY",
         "SLEEP_MEDIA", "SLEEP_OFF_MEDIA", "MSG_SLEEP_OFF", 
         "MSG_WAKE_TIME",
-        "quote_media", "invert_media",
+        "quote_media", "invert_media", "cooldown_seconds",
     ]
 
     PRESET_PACK = {
@@ -118,10 +144,11 @@ class ItachiAFKMod(loader.Module):
             "MSG_WAKE_TIME": "<emoji document_id=5873146865637133757>🎤</emoji> Проснусь через: <code>{}</code>",
             "quote_media": True,
             "invert_media": True,
+            "cooldown_seconds": 60,
         },
         "strict": {
             "setPremiumStatus": True,
-            "customEmojiStatus": 5229252352948379900,
+            "customEmojiStatus": 4969889971700761796,
             "customSleepEmojiStatus": 5433709773532962414,
             "MSG_AFK_REPLY": (
                 "<blockquote><b>⚠️ ВНИМАНИЕ ⚠️</b></blockquote>\n\n"
@@ -147,6 +174,7 @@ class ItachiAFKMod(loader.Module):
             "MSG_WAKE_TIME": "<b>⏰ Пробуждение в: <code>{}</code></b>",
             "quote_media": True,
             "invert_media": True,
+            "cooldown_seconds": 30,
         },
     }
 
@@ -155,6 +183,18 @@ class ItachiAFKMod(loader.Module):
         self._me = await client.get_me()
         self.client = client
         self.username = self._me.username or self._me.first_name
+        
+        # Восстанавливаем кулдауны из БД
+        self.afk_cooldowns = self._db.get(name, "afk_cooldowns", {})
+        self.sleep_cooldowns = self._db.get(name, "sleep_cooldowns", {})
+        
+        # Валидация кулдауна при загрузке
+        try:
+            current_cooldown = self.config["cooldown_seconds"]
+            if not isinstance(current_cooldown, int) or current_cooldown < 5:
+                self.config["cooldown_seconds"] = 60
+        except Exception:
+            self.config["cooldown_seconds"] = 60
 
     def _get_username(self):
         return self._me.username or self._me.first_name or "Хозяин"
@@ -167,6 +207,12 @@ class ItachiAFKMod(loader.Module):
             return default
         except Exception:
             return default
+
+    def _validate_cooldown_value(self, value):
+        """Проверка валидности значения кулдауна"""
+        if not isinstance(value, int) or value < 5:
+            raise ValueError(self.strings["cooldown_invalid"])
+        return value
 
     def _log_message(self, user):
         data = self.chat_messages[user.id]
@@ -231,6 +277,237 @@ class ItachiAFKMod(loader.Module):
     async def _send_command_response(self, message, text: str, media_url: str = None):
         await self._send_with_invert(message, text, media_url, reply_to=None)
 
+    def _check_cooldown(self, cooldown_dict, user_id, mode="afk"):
+        """Проверка кулдауна для пользователя"""
+        cooldown_seconds = self._get_config_value("cooldown_seconds", 60)
+        last_reply_time = cooldown_dict.get(user_id, 0)
+        current_time = time.time()
+        
+        if current_time - last_reply_time >= cooldown_seconds:
+            return True, current_time
+        return False, None
+
+    def _update_cooldown(self, cooldown_dict, user_id, current_time):
+        """Обновление времени последнего ответа"""
+        cooldown_dict[user_id] = current_time
+        return cooldown_dict
+
+    # ====================== БАННЕР КОМАНДЫ ======================
+    @loader.command(
+        ru_doc="Ответь на медиа - Установить баннер для AFK режима",
+        en_doc="Reply to media - Set banner for AFK mode",
+    )
+    async def add_afk_banner(self, message):
+        """Ответь на медиа - Установить баннер для AFK режима"""
+        await self._add_banner(message, "afk")
+
+    @loader.command(
+        ru_doc="Ответь на медиа - Установить баннер для SLEEP режима",
+        en_doc="Reply to media - Set banner for SLEEP mode",
+    )
+    async def add_sleep_banner(self, message):
+        """Ответь на медиа - Установить баннер для SLEEP режима"""
+        await self._add_banner(message, "sleep")
+
+    @loader.command(
+        ru_doc="Ответь на медиа - Установить баннер для выхода из AFK",
+        en_doc="Reply to media - Set banner for AFK OFF mode",
+    )
+    async def add_afkoff_banner(self, message):
+        """Ответь на медиа - Установить баннер для выхода из AFK"""
+        await self._add_banner(message, "afk_off")
+
+    @loader.command(
+        ru_doc="Ответь на медиа - Установить баннер для выхода из SLEEP",
+        en_doc="Reply to media - Set banner for SLEEP OFF mode",
+    )
+    async def add_sleepoff_banner(self, message):
+        """Ответь на медиа - Установить баннер для выхода из SLEEP"""
+        await self._add_banner(message, "sleep_off")
+
+    @loader.command(
+        ru_doc="Показать текущий баннер AFK",
+        en_doc="Show current AFK banner",
+    )
+    async def show_afk_banner(self, message):
+        """Показать текущий баннер AFK"""
+        await self._show_banner(message, "afk")
+
+    @loader.command(
+        ru_doc="Показать текущий баннер SLEEP",
+        en_doc="Show current SLEEP banner",
+    )
+    async def show_sleep_banner(self, message):
+        """Показать текущий баннер SLEEP"""
+        await self._show_banner(message, "sleep")
+
+    @loader.command(
+        ru_doc="Показать текущий баннер AFK OFF",
+        en_doc="Show current AFK OFF banner",
+    )
+    async def show_afkoff_banner(self, message):
+        """Показать текущий баннер AFK OFF"""
+        await self._show_banner(message, "afk_off")
+
+    @loader.command(
+        ru_doc="Показать текущий баннер SLEEP OFF",
+        en_doc="Show current SLEEP OFF banner",
+    )
+    async def show_sleepoff_banner(self, message):
+        """Показать текущий баннер SLEEP OFF"""
+        await self._show_banner(message, "sleep_off")
+
+    @loader.command(
+        ru_doc="Удалить баннер AFK",
+        en_doc="Delete AFK banner",
+    )
+    async def del_afk_banner(self, message):
+        """Удалить баннер AFK"""
+        self.config["AFK_MEDIA"] = ""
+        self._db.set(name, "afk_banner_url", "")
+        await utils.answer(message, self.strings["cleared_afk"])
+
+    @loader.command(
+        ru_doc="Удалить баннер SLEEP",
+        en_doc="Delete SLEEP banner",
+    )
+    async def del_sleep_banner(self, message):
+        """Удалить баннер SLEEP"""
+        self.config["SLEEP_MEDIA"] = ""
+        self._db.set(name, "sleep_banner_url", "")
+        await utils.answer(message, self.strings["cleared_sleep"])
+
+    @loader.command(
+        ru_doc="Удалить баннер AFK OFF",
+        en_doc="Delete AFK OFF banner",
+    )
+    async def del_afkoff_banner(self, message):
+        """Удалить баннер AFK OFF"""
+        self.config["AFK_OFF_MEDIA"] = ""
+        self._db.set(name, "afk_off_banner_url", "")
+        await utils.answer(message, self.strings["cleared_afk_off"])
+
+    @loader.command(
+        ru_doc="Удалить баннер SLEEP OFF",
+        en_doc="Delete SLEEP OFF banner",
+    )
+    async def del_sleepoff_banner(self, message):
+        """Удалить баннер SLEEP OFF"""
+        self.config["SLEEP_OFF_MEDIA"] = ""
+        self._db.set(name, "sleep_off_banner_url", "")
+        await utils.answer(message, self.strings["cleared_sleep_off"])
+
+    async def _upload_media(self, file_path: str, ext: str):
+        """Загрузка медиа на сервер"""
+        try:
+            import requests
+            with open(file_path, 'rb') as f:
+                resp = requests.post('https://x0.at/', files={'file': (f'banner.{ext}', f)}, timeout=30)
+            if resp.status_code == 200 and resp.text.strip().startswith('http'):
+                return resp.text.strip()
+        except Exception as e:
+            logger.error(f"Upload error: {e}")
+        return None
+
+    async def _add_banner(self, message, banner_type: str):
+        """Добавление баннера для указанного типа"""
+        try:
+            import requests
+        except ImportError:
+            await utils.answer(message, self.strings("no_requests"))
+            return
+
+        replied = await message.get_reply_message()
+        if not replied:
+            await utils.answer(message, self.strings("no_reply"))
+            return
+        
+        if not (replied.photo or replied.video or replied.animation or replied.document):
+            await utils.answer(message, self.strings("no_media"))
+            return
+        
+        status = await utils.answer(message, self.strings("uploading"))
+        
+        ext = "jpg"
+        if replied.video:
+            ext = "mp4"
+        elif replied.animation:
+            ext = "gif"
+        
+        tmp_path = None
+        try:
+            import tempfile
+            import os
+            
+            tmp_path = os.path.join(tempfile.gettempdir(), f"banner_{message.id}.{ext}")
+            await self.client.download_media(replied, file=tmp_path)
+            
+            if not os.path.exists(tmp_path) or os.path.getsize(tmp_path) == 0:
+                await status.edit(self.strings("failed"))
+                return
+            
+            url = await self._upload_media(tmp_path, ext)
+            
+            if not url:
+                await status.edit(self.strings("failed"))
+                return
+            
+            # Сохраняем URL в соответствующую конфигурацию
+            if banner_type == "afk":
+                self.config["AFK_MEDIA"] = url
+                self._db.set(name, "afk_banner_url", url)
+                await status.edit(self.strings("added_afk"))
+            elif banner_type == "sleep":
+                self.config["SLEEP_MEDIA"] = url
+                self._db.set(name, "sleep_banner_url", url)
+                await status.edit(self.strings("added_sleep"))
+            elif banner_type == "afk_off":
+                self.config["AFK_OFF_MEDIA"] = url
+                self._db.set(name, "afk_off_banner_url", url)
+                await status.edit(self.strings("added_afk_off"))
+            elif banner_type == "sleep_off":
+                self.config["SLEEP_OFF_MEDIA"] = url
+                self._db.set(name, "sleep_off_banner_url", url)
+                await status.edit(self.strings("added_sleep_off"))
+                
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            await status.edit(self.strings("failed"))
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except:
+                    pass
+
+    async def _show_banner(self, message, banner_type: str):
+        """Показать текущий баннер"""
+        if banner_type == "afk":
+            url = self._get_config_value("AFK_MEDIA", "")
+            text = self.strings("showing_afk")
+        elif banner_type == "sleep":
+            url = self._get_config_value("SLEEP_MEDIA", "")
+            text = self.strings("showing_sleep")
+        elif banner_type == "afk_off":
+            url = self._get_config_value("AFK_OFF_MEDIA", "")
+            text = self.strings("showing_afk_off")
+        elif banner_type == "sleep_off":
+            url = self._get_config_value("SLEEP_OFF_MEDIA", "")
+            text = self.strings("showing_sleep_off")
+        else:
+            return
+        
+        if not url:
+            await utils.answer(message, self.strings("no_banner"))
+            return
+        
+        # Отправляем медиа
+        media = await self._prepare_media(url)
+        if media:
+            await self._send_command_response(message, text, url)
+        else:
+            await utils.answer(message, f"{text}\n\n<code>{url}</code>")
+
     # ====================== AFK КОМАНДЫ ======================
     @loader.command(
         ru_doc="[причина] | [время] — Включить AFK режим",
@@ -269,6 +546,10 @@ class ItachiAFKMod(loader.Module):
         self._db.set(name, "return_time", time_val)
         self.answered_users.clear()
         self.chat_messages.clear()
+        
+        # Сброс кулдаунов при новом AFK
+        self.afk_cooldowns = {}
+        self._db.set(name, "afk_cooldowns", self.afk_cooldowns)
 
         username = self._get_username()
         reason_text = ""
@@ -309,6 +590,10 @@ class ItachiAFKMod(loader.Module):
         self._db.set(name, "gone", None)
         self._db.set(name, "return_time", None)
         self.answered_users.clear()
+        
+        # Очищаем кулдауны при выходе из AFK
+        self.afk_cooldowns = {}
+        self._db.set(name, "afk_cooldowns", self.afk_cooldowns)
 
         log_text = self._format_afk_log()
         self.chat_messages.clear()
@@ -358,6 +643,10 @@ class ItachiAFKMod(loader.Module):
         self._db.set(name, "wake_time", wake_time)
         self.answered_users.clear()
         self.chat_messages.clear()
+        
+        # Сброс кулдаунов SLEEP при новом режиме
+        self.sleep_cooldowns = {}
+        self._db.set(name, "sleep_cooldowns", self.sleep_cooldowns)
 
         username = self._get_username()
         wake_text = self._get_config_value("MSG_WAKE_TIME", self.strings["wake_text"]).format(utils.escape_html(wake_time)) if wake_time else ""
@@ -391,6 +680,10 @@ class ItachiAFKMod(loader.Module):
         self._db.set(name, "sleep_start", None)
         self._db.set(name, "wake_time", None)
         self.answered_users.clear()
+        
+        # Очищаем кулдауны при выходе из SLEEP
+        self.sleep_cooldowns = {}
+        self._db.set(name, "sleep_cooldowns", self.sleep_cooldowns)
 
         log_text = self._format_afk_log()
         self.chat_messages.clear()
@@ -408,6 +701,23 @@ class ItachiAFKMod(loader.Module):
         username = self._get_username()
         full_text = self._get_config_value("MSG_SLEEP_OFF", self.strings["sleep_off"]).format(username=username) + duration_text + (log_text or "")
         await self._send_command_response(message, full_text, self._get_config_value("SLEEP_OFF_MEDIA", ""))
+
+    # ====================== КОМАНДА УСТАНОВКИ КУЛДАУНА ======================
+    @loader.command(
+        ru_doc="<секунды> — Установить время кулдауна между AFK-ответами (минимум 5 секунд)",
+        en_doc="<seconds> — Set cooldown time between AFK responses (minimum 5 seconds)",
+        ua_doc="<секунди> — Встановити час кулдауну між AFK-відповідями (мінімум 5 секунд)",
+    )
+    async def afkcooldown(self, message):
+        """Установить время кулдауна между AFK-ответами одному пользователю (минимум 5 секунд)"""
+        args = utils.get_args_raw(message)
+        try:
+            new_cooldown = int(args)
+            self._validate_cooldown_value(new_cooldown)
+            self.config["cooldown_seconds"] = new_cooldown
+            await utils.answer(message, self.strings["cooldown_set"].format(new_cooldown))
+        except ValueError as e:
+            await utils.answer(message, self.strings["cooldown_invalid"])
 
     # ====================== ПРЕСЕТЫ ======================
     @loader.command(
@@ -542,6 +852,19 @@ class ItachiAFKMod(loader.Module):
 
             self._log_message(user)
 
+            # Проверка кулдауна
+            if sleep_state:
+                can_reply, current_time = self._check_cooldown(self.sleep_cooldowns, user.id, "sleep")
+                if not can_reply:
+                    logger.debug(f"Кулдаун для пользователя {user.id} в SLEEP режиме, пропускаем ответ")
+                    return
+            else:
+                can_reply, current_time = self._check_cooldown(self.afk_cooldowns, user.id, "afk")
+                if not can_reply:
+                    logger.debug(f"Кулдаун для пользователя {user.id} в AFK режиме, пропускаем ответ")
+                    return
+
+            # Дополнительная проверка через answered_users для обратной совместимости
             if user.id in self.answered_users:
                 return
 
@@ -564,6 +887,10 @@ class ItachiAFKMod(loader.Module):
                     wake_time=wake_text,
                 )
                 media_url = self._get_config_value("SLEEP_MEDIA", "")
+                
+                # Обновляем кулдаун после успешной отправки
+                self.sleep_cooldowns = self._update_cooldown(self.sleep_cooldowns, user.id, current_time)
+                self._db.set(name, "sleep_cooldowns", self.sleep_cooldowns)
             else:
                 gone = self._db.get(name, "gone")
                 diff_seconds = int(time.time() - gone) if gone else 0
@@ -588,5 +915,9 @@ class ItachiAFKMod(loader.Module):
                     come_time=come_time_text,
                 )
                 media_url = self._get_config_value("AFK_MEDIA", "")
+                
+                # Обновляем кулдаун после успешной отправки
+                self.afk_cooldowns = self._update_cooldown(self.afk_cooldowns, user.id, current_time)
+                self._db.set(name, "afk_cooldowns", self.afk_cooldowns)
 
             await self._send_response(message, text, media_url)
