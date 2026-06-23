@@ -267,3 +267,16 @@ class  Memprikol3(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+        
+    async def писькиcmd(self, message):
+        """| Здесь вообще работать можно. Эти письки, одни письки, целый день письки, письки, гонококи, реакция Вестермана, спирохеты, трепанемы. О, Николай"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/445",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
