@@ -433,18 +433,59 @@ class ItachiAFKMod(loader.Module):
             await utils.answer(message, self.strings("no_reply"))
             return
         
-        if not (replied.photo or replied.video or replied.animation or replied.document):
+        # Исправленная проверка наличия медиа
+        has_media = False
+        media_type = "jpg"
+        
+        # Проверяем наличие различных типов медиа
+        if hasattr(replied, 'photo') and replied.photo:
+            has_media = True
+            media_type = "jpg"
+        elif hasattr(replied, 'video') and replied.video:
+            has_media = True
+            media_type = "mp4"
+        elif hasattr(replied, 'document') and replied.document:
+            # Проверяем, не является ли документ GIF или другим анимированным файлом
+            has_media = True
+            # Пытаемся определить тип по mime_type или расширению
+            if hasattr(replied.document, 'mime_type'):
+                if 'gif' in replied.document.mime_type.lower():
+                    media_type = "gif"
+                elif 'video' in replied.document.mime_type.lower():
+                    media_type = "mp4"
+            # Также можно проверить атрибут animation, если он существует
+            elif hasattr(replied, 'gif') and replied.gif:
+                media_type = "gif"
+        
+        if not has_media:
+            # Дополнительная проверка через media
+            if hasattr(replied, 'media') and replied.media:
+                has_media = True
+                # Определяем тип по document
+                if hasattr(replied.media, 'document'):
+                    doc = replied.media.document
+                    if hasattr(doc, 'mime_type'):
+                        if 'gif' in doc.mime_type.lower():
+                            media_type = "gif"
+                        elif 'video' in doc.mime_type.lower():
+                            media_type = "mp4"
+                    # Проверяем атрибуты документа
+                    if hasattr(doc, 'attributes'):
+                        for attr in doc.attributes:
+                            if hasattr(attr, 'file_name'):
+                                if attr.file_name and attr.file_name.lower().endswith('.gif'):
+                                    media_type = "gif"
+            elif hasattr(replied, 'sticker') and replied.sticker:
+                has_media = True
+                media_type = "webp"
+        
+        if not has_media:
             await utils.answer(message, self.strings("no_media"))
             return
         
         status = await utils.answer(message, self.strings("uploading"))
         
-        ext = "jpg"
-        if replied.video:
-            ext = "mp4"
-        elif replied.animation:
-            ext = "gif"
-        
+        ext = media_type
         tmp_path = None
         try:
             import tempfile
