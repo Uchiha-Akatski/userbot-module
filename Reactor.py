@@ -190,7 +190,7 @@ class ReactorMod(loader.Module):
 
         return names, [self._normalize_reaction_value(emoji) for emoji in emojis]
 
-    @loader.command(en_doc="- Add reaction [name | emoji]", ru_doc="- Добавить реакцию [имя | реакция]")
+    @loader.command(en_doc="- Add reaction [name | emoji] (e.g. .addreact like 👍 | .addreact like fire sad | 👍 🔥 😢 | .addreact like fire sad 👍 🔥 😢)",ru_doc="- Добавить реакцию [имя | реакция] (например: .addreact like 👍 | .addreact like fire sad | 👍 🔥 😢 | .addreact like fire sad 👍 🔥 😢)")
     async def addreact(self, message: Message):
         raw_args = " ".join(utils.get_args(message))
 
@@ -212,7 +212,7 @@ class ReactorMod(loader.Module):
             self.strings("reaction_added").format(", ".join(names), ", ".join(map(str, emojis))),
         )
 
-    @loader.command(en_doc="- Remove reaction [name]", ru_doc="- Удалить реакцию [имя]")
+    @loader.command(en_doc="- Remove reaction(s) [name1] [name2] ...\n",ru_doc="- Удалить реакцию(и) [имя1] [имя2] ...\n")
     async def delreact(self, message: Message):
         args = utils.get_args(message)
 
