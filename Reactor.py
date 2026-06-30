@@ -9,7 +9,7 @@
 # The rights to this module were kindly transferred by the original author
 
 
-#meta developer: @Itachi_Uchiha_sss
+# meta developer: @Itachi_Uchiha_sss
 
 import asyncio
 import re
