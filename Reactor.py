@@ -1,13 +1,13 @@
-"""
-    ██╗████████╗ █████╗  ██████╗██╗  ██╗██╗
-    ██║╚══██╔══╝██╔══██╗██╔════╝██║  ██║██║
-    ██║   ██║   ███████║██║     ███████║██║
-    ██║   ██║   ██╔══██║██║     ██╔══██║██║
-    ██║   ██║   ██║  ██║╚██████╗██║  ██║██║
-    ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝
+#
+#   ██╗████████╗ █████╗  ██████╗██╗  ██╗██╗
+#   ██║╚══██╔══╝██╔══██╗██╔════╝██║  ██║██║
+#   ██║   ██║   ███████║██║     ███████║██║
+#   ██║   ██║   ██╔══██║██║     ██╔══██║██║
+#   ██║   ██║   ██║  ██║╚██████╗██║  ██║██║
+#   ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝
 # Original developer: @undef1n3dd
 # The rights to this module were kindly transferred by the original author
-"""
+
 
 #meta developer: @Itachi_Uchiha_sss
 
@@ -27,6 +27,7 @@ from legacytl.tl.types import (
 
 @loader.tds
 class ReactorMod(loader.Module):
+    """Модуль для реакций"""
     strings = {
         "name": "Reactor",
         "_cfg_silent": "React silently",
