@@ -280,3 +280,29 @@ class  Memprikol3(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+
+    async def моргэнcmd(self, message):
+        """| Гутен моргэн! Гутен моргэн! Как спалось?"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/446",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def охаёcmd(self, message):
+        """| Охаёшечки даттебаёшечки"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/447",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
