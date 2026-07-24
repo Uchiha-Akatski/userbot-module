@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 1, 8)
+__version__ = (2, 2, 0)
 # -- version --
 
 
@@ -963,7 +963,8 @@ class DotaStatsMod(loader.Module):
                 )
             )
             
-            self._pages_cache[msg.inline_message_id] = {
+            msg_id = str(msg.inline_message_id)
+            self._pages_cache[msg_id] = {
                 "pages": pages,
                 "player_id": str(pid),
             }
@@ -1021,7 +1022,8 @@ class DotaStatsMod(loader.Module):
                 )
             )
 
-            self._pages_cache[msg.inline_message_id] = {
+            msg_id = str(msg.inline_message_id)
+            self._pages_cache[msg_id] = {
                 "pages": pages,
                 "player_id": str(pid),
             }
@@ -1478,7 +1480,7 @@ class DotaStatsMod(loader.Module):
                 self._btn(
                     f"{page+1}/{total}",
                     style="primary",
-                    callback=self.noop
+                    callback=self._noop  # <-- было self.noop
                 ),
                 self._btn(
                     "Вперёд ▶️",
@@ -1507,8 +1509,13 @@ class DotaStatsMod(loader.Module):
         )
 
         return markup
+
+    async def _noop(self, call):
+        await call.answer()    
+
     async def prev_page(self, call, page: int):
-        payload = self._pages_cache.get(call.inline_message_id)
+        msg_id = str(call.inline_message_id) if hasattr(call, 'inline_message_id') else call.inline_message_id
+        payload = self._pages_cache.get(msg_id)
         if not payload:
             return
 
@@ -1526,7 +1533,8 @@ class DotaStatsMod(loader.Module):
         )
 
     async def next_page(self, call, page: int):
-        payload = self._pages_cache.get(call.inline_message_id)
+        msg_id = str(call.inline_message_id) if hasattr(call, 'inline_message_id') else call.inline_message_id
+        payload = self._pages_cache.get(msg_id)
         if not payload:
             return
 
@@ -1543,14 +1551,10 @@ class DotaStatsMod(loader.Module):
             )
         )
 
-    async def noop(self, call):
-        await call.answer()
-
-
     async def close_msg(self, call):
-        self._pages_cache.pop(call.inline_message_id, None)
+        msg_id = str(call.inline_message_id) if hasattr(call, 'inline_message_id') else call.inline_message_id
+        self._pages_cache.pop(msg_id, None)
         await call.delete()
-
 
 
     def _close_btn(self):
