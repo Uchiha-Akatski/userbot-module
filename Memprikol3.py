@@ -306,3 +306,29 @@ class  Memprikol3(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+
+    async def лыжиcmd(self, message):
+        """| Вайб Яна Топлиса"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/448",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def yaracmd(self, message):
+        """| yara yara"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/449",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
