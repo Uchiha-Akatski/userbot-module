@@ -873,29 +873,38 @@ class ItachiAFKMod(loader.Module):
     async def watcher(self, message):
         if not isinstance(message, types.Message):
             return
-        
-        # Проверяем игнорирование ДО логирования
-        if self._should_ignore_message(message):
-            return
-        
+    
+        # Проверяем, нужно ли игнорировать ОТВЕТ (но логировать будем все равно)
+        is_ignored = self._should_ignore_message(message)
+    
+        # Проверяем, что это упоминание или ЛС
         if not (message.mentioned or getattr(message.to_id, "user_id", None) == self._me.id):
             return
-        
+    
+    # Проверяем AFK/SLEEP статус
         afk_state = self._db.get(name, "afk", False)
         sleep_state = self._db.get(name, "sleep", False)
         if not afk_state and not sleep_state:
             return
-        
+    
+    # Получаем пользователя
         try:
             user = await self.client.get_entity(message.sender_id)
         except:
             return
-        
+    
+    # Игнорируем себя и ботов
         if user.is_self or user.bot:
             return
-        
+    
+    # ЛОГИРУЕМ ВСЕГДА! Даже если в игноре
         self._log_message(user)
-        
+    
+    # Если сообщение от игнорируемого пользователя/чата - не отвечаем
+        if is_ignored:
+            return
+    
+    # Проверяем кулдаун
         if sleep_state:
             can_reply, current_time = self._check_cooldown(self.sleep_cooldowns, user.id, "sleep")
             if not can_reply:
@@ -904,8 +913,10 @@ class ItachiAFKMod(loader.Module):
             can_reply, current_time = self._check_cooldown(self.afk_cooldowns, user.id, "afk")
             if not can_reply:
                 return
-        
+    
+    # Формируем и отправляем ответ
         username = self._get_username()
+    
         if sleep_state:
             sleep_start = self._db.get(name, "sleep_start")
             diff_seconds = int(time.time() - sleep_start) if sleep_start else 0
@@ -945,5 +956,5 @@ class ItachiAFKMod(loader.Module):
             media_url = self._get_config_value("AFK_MEDIA", "")
             self.afk_cooldowns = self._update_cooldown(self.afk_cooldowns, user.id, current_time)
             self._db.set(name, "afk_cooldowns", self.afk_cooldowns)
-        
+    
         await self._send_response(message, text, media_url)
