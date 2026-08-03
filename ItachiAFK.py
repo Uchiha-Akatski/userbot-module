@@ -12,7 +12,7 @@ try:
 except ImportError:
     InputMediaWebPage = None
 
-__version__ = (1, 13, 5)
+__version__ = (1, 14, 0)
 
 name = "ItachiAFK"
 logger = logging.getLogger(name)
@@ -101,8 +101,8 @@ class ItachiAFKMod(loader.Module):
             loader.ConfigValue("quote_media", False, "Switch preview media to quote", validator=loader.validators.Boolean()),
             loader.ConfigValue("invert_media", False, "Invert media (медиа сверху)", validator=loader.validators.Boolean()),
             loader.ConfigValue("cooldown_seconds", 60, "Кулдаун между AFK-ответами одному пользователю (секунд, минимум 5)", validator=loader.validators.Integer()),
-            loader.ConfigValue("ignore_chats", [], "ID чатов для полного игнорирования (можно без -100).", validator=loader.validators.Series()),
-            loader.ConfigValue("ignore_users", [], "ID пользователей для полного игнорирования в ЛС.", validator=loader.validators.Series()),
+            loader.ConfigValue("ignore_chats", [], "ID чатов для игнорирования.", validator=loader.validators.Series(validator=loader.validators.TelegramID())),
+            loader.ConfigValue("ignore_users", [], "ID пользователей для игнорирования.", validator=loader.validators.Series(validator=loader.validators.TelegramID())),
         )
 
         self.chat_messages = defaultdict(lambda: {"name": "", "count": 0})
@@ -237,52 +237,49 @@ class ItachiAFKMod(loader.Module):
                 if str_id.startswith('-100'):
                     return int(str_id[4:])
             return chat_id
-        except:
+        except (ValueError, TypeError):
             return None
 
     def _is_chat_ignored(self, chat_id):
-        ignore_chats = self._get_config_value("ignore_chats", [])
-        if not ignore_chats:
-            return False
+        """Проверка игнорирования чата (как в TagWatcher)"""
         try:
             chat_id = int(chat_id)
+            return chat_id in self.config["ignore_chats"]
         except:
             return False
-        if chat_id in ignore_chats:
-            return True
-        normalized = self._normalize_chat_id(chat_id)
-        if normalized is None:
-            return False
-        for ignored in ignore_chats:
-            try:
-                if self._normalize_chat_id(ignored) == normalized:
-                    return True
-            except:
-                continue
-        return False
+
+
 
     def _is_user_ignored(self, user_id):
-        ignore_users = self._get_config_value("ignore_users", [])
-        if not ignore_users:
-            return False
+        """Проверка игнорирования пользователя (как в TagWatcher)"""
         try:
-            return int(user_id) in ignore_users
+            user_id = int(user_id)
+            return user_id in self.config["ignore_users"]
         except:
             return False
 
     def _should_ignore_message(self, message):
-        is_private = getattr(message.to_id, "user_id", None) == self._me.id
-        if is_private:
-            if hasattr(message, 'peer_id') and hasattr(message.peer_id, 'user_id'):
-                if self._is_user_ignored(message.peer_id.user_id):
-                    return True
-            if self._is_user_ignored(message.chat_id):
+        """Проверка игнорирования (как в TagWatcher)"""
+        try:
+        # Проверяем чат
+            chat_id = utils.get_chat_id(message)
+            if chat_id in self.config["ignore_chats"]:
                 return True
-        else:
-            if self._is_chat_ignored(message.chat_id):
+        
+        # Проверяем пользователя
+        # БЛЯТЬ, НО ТУТ НАДО await, А В МЕТОДЕ НЕЛЬЗЯ await
+        # ПОЭТОМУ ПРОСТО ПОЛУЧАЕМ sender_id ИЗ СООБЩЕНИЯ
+            sender_id = None
+            if hasattr(message, 'sender_id'):
+                sender_id = message.sender_id
+            elif hasattr(message, 'from_id'):
+                sender_id = message.from_id
+        
+            if sender_id and sender_id in self.config["ignore_users"]:
                 return True
+        except:
+            pass
         return False
-
     # ====================== КОМАНДЫ ======================
 
     @loader.command(
@@ -620,6 +617,11 @@ class ItachiAFKMod(loader.Module):
         pack - добавить стандартные пресеты (anime, strict)
         """
         args = utils.get_args_raw(message).split(maxsplit=1)
+        if not args or not args[0]:
+            await utils.answer(message,"<emoji document_id=5465665476971471368>❌</emoji> <b>Укажи аргументы!</b>\n<code>.afkpreset save/load/del/list/pack</code>")
+            return
+
+
         action = args[0].lower() if args else "list"
         name_preset = args[1] if len(args) > 1 else None
         presets = self._db.get(name, "presets", {})
@@ -871,27 +873,29 @@ class ItachiAFKMod(loader.Module):
     async def watcher(self, message):
         if not isinstance(message, types.Message):
             return
+        
+        # Проверяем игнорирование ДО логирования
         if self._should_ignore_message(message):
-            try:
-                user = await self.client.get_entity(message.sender_id)
-                if not user.is_self and not user.bot:
-                    self._log_message(user)
-            except:
-                pass
             return
+        
         if not (message.mentioned or getattr(message.to_id, "user_id", None) == self._me.id):
             return
+        
         afk_state = self._db.get(name, "afk", False)
         sleep_state = self._db.get(name, "sleep", False)
         if not afk_state and not sleep_state:
             return
+        
         try:
             user = await self.client.get_entity(message.sender_id)
         except:
             return
+        
         if user.is_self or user.bot:
             return
+        
         self._log_message(user)
+        
         if sleep_state:
             can_reply, current_time = self._check_cooldown(self.sleep_cooldowns, user.id, "sleep")
             if not can_reply:
@@ -900,6 +904,7 @@ class ItachiAFKMod(loader.Module):
             can_reply, current_time = self._check_cooldown(self.afk_cooldowns, user.id, "afk")
             if not can_reply:
                 return
+        
         username = self._get_username()
         if sleep_state:
             sleep_start = self._db.get(name, "sleep_start")
@@ -940,4 +945,5 @@ class ItachiAFKMod(loader.Module):
             media_url = self._get_config_value("AFK_MEDIA", "")
             self.afk_cooldowns = self._update_cooldown(self.afk_cooldowns, user.id, current_time)
             self._db.set(name, "afk_cooldowns", self.afk_cooldowns)
+        
         await self._send_response(message, text, media_url)
