@@ -332,3 +332,29 @@ class  Memprikol3(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+
+    async def суюcmd(self, message):
+        """| Там какой-то должен быть, там какая-то тактика должна быть, да? Ты типа становишься и вот так вот вот... Cу-ю-ю-ю-ю-ю-ю."""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/460",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def рисcmd(self, message):
+        """| Мистер Бист, рис, Мистер Бист ест рис, посмотри вниз, там Мистер Бист каратист, Мистер Бист юрист, Мистер Бист гитарист"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/461",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
