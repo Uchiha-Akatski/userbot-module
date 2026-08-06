@@ -4,7 +4,7 @@ from .. import loader
 
 @loader.tds
 class Dota2pack(loader.Module):
-    """Dota 2 pack"""
+    """Dota 2 pack от @Itachi_Uchiha_sss"""
 
     strings = {"name": "Dota2pack"}
 
@@ -497,6 +497,136 @@ class Dota2pack(loader.Module):
         await message.client.send_file(
             message.to_id,
             "https://t.me/gachi_mych/402",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def корольcmd(self, message):
+        """| Короля не убить"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/450",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def найсcmd(self, message):
+        """| Воу! Найс! Оце потужно!"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/451",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def пёсикcmd(self, message):
+        """| Пёсик, пёсик, аф-аф-аф!(Василиса)"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/452",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def ябыcmd(self, message):
+        """| Я бы ему прописал месяц без дрочки(Nix)"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/453",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def дотаcmd(self, message):
+        """| Жизнь одна, а Дота 2"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/454",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def добегcmd(self, message):
+        """| Это добег"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/455",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def задолбалиcmd(self, message):
+        """| Как же вы задолбали со своим Six Seven!"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/456",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def wwcmd(self, message):
+        """| WW! Завоз!(y0nd)"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/457",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def хз2cmd(self, message):
+        """| I'm out, brother"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/458",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def охаё2cmd(self, message):
+        """| Охаёшечки даттебаёшечки поанимешимся!(Василиса)"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/459",
             voice_note=True,
             reply_to=reply.id if reply else None,
         )
