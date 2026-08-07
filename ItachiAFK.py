@@ -732,7 +732,8 @@ class ItachiAFKMod(loader.Module):
                 await utils.answer(message, text)
             return
 
-        should_invert = force_invert or self._get_config_value("invert_media", False)
+
+        should_invert = not force_invert and self._get_config_value("invert_media", False)
 
         if reply_to:
             temp_msg = await self.client.send_message(message.chat_id, "🔄", reply_to=reply_to)
@@ -864,37 +865,37 @@ class ItachiAFKMod(loader.Module):
                     pass
 
     async def _show_banner(self, message, banner_type: str):
-        if banner_type == "afk":
-            url = self._get_config_value("AFK_MEDIA", "")
-            text = self.strings["showing_afk"]
-        elif banner_type == "sleep":
-            url = self._get_config_value("SLEEP_MEDIA", "")
-            text = self.strings["showing_sleep"]
-        elif banner_type == "afk_off":
-            url = self._get_config_value("AFK_OFF_MEDIA", "")
-            text = self.strings["showing_afk_off"]
-        elif banner_type == "sleep_off":
-            url = self._get_config_value("SLEEP_OFF_MEDIA", "")
-            text = self.strings["showing_sleep_off"]
-        else:
-            return
-    
-        if not url:
-            await utils.answer(message, self.strings["no_banner"])
-            return
-    
-        media = await self._prepare_media(url)
-        if media:
+            if banner_type == "afk":
+                url = self._get_config_value("AFK_MEDIA", "")
+                text = self.strings["showing_afk"]
+            elif banner_type == "sleep":
+                url = self._get_config_value("SLEEP_MEDIA", "")
+                text = self.strings["showing_sleep"]
+            elif banner_type == "afk_off":
+                url = self._get_config_value("AFK_OFF_MEDIA", "")
+                text = self.strings["showing_afk_off"]
+            elif banner_type == "sleep_off":
+                url = self._get_config_value("SLEEP_OFF_MEDIA", "")
+                text = self.strings["showing_sleep_off"]
+            else:
+                return
         
-            await self._send_with_invert(
-                message, 
-                text, 
-                media_url=url, 
-                reply_to=None,
-                force_invert=True
-            )
-        else:
-            await utils.answer(message, f"{text}\n\n<code>{url}</code>")
+            if not url:
+                await utils.answer(message, self.strings["no_banner"])
+                return
+        
+            media = await self._prepare_media(url)
+            if media:
+            
+                await self._send_with_invert(
+                    message, 
+                    text, 
+                    media_url=url, 
+                    reply_to=None,
+                    force_invert=True
+                )
+            else:
+                await utils.answer(message, f"{text}\n\n<code>{url}</code>")
 
     # ====================== WATCHER ======================
 
