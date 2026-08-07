@@ -12,7 +12,7 @@ try:
 except ImportError:
     InputMediaWebPage = None
 
-__version__ = (1, 14, 5)
+__version__ = (1, 15, 0)
 
 name = "ItachiAFK"
 logger = logging.getLogger(name)
@@ -105,7 +105,7 @@ class ItachiAFKMod(loader.Module):
             loader.ConfigValue("ignore_users", [], "ID пользователей для игнорирования.", validator=loader.validators.Series(validator=loader.validators.TelegramID())),
         )
 
-        self.chat_messages = defaultdict(lambda: {"name": "", "count": 0})
+        self.chat_messages = {}
         self._old_status = None
         self.afk_cooldowns = {}
         self.sleep_cooldowns = {}
@@ -188,6 +188,20 @@ class ItachiAFKMod(loader.Module):
         self.username = self._me.username or self._me.first_name
         self.afk_cooldowns = self._db.get(name, "afk_cooldowns", {})
         self.sleep_cooldowns = self._db.get(name, "sleep_cooldowns", {})
+        
+        saved_status = self._db.get(name, "old_status", None)
+        if saved_status:
+            try:
+                if isinstance(saved_status, dict):
+                    self._old_status = types.EmojiStatus(**saved_status)
+                else:
+                    self._old_status = saved_status
+            except Exception as e:
+                logger.error(f"Не удалось восстановить _old_status из БД: {e}")
+
+        saved_messages = self._db.get(name, "chat_messages", {})
+        self.chat_messages = saved_messages if isinstance(saved_messages, dict) else {}
+
         try:
             if self.config["cooldown_seconds"] < 5:
                 self.config["cooldown_seconds"] = 60
@@ -208,10 +222,35 @@ class ItachiAFKMod(loader.Module):
             raise ValueError(self.strings["cooldown_invalid"])
         return value
 
+    def _save_old_status(self, status):
+        self._old_status = status
+        if status:
+            if hasattr(status, "document_id"):
+                self._db.set(name, "old_status", {"document_id": status.document_id})
+            else:
+                self._db.set(name, "old_status", status)
+        else:
+            self._db.set(name, "old_status", None)
+
     def _log_message(self, user):
-        data = self.chat_messages[user.id]
+        user_id = str(user.id)
+        
+        if user_id not in self.chat_messages:
+            self.chat_messages[user_id] = {"name": "", "count": 0}
+        
+        data = self.chat_messages[user_id]
         data["name"] = utils.escape_html(user.first_name or "Без имени")
         data["count"] += 1
+        self._db.set(name, "chat_messages", self.chat_messages)
+
+        last_users = self._db.get(name, "last_users", {})
+        last_users[user_id] = {
+            "id": user.id,
+            "name": data["name"],
+            "count": data["count"],
+            "last_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        self._db.set(name, "last_users", last_users)
 
     def _format_afk_log(self):
         if not self.chat_messages:
@@ -241,7 +280,6 @@ class ItachiAFKMod(loader.Module):
             return None
 
     def _is_chat_ignored(self, chat_id):
-        """Проверка игнорирования чата (как в TagWatcher)"""
         try:
             chat_id = int(chat_id)
             return chat_id in self.config["ignore_chats"]
@@ -249,7 +287,6 @@ class ItachiAFKMod(loader.Module):
             return False
 
     def _is_user_ignored(self, user_id):
-        """Проверка игнорирования пользователя (как в TagWatcher)"""
         try:
             user_id = int(user_id)
             return user_id in self.config["ignore_users"]
@@ -257,13 +294,10 @@ class ItachiAFKMod(loader.Module):
             return False
 
     def _should_ignore_message(self, message):
-        """Проверка игнорирования (как в TagWatcher)"""
         try:
-        
             chat_id = utils.get_chat_id(message)
             if chat_id in self.config["ignore_chats"]:
                 return True
-        
 
             sender_id = None
             if hasattr(message, 'sender_id'):
@@ -276,6 +310,7 @@ class ItachiAFKMod(loader.Module):
         except:
             pass
         return False
+
     # ====================== КОМАНДЫ ======================
 
     @loader.command(
@@ -285,7 +320,6 @@ class ItachiAFKMod(loader.Module):
         alias="ignchats",
     )
     async def ignorechats(self, message):
-        """Показать список игнорируемых чатов"""
         ignore_chats = self._get_config_value("ignore_chats", [])
         if not ignore_chats:
             await utils.answer(message, self.strings["no_ignored_chats"])
@@ -300,7 +334,6 @@ class ItachiAFKMod(loader.Module):
         alias="ignusers",
     )
     async def ignoreusers(self, message):
-        """Показать список игнорируемых пользователей"""
         ignore_users = self._get_config_value("ignore_users", [])
         if not ignore_users:
             await utils.answer(message, self.strings["no_ignored_users"])
@@ -315,7 +348,6 @@ class ItachiAFKMod(loader.Module):
         alias="a",
     )
     async def afk(self, message):
-        """Включить AFK режим. Можно указать причину и время возвращения через |"""
         args = utils.get_args_raw(message)
         reason = None
         time_val = None
@@ -328,7 +360,7 @@ class ItachiAFKMod(loader.Module):
             try:
                 me = await self.client.get_me()
                 if me.emoji_status:
-                    self._old_status = me.emoji_status
+                    self._save_old_status(me.emoji_status)
                 await self.client(
                     functions.account.UpdateEmojiStatusRequest(
                         emoji_status=types.EmojiStatus(
@@ -341,9 +373,14 @@ class ItachiAFKMod(loader.Module):
         self._db.set(name, "afk", reason or True)
         self._db.set(name, "gone", time.time())
         self._db.set(name, "return_time", time_val)
-        self.chat_messages.clear()
+        
+        self.chat_messages = {}
+        self._db.set(name, "chat_messages", {})
+        self._db.set(name, "last_users", {})
+        
         self.afk_cooldowns = {}
         self._db.set(name, "afk_cooldowns", self.afk_cooldowns)
+
         username = self._get_username()
         reason_text = ""
         if reason:
@@ -367,7 +404,6 @@ class ItachiAFKMod(loader.Module):
         alias="back",
     )
     async def unafk(self, message):
-        """Выключить AFK режим и показать кто писал"""
         gone = self._db.get(name, "gone")
         duration_text = ""
         if gone:
@@ -381,8 +417,9 @@ class ItachiAFKMod(loader.Module):
         self._db.set(name, "return_time", None)
         self.afk_cooldowns = {}
         self._db.set(name, "afk_cooldowns", self.afk_cooldowns)
+
         log_text = self._format_afk_log()
-        self.chat_messages.clear()
+
         if self._get_config_value("setPremiumStatus", True) and self._old_status:
             try:
                 await self.client(
@@ -392,9 +429,15 @@ class ItachiAFKMod(loader.Module):
                 )
             except Exception as e:
                 logger.error(f"Не удалось восстановить статус: {e}")
+        self._save_old_status(None)
+
         username = self._get_username()
         full_text = self._get_config_value("MSG_AFK_OFF", self.strings["back"]).format(username=username) + duration_text + (log_text or "")
         await self._send_command_response(message, full_text, self._get_config_value("AFK_OFF_MEDIA", ""))
+        
+        self.chat_messages = {}
+        self._db.set(name, "chat_messages", {})
+        self._db.set(name, "last_users", {})
 
     @loader.command(
         ru_doc="[время] — Включить SLEEP режим",
@@ -403,14 +446,13 @@ class ItachiAFKMod(loader.Module):
         alias="gn",
     )
     async def sleep(self, message):
-        """Включить SLEEP режим. Можно указать время пробуждения"""
         args = utils.get_args_raw(message)
         wake_time = args if args else None
         if self._get_config_value("setPremiumStatus", True):
             try:
                 me = await self.client.get_me()
                 if me.emoji_status:
-                    self._old_status = me.emoji_status
+                    self._save_old_status(me.emoji_status)
                 await self.client(
                     functions.account.UpdateEmojiStatusRequest(
                         emoji_status=types.EmojiStatus(
@@ -423,9 +465,14 @@ class ItachiAFKMod(loader.Module):
         self._db.set(name, "sleep", True)
         self._db.set(name, "sleep_start", time.time())
         self._db.set(name, "wake_time", wake_time)
-        self.chat_messages.clear()
+        
+        self.chat_messages = {}
+        self._db.set(name, "chat_messages", {})
+        self._db.set(name, "last_users", {})
+        
         self.sleep_cooldowns = {}
         self._db.set(name, "sleep_cooldowns", self.sleep_cooldowns)
+
         username = self._get_username()
         wake_text = self._get_config_value("MSG_WAKE_TIME", self.strings["wake_text"]).format(utils.escape_html(wake_time)) if wake_time else ""
         preview = self._get_config_value("MSG_SLEEP_REPLY", self.strings["sleep_msg"]).format(
@@ -443,7 +490,6 @@ class ItachiAFKMod(loader.Module):
         alias="wake",
     )
     async def unsleep(self, message):
-        """Выключить SLEEP режим и показать кто писал"""
         sleep_start = self._db.get(name, "sleep_start")
         duration_text = ""
         if sleep_start:
@@ -457,8 +503,9 @@ class ItachiAFKMod(loader.Module):
         self._db.set(name, "wake_time", None)
         self.sleep_cooldowns = {}
         self._db.set(name, "sleep_cooldowns", self.sleep_cooldowns)
+
         log_text = self._format_afk_log()
-        self.chat_messages.clear()
+
         if self._get_config_value("setPremiumStatus", True) and self._old_status:
             try:
                 await self.client(
@@ -468,9 +515,15 @@ class ItachiAFKMod(loader.Module):
                 )
             except Exception as e:
                 logger.error(f"Не удалось восстановить статус: {e}")
+        self._save_old_status(None)
+
         username = self._get_username()
         full_text = self._get_config_value("MSG_SLEEP_OFF", self.strings["sleep_off"]).format(username=username) + duration_text + (log_text or "")
         await self._send_command_response(message, full_text, self._get_config_value("SLEEP_OFF_MEDIA", ""))
+        
+        self.chat_messages = {}
+        self._db.set(name, "chat_messages", {})
+        self._db.set(name, "last_users", {})
 
     @loader.command(
         ru_doc="<секунды> — Установить время кулдауна между AFK-ответами (минимум 5 секунд)",
@@ -479,7 +532,6 @@ class ItachiAFKMod(loader.Module):
         alias="afkcd",
     )
     async def afkcooldown(self, message):
-        """Установить время кулдауна между AFK-ответами одному пользователю (минимум 5 секунд)"""
         args = utils.get_args_raw(message)
         try:
             new_cooldown = int(args)
@@ -496,7 +548,6 @@ class ItachiAFKMod(loader.Module):
         alias="addafk",
     )
     async def add_afk_banner(self, message):
-        """Ответь на медиа - Установить баннер для AFK режима"""
         await self._add_banner(message, "afk")
 
     @loader.command(
@@ -506,7 +557,6 @@ class ItachiAFKMod(loader.Module):
         alias="addsleep",
     )
     async def add_sleep_banner(self, message):
-        """Ответь на медиа - Установить баннер для SLEEP режима"""
         await self._add_banner(message, "sleep")
 
     @loader.command(
@@ -516,7 +566,6 @@ class ItachiAFKMod(loader.Module):
         alias="addafkoff",
     )
     async def add_afkoff_banner(self, message):
-        """Ответь на медиа - Установить баннер для выхода из AFK"""
         await self._add_banner(message, "afk_off")
 
     @loader.command(
@@ -526,7 +575,6 @@ class ItachiAFKMod(loader.Module):
         alias="addsleepoff",
     )
     async def add_sleepoff_banner(self, message):
-        """Ответь на медиа - Установить баннер для выхода из SLEEP"""
         await self._add_banner(message, "sleep_off")
 
     @loader.command(
@@ -536,7 +584,6 @@ class ItachiAFKMod(loader.Module):
         alias="showafk",
     )
     async def show_afk_banner(self, message):
-        """Показать текущий баннер AFK"""
         await self._show_banner(message, "afk")
 
     @loader.command(
@@ -546,7 +593,6 @@ class ItachiAFKMod(loader.Module):
         alias="showsleep",
     )
     async def show_sleep_banner(self, message):
-        """Показать текущий баннер SLEEP"""
         await self._show_banner(message, "sleep")
 
     @loader.command(
@@ -556,7 +602,6 @@ class ItachiAFKMod(loader.Module):
         alias="showafkoff",
     )
     async def show_afkoff_banner(self, message):
-        """Показать текущий баннер AFK OFF"""
         await self._show_banner(message, "afk_off")
 
     @loader.command(
@@ -566,7 +611,6 @@ class ItachiAFKMod(loader.Module):
         alias="showsleepoff",
     )
     async def show_sleepoff_banner(self, message):
-        """Показать текущий баннер SLEEP OFF"""
         await self._show_banner(message, "sleep_off")
 
     @loader.command(
@@ -576,7 +620,6 @@ class ItachiAFKMod(loader.Module):
         alias="delafk",
     )
     async def del_afk_banner(self, message):
-        """Удалить баннер AFK"""
         self.config["AFK_MEDIA"] = ""
         self._db.set(name, "afk_banner_url", "")
         await utils.answer(message, self.strings["cleared_afk"])
@@ -588,7 +631,6 @@ class ItachiAFKMod(loader.Module):
         alias="delsleep",
     )
     async def del_sleep_banner(self, message):
-        """Удалить баннер SLEEP"""
         self.config["SLEEP_MEDIA"] = ""
         self._db.set(name, "sleep_banner_url", "")
         await utils.answer(message, self.strings["cleared_sleep"])
@@ -600,7 +642,6 @@ class ItachiAFKMod(loader.Module):
         alias="delafkoff",
     )
     async def del_afkoff_banner(self, message):
-        """Удалить баннер AFK OFF"""
         self.config["AFK_OFF_MEDIA"] = ""
         self._db.set(name, "afk_off_banner_url", "")
         await utils.answer(message, self.strings["cleared_afk_off"])
@@ -612,7 +653,6 @@ class ItachiAFKMod(loader.Module):
         alias="delsleepoff",
     )
     async def del_sleepoff_banner(self, message):
-        """Удалить баннер SLEEP OFF"""
         self.config["SLEEP_OFF_MEDIA"] = ""
         self._db.set(name, "sleep_off_banner_url", "")
         await utils.answer(message, self.strings["cleared_sleep_off"])
@@ -624,19 +664,10 @@ class ItachiAFKMod(loader.Module):
         alias="preset",
     )
     async def afkpreset(self, message):
-        """
-        Управление пресетами настроек.
-        save [name] - сохранить текущие настройки
-        load [name] - загрузить пресет
-        del [name] - удалить пресет
-        list - показать все пресеты
-        pack - добавить стандартные пресеты (anime, strict)
-        """
         args = utils.get_args_raw(message).split(maxsplit=1)
         if not args or not args[0]:
-            await utils.answer(message,"<emoji document_id=5465665476971471368>❌</emoji> <b>Укажи аргументы!</b>\n<code>.afkpreset save/load/del/list/pack</code>")
+            await utils.answer(message, "<emoji document_id=5465665476971471368>❌</emoji> <b>Укажи аргументы!</b>\n<code>.afkpreset save/load/del/list/pack</code>")
             return
-
 
         action = args[0].lower() if args else "list"
         name_preset = args[1] if len(args) > 1 else None
@@ -731,7 +762,6 @@ class ItachiAFKMod(loader.Module):
             else:
                 await utils.answer(message, text)
             return
-
 
         should_invert = not force_invert and self._get_config_value("invert_media", False)
 
@@ -865,37 +895,36 @@ class ItachiAFKMod(loader.Module):
                     pass
 
     async def _show_banner(self, message, banner_type: str):
-            if banner_type == "afk":
-                url = self._get_config_value("AFK_MEDIA", "")
-                text = self.strings["showing_afk"]
-            elif banner_type == "sleep":
-                url = self._get_config_value("SLEEP_MEDIA", "")
-                text = self.strings["showing_sleep"]
-            elif banner_type == "afk_off":
-                url = self._get_config_value("AFK_OFF_MEDIA", "")
-                text = self.strings["showing_afk_off"]
-            elif banner_type == "sleep_off":
-                url = self._get_config_value("SLEEP_OFF_MEDIA", "")
-                text = self.strings["showing_sleep_off"]
-            else:
-                return
-        
-            if not url:
-                await utils.answer(message, self.strings["no_banner"])
-                return
-        
-            media = await self._prepare_media(url)
-            if media:
-            
-                await self._send_with_invert(
-                    message, 
-                    text, 
-                    media_url=url, 
-                    reply_to=None,
-                    force_invert=True
-                )
-            else:
-                await utils.answer(message, f"{text}\n\n<code>{url}</code>")
+        if banner_type == "afk":
+            url = self._get_config_value("AFK_MEDIA", "")
+            text = self.strings["showing_afk"]
+        elif banner_type == "sleep":
+            url = self._get_config_value("SLEEP_MEDIA", "")
+            text = self.strings["showing_sleep"]
+        elif banner_type == "afk_off":
+            url = self._get_config_value("AFK_OFF_MEDIA", "")
+            text = self.strings["showing_afk_off"]
+        elif banner_type == "sleep_off":
+            url = self._get_config_value("SLEEP_OFF_MEDIA", "")
+            text = self.strings["showing_sleep_off"]
+        else:
+            return
+    
+        if not url:
+            await utils.answer(message, self.strings["no_banner"])
+            return
+    
+        media = await self._prepare_media(url)
+        if media:
+            await self._send_with_invert(
+                message, 
+                text, 
+                media_url=url, 
+                reply_to=None,
+                force_invert=True
+            )
+        else:
+            await utils.answer(message, f"{text}\n\n<code>{url}</code>")
 
     # ====================== WATCHER ======================
 
@@ -903,36 +932,28 @@ class ItachiAFKMod(loader.Module):
         if not isinstance(message, types.Message):
             return
     
-        
         is_ignored = self._should_ignore_message(message)
     
-        
         if not (message.mentioned or getattr(message.to_id, "user_id", None) == self._me.id):
             return
-    
     
         afk_state = self._db.get(name, "afk", False)
         sleep_state = self._db.get(name, "sleep", False)
         if not afk_state and not sleep_state:
             return
     
-    
         try:
             user = await self.client.get_entity(message.sender_id)
         except:
             return
     
-    
         if user.is_self or user.bot:
             return
     
-    
         self._log_message(user)
-    
     
         if is_ignored:
             return
-    
     
         if sleep_state:
             can_reply, current_time = self._check_cooldown(self.sleep_cooldowns, user.id, "sleep")
@@ -942,7 +963,6 @@ class ItachiAFKMod(loader.Module):
             can_reply, current_time = self._check_cooldown(self.afk_cooldowns, user.id, "afk")
             if not can_reply:
                 return
-    
     
         username = self._get_username()
     
