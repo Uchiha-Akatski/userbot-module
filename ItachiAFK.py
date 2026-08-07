@@ -12,7 +12,7 @@ try:
 except ImportError:
     InputMediaWebPage = None
 
-__version__ = (1, 14, 0)
+__version__ = (1, 14, 5)
 
 name = "ItachiAFK"
 logger = logging.getLogger(name)
@@ -57,28 +57,28 @@ class ItachiAFKMod(loader.Module):
         "presets_list": "<emoji document_id=5870730156259152122>📋</emoji> <b>Список пресетов:</b>\n\n",
         "cooldown_set": "<emoji document_id=5870730156259152122>⏰</emoji> <b>Кулдаун между AFK-ответами установлен на: {} секунд</b>",
         "cooldown_invalid": "<emoji document_id=5870730156259152122>❌</emoji> <b>Кулдаун должен быть целым числом и не менее 5 секунд!</b>",
-        "no_reply": "❌ <b>Нужно ответить на медиа</b>",
-        "no_media": "❌ <b>В ответе нет медиа</b>",
-        "uploading": "📤 <b>Загружаю баннер...</b>",
-        "added_afk": "✅ <b>Баннер для AFK установлен!</b>",
-        "added_sleep": "✅ <b>Баннер для SLEEP установлен!</b>",
-        "added_afk_off": "✅ <b>Баннер для AFK OFF установлен!</b>",
-        "added_sleep_off": "✅ <b>Баннер для SLEEP OFF установлен!</b>",
-        "failed": "❌ <b>Не удалось загрузить баннер</b>",
-        "no_requests": "❌ <b>Установи requests: pip install requests</b>",
-        "showing_afk": "🖼️ <b>Текущий баннер AFK:</b>",
-        "showing_sleep": "🖼️ <b>Текущий баннер SLEEP:</b>",
-        "showing_afk_off": "🖼️ <b>Текущий баннер AFK OFF:</b>",
-        "showing_sleep_off": "🖼️ <b>Текущий баннер SLEEP OFF:</b>",
-        "no_banner": "📭 <b>Баннер для этого типа не установлен</b>",
-        "cleared_afk": "🗑️ <b>Баннер AFK удалён</b>",
-        "cleared_sleep": "🗑️ <b>Баннер SLEEP удалён</b>",
-        "cleared_afk_off": "🗑️ <b>Баннер AFK OFF удалён</b>",
-        "cleared_sleep_off": "🗑️ <b>Баннер SLEEP OFF удалён</b>",
+        "no_reply": "<emoji document_id=5870730156259152122>❌</emoji> <b>Нужно ответить на медиа</b>",
+        "no_media": "<emoji document_id=5870730156259152122>❌</emoji> <b>В ответе нет медиа</b>",
+        "uploading": "<emoji document_id=5445355530111437729>📤</emoji> <b>Загружаю баннер...</b>",
+        "added_afk": "<emoji document_id=5206607081334906820>✔️</emoji> <b>Баннер для AFK установлен!</b>",
+        "added_sleep": "<emoji document_id=5206607081334906820>✔️</emoji> <b>Баннер для SLEEP установлен!</b>",
+        "added_afk_off": "<emoji document_id=5206607081334906820>✔️</emoji> <b>Баннер для AFK OFF установлен!</b>",
+        "added_sleep_off": "<emoji document_id=5206607081334906820>✔️</emoji> <b>Баннер для SLEEP OFF установлен!</b>",
+        "failed": "<emoji document_id=5870730156259152122>❌</emoji> <b>Не удалось загрузить баннер</b>",
+        "no_requests": "<emoji document_id=5870730156259152122>❌</emoji> <b>Установи requests: pip install requests</b>",
+        "showing_afk": "<emoji document_id=5766879414704935108>🖼</emoji> <b>Текущий баннер AFK:</b>",
+        "showing_sleep": "<emoji document_id=5766879414704935108>🖼</emoji> <b>Текущий баннер SLEEP:</b>",
+        "showing_afk_off": "<emoji document_id=5766879414704935108>🖼</emoji> <b>Текущий баннер AFK OFF:</b>",
+        "showing_sleep_off": "<emoji document_id=5766879414704935108>🖼</emoji> <b>Текущий баннер SLEEP OFF:</b>",
+        "no_banner": "<emoji document_id=5352896944496728039>📭</emoji> <b>Баннер для этого типа не установлен</b>",
+        "cleared_afk": "<emoji document_id=5255831443816327915>🗑</emoji> <b>Баннер AFK удалён</b>",
+        "cleared_sleep": "<emoji document_id=5255831443816327915>🗑</emoji> <b>Баннер SLEEP удалён</b>",
+        "cleared_afk_off": "<emoji document_id=5255831443816327915>🗑</emoji> <b>Баннер AFK OFF удалён</b>",
+        "cleared_sleep_off": "<emoji document_id=5255831443816327915>🗑</emoji> <b>Баннер SLEEP OFF удалён</b>",
         "ignore_chats_list": "<emoji document_id=5199750217586459631>📄</emoji> <b>Игнорируемые чаты:</b>\n{}",
         "ignore_users_list": "<emoji document_id=5199750217586459631>📄</emoji> <b>Игнорируемые пользователи:</b>\n{}",
-        "no_ignored_chats": "📭 <b>Нет игнорируемых чатов</b>",
-        "no_ignored_users": "📭 <b>Нет игнорируемых пользователей</b>",
+        "no_ignored_chats": "<emoji document_id=5352896944496728039>📭</emoji> <b>Нет игнорируемых чатов</b>",
+        "no_ignored_users": "<emoji document_id=5352896944496728039>📭</emoji> <b>Нет игнорируемых пользователей</b>",
         "config_edit_hint": "\n\n<emoji document_id=5222108309795908493>✨</emoji> <b>Для изменения списка отредактируй конфиг модуля:</b>\n<code>.cfg ItachiAFK</code>",
     }
 
@@ -248,8 +248,6 @@ class ItachiAFKMod(loader.Module):
         except:
             return False
 
-
-
     def _is_user_ignored(self, user_id):
         """Проверка игнорирования пользователя (как в TagWatcher)"""
         try:
@@ -261,14 +259,12 @@ class ItachiAFKMod(loader.Module):
     def _should_ignore_message(self, message):
         """Проверка игнорирования (как в TagWatcher)"""
         try:
-        # Проверяем чат
+        
             chat_id = utils.get_chat_id(message)
             if chat_id in self.config["ignore_chats"]:
                 return True
         
-        # Проверяем пользователя
-        # БЛЯТЬ, НО ТУТ НАДО await, А В МЕТОДЕ НЕЛЬЗЯ await
-        # ПОЭТОМУ ПРОСТО ПОЛУЧАЕМ sender_id ИЗ СООБЩЕНИЯ
+
             sender_id = None
             if hasattr(message, 'sender_id'):
                 sender_id = message.sender_id
@@ -286,6 +282,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="— Показать список игнорируемых чатов",
         en_doc="— Show ignored chats list",
         ua_doc="— Показати список ігнорованих чатів",
+        alias="ignchats",
     )
     async def ignorechats(self, message):
         """Показать список игнорируемых чатов"""
@@ -300,6 +297,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="— Показать список игнорируемых пользователей",
         en_doc="— Show ignored users list",
         ua_doc="— Показати список ігнорованих користувачів",
+        alias="ignusers",
     )
     async def ignoreusers(self, message):
         """Показать список игнорируемых пользователей"""
@@ -314,6 +312,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="[причина] | [время] — Включить AFK режим",
         en_doc="[reason] | [time] — Enable AFK mode",
         ua_doc="[причина] | [час] — Увімкнути AFK",
+        alias="a",
     )
     async def afk(self, message):
         """Включить AFK режим. Можно указать причину и время возвращения через |"""
@@ -365,6 +364,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="Выключить AFK режим",
         en_doc="Disable AFK mode",
         ua_doc="Вимкнути AFK",
+        alias="back",
     )
     async def unafk(self, message):
         """Выключить AFK режим и показать кто писал"""
@@ -400,6 +400,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="[время] — Включить SLEEP режим",
         en_doc="[time] — Enable SLEEP mode",
         ua_doc="[час] — Увімкнути SLEEP",
+        alias="gn",
     )
     async def sleep(self, message):
         """Включить SLEEP режим. Можно указать время пробуждения"""
@@ -439,6 +440,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="Выключить SLEEP режим",
         en_doc="Disable SLEEP mode",
         ua_doc="Вимкнути SLEEP",
+        alias="wake",
     )
     async def unsleep(self, message):
         """Выключить SLEEP режим и показать кто писал"""
@@ -474,6 +476,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="<секунды> — Установить время кулдауна между AFK-ответами (минимум 5 секунд)",
         en_doc="<seconds> — Set cooldown time between AFK responses (minimum 5 seconds)",
         ua_doc="<секунди> — Встановити час кулдауну між AFK-відповідями (мінімум 5 секунд)",
+        alias="afkcd",
     )
     async def afkcooldown(self, message):
         """Установить время кулдауна между AFK-ответами одному пользователю (минимум 5 секунд)"""
@@ -490,6 +493,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="Ответь на медиа - Установить баннер для AFK режима",
         en_doc="Reply to media - Set banner for AFK mode",
         ua_doc="Відповісти на медіа — Встановити банер для режиму AFK",
+        alias="addafk",
     )
     async def add_afk_banner(self, message):
         """Ответь на медиа - Установить баннер для AFK режима"""
@@ -499,6 +503,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="Ответь на медиа - Установить баннер для SLEEP режима",
         en_doc="Reply to media - Set banner for SLEEP mode",
         ua_doc="Відповісти на медіа — Встановити банер для режиму SLEEP",
+        alias="addsleep",
     )
     async def add_sleep_banner(self, message):
         """Ответь на медиа - Установить баннер для SLEEP режима"""
@@ -508,6 +513,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="Ответь на медиа - Установить баннер для выхода из AFK",
         en_doc="Reply to media - Set banner for AFK OFF mode",
         ua_doc="Відповісти на медіа - Встановити банер для виходу з AFK",
+        alias="addafkoff",
     )
     async def add_afkoff_banner(self, message):
         """Ответь на медиа - Установить баннер для выхода из AFK"""
@@ -517,6 +523,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="Ответь на медиа - Установить баннер для выхода из SLEEP",
         en_doc="Reply to media - Set banner for SLEEP OFF mode",
         ua_doc="Відповісти на медіа - Встановити банер для виходу із SLEEP",
+        alias="addsleepoff",
     )
     async def add_sleepoff_banner(self, message):
         """Ответь на медиа - Установить баннер для выхода из SLEEP"""
@@ -526,6 +533,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="Показать текущий баннер AFK",
         en_doc="Show current AFK banner",
         ua_doc="Показати поточний банер AFK",
+        alias="showafk",
     )
     async def show_afk_banner(self, message):
         """Показать текущий баннер AFK"""
@@ -535,6 +543,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="Показать текущий баннер SLEEP",
         en_doc="Show current SLEEP banner",
         ua_doc="Показати поточний банер SLEEP",
+        alias="showsleep",
     )
     async def show_sleep_banner(self, message):
         """Показать текущий баннер SLEEP"""
@@ -544,6 +553,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="Показать текущий баннер AFK OFF",
         en_doc="Show current AFK OFF banner",
         ua_doc="Показати поточний банер AFK OFF",
+        alias="showafkoff",
     )
     async def show_afkoff_banner(self, message):
         """Показать текущий баннер AFK OFF"""
@@ -553,6 +563,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="Показать текущий баннер SLEEP OFF",
         en_doc="Show current SLEEP OFF banner",
         ua_doc="Показати поточний банер SLEEP OFF",
+        alias="showsleepoff",
     )
     async def show_sleepoff_banner(self, message):
         """Показать текущий баннер SLEEP OFF"""
@@ -562,6 +573,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="Удалить баннер AFK",
         en_doc="Delete AFK banner",
         ua_doc="Видалити банер AFK",
+        alias="delafk",
     )
     async def del_afk_banner(self, message):
         """Удалить баннер AFK"""
@@ -573,6 +585,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="Удалить баннер SLEEP",
         en_doc="Delete SLEEP banner",
         ua_doc="Видалити банер SLEEP",
+        alias="delsleep",
     )
     async def del_sleep_banner(self, message):
         """Удалить баннер SLEEP"""
@@ -584,6 +597,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="Удалить баннер AFK OFF",
         en_doc="Delete AFK OFF banner",
         ua_doc="Видалити банер AFK OFF",
+        alias="delafkoff",
     )
     async def del_afkoff_banner(self, message):
         """Удалить баннер AFK OFF"""
@@ -595,6 +609,7 @@ class ItachiAFKMod(loader.Module):
         ru_doc="Удалить баннер SLEEP OFF",
         en_doc="Delete SLEEP OFF banner",
         ua_doc="Видалити банер SLEEP OFF",
+        alias="delsleepoff",
     )
     async def del_sleepoff_banner(self, message):
         """Удалить баннер SLEEP OFF"""
@@ -606,6 +621,7 @@ class ItachiAFKMod(loader.Module):
         en_doc="[save/load/del/list/pack] [name] — Preset manager",
         ru_doc="[save/load/del/list/pack] [название] — Управление пресетами",
         ua_doc="[save/load/del/list/pack] [назва] — Керування пресетами",
+        alias="preset",
     )
     async def afkpreset(self, message):
         """
@@ -707,7 +723,7 @@ class ItachiAFKMod(loader.Module):
                 pass
         return media_url
 
-    async def _send_with_invert(self, message, text: str, media_url: str = None, reply_to=None):
+    async def _send_with_invert(self, message, text: str, media_url: str = None, reply_to=None, force_invert=False):
         media = await self._prepare_media(media_url)
         if media is None:
             if reply_to:
@@ -715,6 +731,9 @@ class ItachiAFKMod(loader.Module):
             else:
                 await utils.answer(message, text)
             return
+
+        should_invert = force_invert or self._get_config_value("invert_media", False)
+
         if reply_to:
             temp_msg = await self.client.send_message(message.chat_id, "🔄", reply_to=reply_to)
         else:
@@ -723,7 +742,7 @@ class ItachiAFKMod(loader.Module):
             temp_msg,
             text,
             file=media,
-            invert_media=self._get_config_value("invert_media", False),
+            invert_media=should_invert,
         )
 
     async def _send_response(self, message, text: str, media_url: str = None):
@@ -859,12 +878,21 @@ class ItachiAFKMod(loader.Module):
             text = self.strings["showing_sleep_off"]
         else:
             return
+    
         if not url:
             await utils.answer(message, self.strings["no_banner"])
             return
+    
         media = await self._prepare_media(url)
         if media:
-            await self._send_command_response(message, text, url)
+        
+            await self._send_with_invert(
+                message, 
+                text, 
+                media_url=url, 
+                reply_to=None,
+                force_invert=True
+            )
         else:
             await utils.answer(message, f"{text}\n\n<code>{url}</code>")
 
@@ -874,37 +902,37 @@ class ItachiAFKMod(loader.Module):
         if not isinstance(message, types.Message):
             return
     
-        # Проверяем, нужно ли игнорировать ОТВЕТ (но логировать будем все равно)
+        
         is_ignored = self._should_ignore_message(message)
     
-        # Проверяем, что это упоминание или ЛС
+        
         if not (message.mentioned or getattr(message.to_id, "user_id", None) == self._me.id):
             return
     
-    # Проверяем AFK/SLEEP статус
+    
         afk_state = self._db.get(name, "afk", False)
         sleep_state = self._db.get(name, "sleep", False)
         if not afk_state and not sleep_state:
             return
     
-    # Получаем пользователя
+    
         try:
             user = await self.client.get_entity(message.sender_id)
         except:
             return
     
-    # Игнорируем себя и ботов
+    
         if user.is_self or user.bot:
             return
     
-    # ЛОГИРУЕМ ВСЕГДА! Даже если в игноре
+    
         self._log_message(user)
     
-    # Если сообщение от игнорируемого пользователя/чата - не отвечаем
+    
         if is_ignored:
             return
     
-    # Проверяем кулдаун
+    
         if sleep_state:
             can_reply, current_time = self._check_cooldown(self.sleep_cooldowns, user.id, "sleep")
             if not can_reply:
@@ -914,7 +942,7 @@ class ItachiAFKMod(loader.Module):
             if not can_reply:
                 return
     
-    # Формируем и отправляем ответ
+    
         username = self._get_username()
     
         if sleep_state:
