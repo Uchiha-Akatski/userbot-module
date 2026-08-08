@@ -1,4 +1,6 @@
 # meta developer: @Itachi_Uchiha_sss, @Wers1xx
+#meta banner: https://raw.githubusercontent.com/Uchiha-Akatski/itachi/main/photo_2026-08-08_02-10-27.jpg
+#meta pic: https://raw.githubusercontent.com/Uchiha-Akatski/itachi/main/photo_2026-08-08_02-10-27.jpg
 
 from .. import loader, utils
 from telethon import types, functions
