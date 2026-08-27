@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 2, 5)
+__version__ = (2, 2, 10)
 # -- version --
 
 # meta developer: @Itachi_Uchiha_sss
@@ -8,7 +8,7 @@ import requests
 from requests import RequestException
 from .. import loader, utils
 from telethon.tl.types import Message 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import time
 import asyncio
 
@@ -120,7 +120,18 @@ class DotaStatsMod(loader.Module):
     def __init__(self):
         self._pages_cache = {}
         self.config = loader.ModuleConfig(
-            "PLAYER_ID", None, "Steam ID игрока"
+            loader.ConfigValue(
+                "PLAYER_ID",
+                None,
+                "Steam ID игрока",
+                validator=loader.validators.String()
+            ),
+            loader.ConfigValue(
+                "TIMEZONE",
+                2,
+                "Часовой пояс (0=UTC+0, 1=UTC+1, 2=UTC+2, 3=UTC+3, 4=UTC+4, 5=UTC+5, 6=UTC+6, 7=UTC+7, 8=UTC+8, 9=UTC+9, 10=UTC+10, 11=UTC+11, 12=UTC+12, -1=UTC-1... -12=UTC-12)",
+                validator=loader.validators.Choice([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12])
+            )
         )
         self.heroes = {}
         self.item_emojis = {            
@@ -641,29 +652,24 @@ class DotaStatsMod(loader.Module):
 
     def _format_match_time(self, start_time: int) -> str:
         try:
-            match_time = datetime.fromtimestamp(start_time, tz=timezone.utc)
-            now = datetime.now(timezone.utc)
+            tz_offset = int(self.config["TIMEZONE"])
+            match_time = datetime.fromtimestamp(start_time, tz=timezone.utc) + timedelta(hours=tz_offset)
+            now = datetime.now(timezone.utc) + timedelta(hours=tz_offset)
             time_diff = now - match_time
             
-            if time_diff.days > 0:
-                if time_diff.days == 1:
-                    return f"1 день назад ({match_time.strftime('%d.%m.%Y %H:%M')})"
-                else:
-                    return f"{time_diff.days} дней назад ({match_time.strftime('%d.%m.%Y %H:%M')})"
-            elif time_diff.seconds >= 3600:
-                hours = time_diff.seconds // 3600
-                if hours == 1:
-                    return f"1 час назад ({match_time.strftime('%d.%m.%Y %H:%M')})"
-                else:
-                    return f"{hours} часов назад ({match_time.strftime('%d.%m.%Y %H:%M')})"
-            elif time_diff.seconds >= 60:
-                minutes = time_diff.seconds // 60
-                if minutes == 1:
-                    return f"1 минуту назад ({match_time.strftime('%d.%m.%Y %H:%M')})"
-                else:
-                    return f"{minutes} минут назад ({match_time.strftime('%d.%m.%Y %H:%M')})"
-            else:
+            seconds = int(time_diff.total_seconds())
+            
+            if seconds < 60:
                 return f"только что ({match_time.strftime('%d.%m.%Y %H:%M')})"
+            elif seconds < 3600:
+                minutes = seconds // 60
+                return f"{minutes} минут назад ({match_time.strftime('%d.%m.%Y %H:%M')})"
+            elif seconds < 86400:
+                hours = seconds // 3600
+                return f"{hours} часов назад ({match_time.strftime('%d.%m.%Y %H:%M')})"
+            else:
+                days = seconds // 86400
+                return f"{days} дней назад ({match_time.strftime('%d.%m.%Y %H:%M')})"
         except Exception as e:
             print(f"[DotaStats] Ошибка форматирования времени: {e}")
             return "неизвестно"
@@ -676,7 +682,7 @@ class DotaStatsMod(loader.Module):
     async def profile2cmd(self, message: Message):
         pid = self.config["PLAYER_ID"]
         if not pid:
-            return await utils.answer(message, "<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Не задан Steam ID")
+            return await utils.answer(message, '<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> Не задан Steam ID')
         await self._send_profile(message, pid)
 
     @loader.command(
@@ -726,7 +732,7 @@ class DotaStatsMod(loader.Module):
                 )
 
         if not pid:
-            lines.append("\n<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> PLAYER_ID не задан, проверка матчей игрока пропущена")
+            lines.append('\n<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> PLAYER_ID не задан, проверка матчей игрока пропущена')
 
         await utils.answer(message, "\n".join(lines), parse_mode="html")
 
@@ -763,16 +769,16 @@ class DotaStatsMod(loader.Module):
                         rank_info = f"{rank_name} {rank_icon}"
 
             msg = (
-                f"<blockquote><tg-emoji emoji-id=\"5235611059909323996\">⭐️</tg-emoji> Профиль: <code>{profile.get('personaname', 'Unknown')}</code></blockquote>\n"
-                f"<blockquote><tg-emoji emoji-id=\"5422683699130933153\">🪪</tg-emoji> Steam ID: <code>{pid}</code></blockquote>\n"
-                f"<blockquote><tg-emoji emoji-id=\"5456498809875995940\">🏆</tg-emoji> Ранг: {rank_info}</blockquote>\n"
-                f"<blockquote><tg-emoji emoji-id=\"5429381339851796035\">✅</tg-emoji> Победы: {win}</blockquote>\n"
-                f"<blockquote><tg-emoji emoji-id=\"5465225015190367274\">👎</tg-emoji> Поражения: {lose}</blockquote>\n"
-                f"<blockquote><tg-emoji emoji-id=\"5364265190353286344\">📊</tg-emoji> Винрейт: {wr}%</blockquote>\n"
+                f'<blockquote><tg-emoji emoji-id="5235611059909323996">⭐️</tg-emoji> Профиль: <code>{profile.get("personaname", "Unknown")}</code></blockquote>\n'
+                f'<blockquote><tg-emoji emoji-id="5422683699130933153">🪪</tg-emoji> Steam ID: <code>{pid}</code></blockquote>\n'
+                f'<blockquote><tg-emoji emoji-id="5456498809875995940">🏆</tg-emoji> Ранг: {rank_info}</blockquote>\n'
+                f'<blockquote><tg-emoji emoji-id="5429381339851796035">✅</tg-emoji> Победы: {win}</blockquote>\n'
+                f'<blockquote><tg-emoji emoji-id="5465225015190367274">👎</tg-emoji> Поражения: {lose}</blockquote>\n'
+                f'<blockquote><tg-emoji emoji-id="5364265190353286344">📊</tg-emoji> Винрейт: {wr}%</blockquote>\n'
             )
             await utils.answer(message, msg, parse_mode="html")
         except Exception as e:
-            await utils.answer(message, f"<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Ошибка загрузки профиля: {str(e)}")
+            await utils.answer(message, f'<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> Ошибка загрузки профиля: {str(e)}')
 
     @loader.command(
         en_doc="- last 40 matches for PLAYER_ID",
@@ -782,12 +788,12 @@ class DotaStatsMod(loader.Module):
     async def dota2cmd(self, message: Message):
         pid = self.config["PLAYER_ID"]
         if not pid:
-            return await utils.answer(message, "<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Не задан Steam ID")
+            return await utils.answer(message, '<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> Не задан Steam ID')
 
         try:
             matches = await self._fetch_player_matches_async(pid, limit=40)
             if not matches:
-                return await utils.answer(message, "<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Нет данных матчей")
+                return await utils.answer(message, '<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> Нет данных матчей')
 
             pages = self._build_pages(matches)
 
@@ -821,7 +827,7 @@ class DotaStatsMod(loader.Module):
         if not args or not args.isdigit():
             return await utils.answer(
                 message,
-                "<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Используй: .dota2id <steam_id>"
+                '<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> Используй: .dota2id <steam_id>'
             )
 
         raw_id = int(args)
@@ -836,7 +842,7 @@ class DotaStatsMod(loader.Module):
             if not matches:
                 return await utils.answer(
                     message,
-                    "<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Нет данных матчей (профиль скрыт или нет игр)"
+                    '<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> Нет данных матчей (профиль скрыт или нет игр)'
                 )
 
             pages = self._build_pages(matches)
@@ -877,7 +883,7 @@ class DotaStatsMod(loader.Module):
             r = await asyncio.to_thread(self._get_match_data, match_id)
             await utils.answer(message, self._format_match_text(r, str(match_id)), parse_mode="html")
         except Exception as e:
-            await utils.answer(message, f"<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Ошибка загрузки матча: {str(e)}")
+            await utils.answer(message, f'<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> Ошибка загрузки матча: {str(e)}')
 
     @loader.command(
         en_doc="- hero stats: last 20 games or all-time with -all",
@@ -953,12 +959,12 @@ class DotaStatsMod(loader.Module):
                     f"─────── ✦ ───────\n"
                     f"<b>Герой: {hero_icon} <code>{hero_name}</code></b>\n\n"
                     f"─────── ✦ ───────\n\n"
-                    f"<b>〚<tg-emoji emoji-id=\"5231200819986047254\">📊</tg-emoji>〛 Вся статистика:</b>\n"
-                    f"〚<tg-emoji emoji-id=\"5375437280758496345\">🎮</tg-emoji>〛 Матчей➛ <b>{games}</b>\n"
-                    f"〚<tg-emoji emoji-id=\"5429381339851796035\">✅</tg-emoji>〛 Побед➛ <b>{wins}</b>\n"
-                    f"〚<tg-emoji emoji-id=\"5352703271536454445\">❌</tg-emoji>〛 Поражений➛ <b>{losses}</b>\n"
-                    f"〚<tg-emoji emoji-id=\"5244837092042750681\">📈</tg-emoji>〛 Винрейт➛ {total_wr_color} <b>{total_wr}%</b>\n"
-                    f"<b>〚<tg-emoji emoji-id=\"5240271820979981346\">⚔️</tg-emoji>〛 Средний KDA (≈100 игр)</b>\n"
+                    f'<b>〚<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji>〛 Вся статистика:</b>\n'
+                    f'〚<tg-emoji emoji-id="5375437280758496345">🎮</tg-emoji>〛 Матчей➛ <b>{games}</b>\n'
+                    f'〚<tg-emoji emoji-id="5429381339851796035">✅</tg-emoji>〛 Побед➛ <b>{wins}</b>\n'
+                    f'〚<tg-emoji emoji-id="5352703271536454445">❌</tg-emoji>〛 Поражений➛ <b>{losses}</b>\n'
+                    f'〚<tg-emoji emoji-id="5244837092042750681">📈</tg-emoji>〛 Винрейт➛ {total_wr_color} <b>{total_wr}%</b>\n'
+                    f'<b>〚<tg-emoji emoji-id="5240271820979981346">⚔️</tg-emoji>〛 Средний KDA (≈100 игр)</b>\n'
                     f"{avg_k} / {avg_d} / {avg_a}"
                 )
 
@@ -994,12 +1000,12 @@ class DotaStatsMod(loader.Module):
                 f"─────── ✦ ───────\n"
                 f"<b>Герой: {hero_icon} <code>{hero_name}</code></b>\n\n"
                 f"─────── ✦ ───────\n\n"
-                f"<b>〚<tg-emoji emoji-id=\"5231200819986047254\">📊</tg-emoji>〛 Последние 20 игр:</b>\n"
-                f"〚<tg-emoji emoji-id=\"5375437280758496345\">🎮</tg-emoji>〛 Матчей➛ <b>{total}</b>\n"
-                f"〚<tg-emoji emoji-id=\"5429381339851796035\">✅</tg-emoji>〛 Побед➛ <b>{wins}</b>\n"
-                f"〚<tg-emoji emoji-id=\"5352703271536454445\">❌</tg-emoji>〛 Поражений➛ <b>{losses}</b>\n"
-                f"〚<tg-emoji emoji-id=\"5244837092042750681\">📈</tg-emoji>〛 Винрейт➛ {recent_wr_color} <b>{recent_wr}%</b>\n"
-                f"<b>〚<tg-emoji emoji-id=\"5240271820979981346\">⚔️</tg-emoji>〛 Средний KDA</b>\n"
+                f'<b>〚<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji>〛 Последние 20 игр:</b>\n'
+                f'〚<tg-emoji emoji-id="5375437280758496345">🎮</tg-emoji>〛 Матчей➛ <b>{total}</b>\n'
+                f'〚<tg-emoji emoji-id="5429381339851796035">✅</tg-emoji>〛 Побед➛ <b>{wins}</b>\n'
+                f'〚<tg-emoji emoji-id="5352703271536454445">❌</tg-emoji>〛 Поражений➛ <b>{losses}</b>\n'
+                f'〚<tg-emoji emoji-id="5244837092042750681">📈</tg-emoji>〛 Винрейт➛ {recent_wr_color} <b>{recent_wr}%</b>\n'
+                f'<b>〚<tg-emoji emoji-id="5240271820979981346">⚔️</tg-emoji>〛 Средний KDA</b>\n'
                 f"{avg_k} / {avg_d} / {avg_a}"
             )
 
@@ -1018,10 +1024,10 @@ class DotaStatsMod(loader.Module):
         my_raw = self.config["PLAYER_ID"]
 
         if not my_raw:
-            return await utils.answer(message, f"<tg-emoji emoji-id=\"5375557664396835394\">❌</tg-emoji> Не задан PLAYER_ID")
+            return await utils.answer(message, '<tg-emoji emoji-id="5375557664396835394">❌</tg-emoji> Не задан PLAYER_ID')
 
         if not args:
-            return await utils.answer(message, f"<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Укажи SteamID или account_id игрока")
+            return await utils.answer(message, '<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> Укажи SteamID или account_id игрока')
 
         try:
             my_id = self._to_account_id(int(my_raw))
@@ -1038,7 +1044,7 @@ class DotaStatsMod(loader.Module):
             )
 
             if not my_matches or not other_matches:
-                return await utils.answer(message, "<tg-emoji emoji-id=\"5375557664396835394\">❌</tg-emoji> У одного из игроков нет матчей")
+                return await utils.answer(message, '<tg-emoji emoji-id="5375557664396835394">❌</tg-emoji> У одного из игроков нет матчей')
 
             def calc_stats(matches):
                 games = len(matches)
@@ -1056,22 +1062,22 @@ class DotaStatsMod(loader.Module):
             o_games, o_wins, o_wr, o_kda = calc_stats(other_matches)
 
             msg = (
-                f"<blockquote><tg-emoji emoji-id=\"5240271820979981346\">⚔️</tg-emoji> СРАВНЕНИЕ ИГРОКОВ\n"
-                f"<tg-emoji emoji-id=\"5425013375291629746\">😳</tg-emoji> <b>Ты</b>\n"
-                f"<tg-emoji emoji-id=\"5375437280758496345\">🎮</tg-emoji> Матчей: {my_games}\n"
-                f"<tg-emoji emoji-id=\"5456498809875995940\">🏆</tg-emoji> Побед: {my_wins} ({my_wr}%)\n"
-                f"<tg-emoji emoji-id=\"5240271820979981346\">⚔️</tg-emoji> KDA: {my_kda}\n\n"
-                f"<tg-emoji emoji-id=\"6021829047057652150\">🧍‍♀️</tg-emoji> <b>Оппонент</b>\n"
-                f"<tg-emoji emoji-id=\"5375437280758496345\">🎮</tg-emoji> Матчей: {o_games}\n"
-                f"<tg-emoji emoji-id=\"5456498809875995940\">🏆</tg-emoji> Побед: {o_wins} ({o_wr}%)\n"
-                f"<tg-emoji emoji-id=\"5240271820979981346\">⚔️</tg-emoji> KDA: {o_kda}\n"
+                f'<blockquote><tg-emoji emoji-id="5240271820979981346">⚔️</tg-emoji> СРАВНЕНИЕ ИГРОКОВ\n'
+                f'<tg-emoji emoji-id="5425013375291629746">😳</tg-emoji> <b>Ты</b>\n'
+                f'<tg-emoji emoji-id="5375437280758496345">🎮</tg-emoji> Матчей: {my_games}\n'
+                f'<tg-emoji emoji-id="5456498809875995940">🏆</tg-emoji> Побед: {my_wins} ({my_wr}%)\n'
+                f'<tg-emoji emoji-id="5240271820979981346">⚔️</tg-emoji> KDA: {my_kda}\n\n'
+                f'<tg-emoji emoji-id="6021829047057652150">🧍‍♀️</tg-emoji> <b>Оппонент</b>\n'
+                f'<tg-emoji emoji-id="5375437280758496345">🎮</tg-emoji> Матчей: {o_games}\n'
+                f'<tg-emoji emoji-id="5456498809875995940">🏆</tg-emoji> Побед: {o_wins} ({o_wr}%)\n'
+                f'<tg-emoji emoji-id="5240271820979981346">⚔️</tg-emoji> KDA: {o_kda}\n'
                 f"</blockquote>"
             )
 
             await utils.answer(message, msg, parse_mode="html")
 
         except Exception as e:
-            await utils.answer(message, f"<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Ошибка compare: {e}")
+            await utils.answer(message, f'<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> Ошибка compare: {e}')
 
     def _get_match_data(self, match_id: str):
         data = requests.get(f"{API_URL}/matches/{match_id}").json()
@@ -1083,9 +1089,9 @@ class DotaStatsMod(loader.Module):
         duration = f"{match_data['duration'] // 60}:{match_data['duration'] % 60:02d}"
         radiant_win = match_data.get("radiant_win", False)
         result = (
-            "<tg-emoji emoji-id=\"5368338090660209672\">🌿</tg-emoji> Radiant Победа"
+            '<tg-emoji emoji-id="5368338090660209672">🌿</tg-emoji> Radiant Победа'
             if radiant_win
-            else "<tg-emoji emoji-id=\"5397751602956239123\">🔥</tg-emoji> Dire Победа"
+            else '<tg-emoji emoji-id="5397751602956239123">🔥</tg-emoji> Dire Победа'
         )
 
         radiant, dire = [], []
@@ -1208,7 +1214,7 @@ class DotaStatsMod(loader.Module):
             line = (
                 f"- <code>{hero_name}</code> {hero_icon} | {kda} | GPM: {gpm} | "
                 f"XPM: {xpm} | Net: {net} | Steam ID: <code>{account_id}</code>\n"
-                f"  <tg-emoji emoji-id=\"5445221832074483553\">💼</tg-emoji> {main_items_str}\n"
+                f'  <tg-emoji emoji-id="5445221832074483553">💼</tg-emoji> {main_items_str}\n'
                 f"  🎒 {backpack_items_str}"
             )
 
@@ -1218,11 +1224,11 @@ class DotaStatsMod(loader.Module):
                 dire.append(line)
 
         return (
-            f"<blockquote><tg-emoji emoji-id=\"5217703082099498813\">🤬</tg-emoji> Матч <code>{match_id}</code>\n"
-            f"<tg-emoji emoji-id=\"5373236586760651455\">⏱️</tg-emoji> Длительность: <code>{duration}</code>\n"
+            f'<blockquote><tg-emoji emoji-id="5217703082099498813">🤬</tg-emoji> Матч <code>{match_id}</code>\n'
+            f'<tg-emoji emoji-id="5373236586760651455">⏱️</tg-emoji> Длительность: <code>{duration}</code>\n'
             f"Результат: {result}\n\n"
-            f"<tg-emoji emoji-id=\"5368338090660209672\">🌿</tg-emoji> Radiant:\n" + "\n".join(radiant) +
-            f"\n\n<tg-emoji emoji-id=\"5397751602956239123\">🔥</tg-emoji> Dire:\n" + "\n".join(dire) +
+            f'<tg-emoji emoji-id="5368338090660209672">🌿</tg-emoji> Radiant:\n' + "\n".join(radiant) +
+            f'\n\n<tg-emoji emoji-id="5397751602956239123">🔥</tg-emoji> Dire:\n' + "\n".join(dire) +
             f"</blockquote>"
         )
 
@@ -1233,7 +1239,7 @@ class DotaStatsMod(loader.Module):
         for i in range(0, len(matches), per_page):
             chunk = matches[i:i+per_page]
 
-            text = "<b><tg-emoji emoji-id=\"5319120041780726017\">🎮</tg-emoji>Последние 40 игр<tg-emoji emoji-id=\"5319120041780726017\">🎮</tg-emoji>:</b>\n\n"
+            text = '<b><tg-emoji emoji-id="5319120041780726017">🎮</tg-emoji>Последние 40 игр<tg-emoji emoji-id="5319120041780726017">🎮</tg-emoji>:</b>\n\n'
 
             for m in chunk:
                 hero_name = self.heroes.get(m["hero_id"], f"Unknown({m['hero_id']})")
