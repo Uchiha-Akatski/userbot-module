@@ -1,10 +1,8 @@
 # -- version --
-__version__ = (2, 2, 0)
+__version__ = (2, 2, 5)
 # -- version --
 
-
 # meta developer: @Itachi_Uchiha_sss
-# meta banner: https://api.opendota.com
 
 import requests
 from requests import RequestException
@@ -119,8 +117,6 @@ class DotaStatsMod(loader.Module):
             timeout=timeout,
         )
 
-
-
     def __init__(self):
         self._pages_cache = {}
         self.config = loader.ModuleConfig(
@@ -128,475 +124,343 @@ class DotaStatsMod(loader.Module):
         )
         self.heroes = {}
         self.item_emojis = {            
-            "Blink": '<emoji document_id="5467710328080981143">🤩</emoji>',
-            "Black King Bar": '<emoji document_id="5467828615775279955">🤩</emoji>',
-            "Ultimate Scepter": '<emoji document_id="5467777522844327342">🤩</emoji>',
-            "Aghanims Scepter": '<emoji document_id="5467777522844327342">🤩</emoji>',
-            "Aghanim's Scepter": '<emoji document_id="5467777522844327342">🤩</emoji>',
-            "Power Treads": '<emoji document_id="5467823212706421270">🤩</emoji>',
-            "Desolator": '<emoji document_id="5467606626095619791">🤩</emoji>',
-            "Greater Crit": '<emoji document_id="5467526443351170991">🤩</emoji>',
-            "Satanic": '<emoji document_id="5467481238820381084">🤩</emoji>',
-            "Butterfly": '<emoji document_id="5467628088047197171">🤩</emoji>',
-            "Assault": '<emoji document_id="5467467786982809436">🤩</emoji>',
-            "Sheepstick": '<emoji document_id="5467471613798669675">🤩</emoji>',
-            "Rapier": '<emoji document_id="5469940176316816456">🤩</emoji>',
-            "Heart": '<emoji document_id="5469829838606982639">🤩</emoji>',
-            "Heart Of Tarrasque": '<emoji document_id="5469829838606982639">🤩</emoji>',
-            "Invis Sword": '<emoji document_id="5469889422688278238">🤩</emoji>',
-            "Manta": '<emoji document_id="5467786310347413191">🤩</emoji>', 
-            "Sphere": '<emoji document_id="5467841560806709776">🤩</emoji>',
-            "Moon Shard": '<emoji document_id="5469874360237970537">🤩</emoji>',  
-            "Crystalys": '<emoji document_id="5467629917703264949">🤩</emoji>', 
-            "Dragon Lance": '<emoji document_id="5429427424850906507">🫤</emoji>',  
-            "Skadi": '<emoji document_id="5467912754184609175">🤩</emoji>',  
-            "Mjollnir": '<emoji document_id="5467553437220624541">🤩</emoji>',  
-            "Eternal Shroud": '<emoji document_id="5429168489862565021">🤤</emoji>',  
-            "Radiance": '<emoji document_id="5467917160821053680">🤩</emoji>',  
-            "Bloodstone": '<emoji document_id="5467872957017647753">🤩</emoji>',  
-            "Vanguard": '<emoji document_id="5467905512869745249">🤩</emoji>',  
-            "Overwhelming Blink": '<emoji document_id="5467811268402372102">🤩</emoji>', 
-            "Force Staff": '<emoji document_id="5467816044406004412">🤩</emoji>',    
-            "Blade Mail": '<emoji document_id="5467910258808610438">🤩</emoji>',  
-            "Lotus Orb": '<emoji document_id="5467854656161996490">🤩</emoji>',  
-            "Diffusal Blade": '<emoji document_id="5467589596550291093">🤩</emoji>',
-            "Disperser": '<emoji document_id="5467511685843540004">🤩</emoji>',  
-            "Silver Edge": '<emoji document_id="5467413421286774948">🤩</emoji>', 
-            "Solar Crest": '<emoji document_id="5470022991876216864">🤩</emoji>',     
-            "Octarine Core": '<emoji document_id="5469910390718616277">🤩</emoji>',  
-            "Refresher": '<emoji document_id="5467413301027691972">🤩</emoji>',      
-            "Soul Ring": '<emoji document_id="5467735694157831691">🤩</emoji>',  
-            "Pipe": '<emoji document_id="5467784545115857970">🤩</emoji>',  
-            "Cyclone": '<emoji document_id="5469770533698556516">🤩</emoji>',
-            "Wind Waker": '<emoji document_id="5467755674345690984">🤩</emoji>',  
-            "Hurricane Pike": '<emoji document_id="5429505296902945143">🤗</emoji>',    
-            "Veil Of Discord": '<emoji document_id="5467619223234698435">🤩</emoji>',  
-            "Glimmer Cape": '<emoji document_id="5467869675662631035">🤩</emoji>',   
-            "Shadow Amulet": '<emoji document_id="5467818432407819955">🤩</emoji>',  
-            "Tranquil Boots": '<emoji document_id="5467458642997434165">🤩</emoji>',  
-            "Arcane Boots": '<emoji document_id="5467688316373590211">🤩</emoji>',  
-            "Travel Boots": '<emoji document_id="5467854351219318497">🤩</emoji>',
-            "Travel Boots 2": '<emoji document_id="5467653724706986524">🤩</emoji>',
-            "Boots": '<emoji document_id="5429649362990960283">💜</emoji>',  
-            "Phase Boots": '<emoji document_id="5467564569775857363">🤩</emoji>',
-            "Mask Of Madness": '<emoji document_id="5467883471097585936">🤩</emoji>',  
-            "Ancient Janggo": '<emoji document_id="5467804241835876590">🤩</emoji>',
-            "Boots Of Bearing": '<emoji document_id="5467809013544541750">🤩</emoji>', 
-            "Meteor Hammer": '<emoji document_id="5469909724998687900">🤩</emoji>',  
-            "Guardian Greaves": '<emoji document_id="5427047918479642257">👇</emoji>',    
-            "Ring Of Basilius": '<emoji document_id="5467867145926891521">🤩</emoji>',         
-            "Smoke Of Deceit": '<emoji document_id="5467832077518921780">🤩</emoji>',  
-            "Dust": '<emoji document_id="5467852414189067273">🤩</emoji>',  
-            "Bottle": '<emoji document_id="5467423492985085154">🤩</emoji>',  
-            "Magic Stick": '<emoji document_id="5467520726749699871">🤩</emoji>',
-            "Holy Locket": '<emoji document_id="5429324818082202689">🥹</emoji>', 
-            "Magic Wand": '<emoji document_id="5467791386998758693">🤩</emoji>',  
-            "Aether Lens": '<emoji document_id="5467863087182797856">🤩</emoji>',  
-            "Swift Blink": '<emoji document_id="5467512635031313209">🤩</emoji>',    
-            "Null Talisman": '<emoji document_id="5469971357779384692">🤩</emoji>',  
-            "Bracer": '<emoji document_id="5469634555033965479">🤩</emoji>',  
-            "Wraith Band": '<emoji document_id="5467754252711516912">🤩</emoji>',  
-            "Soul Booster": '<emoji document_id="5467565600568006619">🤩</emoji>',  
-            "Kaya": '<emoji document_id="5429406474000437184">👩‍❤️‍💋‍👨</emoji>',  
-            "Yasha": '<emoji document_id="5467560339233070091">🤩</emoji>',  
-            "Sange And Yasha": '<emoji document_id="5429589242038749865">🤚</emoji>',  
-            "Orchid": '<emoji document_id="5467520726749699874">🤩</emoji>',  
-            "Bloodthorn": '<emoji document_id="5467694776004401553">🤩</emoji>',  
-            "Ethereal Blade": '<emoji document_id="5467641462575358888">🤩</emoji>',  
-            "Heavens Halberd": '<emoji document_id="5467846439889558895">🤩</emoji>',      
-            "Sange": '<emoji document_id="5469885926584898014">🤩</emoji>',  
-            "Urn Of Shadows": '<emoji document_id="5467630226940910178">🤩</emoji>',  
-            "Spirit Vessel": '<emoji document_id="5429261402890079825">😩</emoji>',    
-            "Crimson Guard": '<emoji document_id="5470036121591240703">🤩</emoji>',    
-            "Refresher Shard": '<emoji document_id="5467436815973636888">🤩</emoji>',  
-            "Echo Sabre": '<emoji document_id="5429603432610695458">🤱</emoji>',
-            "Harpoon": '<emoji document_id="5467597984621420624">🤩</emoji>',    
-            "Arcane Blink": '<emoji document_id="5467886499049528800">🤩</emoji>',    
-            "Abaddon’s Aghanim’s Scepter": '<emoji document_id="5469857141714083939">🤩</emoji>',    
-            "Mekansm": '<emoji document_id="5467932824566784067">🤩</emoji>',  
-            "Rod Of Atos": '<emoji document_id="5467818376573246343">🤩</emoji>',
-            "Kaya And Sange": '<emoji document_id="5467789192270470219">🤩</emoji>',
-            "Phylactery": '<emoji document_id="5208510580775737094">😎</emoji>',
-            "Angels Demise": '<emoji document_id="5467410049737448975">🤩</emoji>',
-            "Bfury": '<emoji document_id="5469748109674306463">🤩</emoji>',
-            "Monkey King Bar": '<emoji document_id="5470163106594312935">🤩</emoji>',
-            "Hand Of Midas": '<emoji document_id="5429484178548752495">🤡</emoji>',
-            "Basher": '<emoji document_id="5469746426047125184">🤩</emoji>',
-            "Abyssal Blade": '<emoji document_id="5467666536594431270">🤩</emoji>',
-            "Aeon Disk": '<emoji document_id="5467791133595686879">🤩</emoji>',
-            "Armlet": '<emoji document_id="5469824396883416139">🤩</emoji>',
-            "Witch Blade": '<emoji document_id="5467826399572156107">🤩</emoji>',
-            "Devastator": '<emoji document_id="5467805345642470314">🤩</emoji>',
-            "Revenants Brooch": '<emoji document_id="5469908634076992123">🤩</emoji>',
-            "Ward Observer": '<emoji document_id="5467632846870962993">🤩</emoji>',
-            "Ward Sentry": '<emoji document_id="5467462169165586203">🤩</emoji>',
-            "Ward Dispenser": '<emoji document_id="5469962815089431997">🤩</emoji>',
-            "Falcon Blade": '<emoji document_id="5467861553879473110">🤩</emoji>',
-            "Mage Slayer": '<emoji document_id="5470013504293461332">🤩</emoji>',
-            "Dagon": '<emoji document_id="5467488218142235587">🤩</emoji>',
-            "Dagon 2": '<emoji document_id="5469969296195082383">🤩</emoji>',
-            "Dagon 3": '<emoji document_id="5469622112513709919">🤩</emoji>',
-            "Dagon 4": '<emoji document_id="5469844480150492940">🤩</emoji>',
-            "Dagon 5": '<emoji document_id="5469686244965374270">🤩</emoji>',
-            "Nullifier": '<emoji document_id="5467639448235695534">🤩</emoji>',
-            "Helm Of The Dominator": '<emoji document_id="5467464140555575688">🤩</emoji>',
-            "Helm Of The Overlord": '<emoji document_id="5467741569673092276">🤩</emoji>',
-            "Maelstrom": '<emoji document_id="5467923019156446536">🤩</emoji>',
-            "Ghost": '<emoji document_id="5470035653439803744">🤩</emoji>',
-            "Quelling Blade": '<emoji document_id="5467378189670046307">🤩</emoji>',
-            "Shivas Guard": '<emoji document_id="5467835062521190904">🤩</emoji>',
-            "Infused Raindrop": '<emoji document_id="5429589508326716866">💑</emoji>',
-            "Gem": '<emoji document_id="5467526344566921150">🤩</emoji>',
-            "Yasha And Kaya": '<emoji document_id="5429591746004680178">💤</emoji>',
-            "Lifesteal": '<emoji document_id="5469950286669829137">🤩</emoji>',
-            "Lesser Crit": '<emoji document_id="5467629917703264949">🤩</emoji>',
-            "Vladmir": '<emoji document_id="5467690648540830431">🤩</emoji>',
-            "Orb Of Frost": '<emoji document_id="5429604854244872076">😶‍🌫️</emoji>',
-            "Wind Lace": '<emoji document_id="5429632793007129283">🤕</emoji>',
-            "Fluffy Hat": '<emoji document_id="5429599227837712299">😑</emoji>',
-            "Blight Stone": '<emoji document_id="5429570795154210156">👩‍🦰</emoji>',
-            "Mithril Hammer": '<emoji document_id="5467426739980361549">🤩</emoji>',
-            "Ogre Axe": '<emoji document_id="5467868851028908643">🤩</emoji>',
-            "Circlet": '<emoji document_id="5440652308994098468">👹</emoji>',
-            "Cloak": '<emoji document_id="5438211616518734925">🤢</emoji>',
-            "Clarity": '<emoji document_id="5467785249490493699">🤩</emoji>',
-            "Ring Of Health": '<emoji document_id="5467752805307539172">🤩</emoji>',
-            "Eagle": '<emoji document_id="5467582647293204653">🤩</emoji>',
-            "Branches": '<emoji document_id="5467442214747526492">🤩</emoji>',
-            "Robe": '<emoji document_id="5467691451699716884">🤩</emoji>',
-            "Tango": '<emoji document_id="5467809876832968643">🤩</emoji>',
-            "Tiara Of Selemene": '<emoji document_id="5470172177565240449">🤩</emoji>',
-            "Aegis": '<emoji document_id="5467744176718240540">🤩</emoji>',
-            "Vitality Booster": '<emoji document_id="5467811242632567795">🤩</emoji>',
-            "Headdress": '<emoji document_id="5467884171177255427">🤩</emoji>',
-            "Pers": '<emoji document_id="5467634204080624390">🤩</emoji>',
-            "Relic": '<emoji document_id="5467765355201976698">🤩</emoji>',
-            "Void Stone": '<emoji document_id="5467395210625440792">🤩</emoji>',
-            "Ultimate Orb": '<emoji document_id="5467578854837085359">🤩</emoji>',
-            "Gauntlets": '<emoji document_id="5467430596860992009">🤩</emoji>',
-            "Point Booster": '<emoji document_id="5467599337536119160">🤩</emoji>',
-            "Famango": '<emoji document_id="5467577836929835133">🤩</emoji>',
-            "Platemail": '<emoji document_id="5467920592499924802">🤩</emoji>',
-            "Orb Of Corrosion": '<emoji document_id="5467924105783171604">🤩</emoji>',
-            "Blade Of Alacrity": '<emoji document_id="5467464917944656239">🤩</emoji>',
-            "Cheese": '<emoji document_id="5467903739048254682">🤩</emoji>',
-            "Gungir": '<emoji document_id="5467458591457827736">🤩</emoji>',
-            "Staff Of Wizardry": '<emoji document_id="5467822662950609346">🤩</emoji>',
-            "Diadem": '<emoji document_id="5469685862713284861">🤩</emoji>',
-            "Blood Grenade": '<emoji document_id="5280926765928193216">👨‍🦱</emoji>',
-            "Mystic Staff": '<emoji document_id="5467388080979730073">🤩</emoji>',
-            "Gloves": '<emoji document_id="5469841349119332616">🤩</emoji>',
-            "Broadsword": '<emoji document_id="5467756065187716276">🤩</emoji>',
-            "Chainmail": '<emoji document_id="5467372309859818911">🤩</emoji>',
-            "Energy Booster": '<emoji document_id="5467828508401100211">🤩</emoji>',
-            "Cornucopia": '<emoji document_id="5467743695681904292">🤩</emoji>',
-            "Blitz Knuckles": '<emoji document_id="5467602112084990687">🤩</emoji>', 
-            "Enchanted Mango": '<emoji document_id="5467870783764192653">🤩</emoji>',
-            "Belt Of Strength": '<emoji document_id="5467715709675001734">🤩</emoji>',
-            "Javelin": '<emoji document_id="5467443365798766241">🤩</emoji>',
-            "Roshans Banner": '<emoji document_id="5467430893213734638">🤩</emoji>',
-            "Slippers": '<emoji document_id="5467824982232948778">🤩</emoji>',
-            "Hyperstone": '<emoji document_id="5469995989416825772">🤩</emoji>',
-            "Ring Of Tarrasque": '<emoji document_id="5467665836514761681">🤩</emoji>',
-            "Flask": '<emoji document_id="5467399406808492353">🤩</emoji>',
-            "Faerie Fire": '<emoji document_id="5314334224147322409">👩‍🦲</emoji>',
-            "Orb Of Venom": '<emoji document_id="5469911017783841138">🤩</emoji>',
-            "Oblivion Staff": '<emoji document_id="5467710761872678029">🤩</emoji>',
-            "Demon Edge": '<emoji document_id="5469879359579903518">🤩</emoji>',
-            "Ring Of Protection": '<emoji document_id="5467518867028859087">🤩</emoji>',
-            "Sobi Mask": '<emoji document_id="5467627091614789052">🤩</emoji>',
-            "Buckler": '<emoji document_id="5467614331266948301">🤩</emoji>',
-            "Greater Famango": '<emoji document_id="5467476810709098517">🤩</emoji>',
-            "Consecrated Wraps": '<emoji document_id="5341441218746293135">👘</emoji>',
-            "Ring Of Regen": '<emoji document_id="5467603203006685200">🤩</emoji>',
-            "Hydras Breath": '<emoji document_id="5343760363647178272">👲</emoji>',
-            "Essence Distiller": '<emoji document_id="5341457728600577852">💨</emoji>',
-            "Chasm Stone": '<emoji document_id="5346305063050580881">🤕</emoji>',
-            "Voodoo Mask": '<emoji document_id="5467416891620352938">🤩</emoji>',
-            "Reaver": '<emoji document_id="5346110470967303740">🥴</emoji>',
-            "Shawl": '<emoji document_id="5346268319605383344">🕺</emoji>',
-            "Specialists Array": '<emoji document_id="5341312588770743680">🧰</emoji>',
-            "Crellas Crozier": '<emoji document_id="5341699256086465595">🧙</emoji>',
-            "Claymore": '<emoji document_id="5467518123999517884">🤩</emoji>',
-            "Talisman Of Evasion": '<emoji document_id="5469849462312556864">🤩</emoji>',
-            "Splintmail": '<emoji document_id="5388862240424235116">🤎</emoji>',
-            "Crown": '<emoji document_id="5467598594506775207">🤩</emoji>',
-            "Wizard Hat": '<emoji document_id="5389046430096728598">🤍</emoji>',
-            "Foragers Mana": '<emoji document_id="5389065267823282566">👩‍🍼</emoji>',
-            "Foragers Health": '<emoji document_id="5389097630401859068">😐</emoji>'
+            "Blink": '<tg-emoji emoji-id="5467710328080981143">🤩</tg-emoji>',
+            "Black King Bar": '<tg-emoji emoji-id="5467828615775279955">🤩</tg-emoji>',
+            "Ultimate Scepter": '<tg-emoji emoji-id="5467777522844327342">🤩</tg-emoji>',
+            "Aghanims Scepter": '<tg-emoji emoji-id="5467777522844327342">🤩</tg-emoji>',
+            "Aghanim's Scepter": '<tg-emoji emoji-id="5467777522844327342">🤩</tg-emoji>',
+            "Power Treads": '<tg-emoji emoji-id="5467823212706421270">🤩</tg-emoji>',
+            "Desolator": '<tg-emoji emoji-id="5467606626095619791">🤩</tg-emoji>',
+            "Greater Crit": '<tg-emoji emoji-id="5467526443351170991">🤩</tg-emoji>',
+            "Satanic": '<tg-emoji emoji-id="5467481238820381084">🤩</tg-emoji>',
+            "Butterfly": '<tg-emoji emoji-id="5467628088047197171">🤩</tg-emoji>',
+            "Assault": '<tg-emoji emoji-id="5467467786982809436">🤩</tg-emoji>',
+            "Sheepstick": '<tg-emoji emoji-id="5467471613798669675">🤩</tg-emoji>',
+            "Rapier": '<tg-emoji emoji-id="5469940176316816456">🤩</tg-emoji>',
+            "Heart": '<tg-emoji emoji-id="5469829838606982639">🤩</tg-emoji>',
+            "Heart Of Tarrasque": '<tg-emoji emoji-id="5469829838606982639">🤩</tg-emoji>',
+            "Invis Sword": '<tg-emoji emoji-id="5469889422688278238">🤩</tg-emoji>',
+            "Manta": '<tg-emoji emoji-id="5467786310347413191">🤩</tg-emoji>', 
+            "Sphere": '<tg-emoji emoji-id="5467841560806709776">🤩</tg-emoji>',
+            "Moon Shard": '<tg-emoji emoji-id="5469874360237970537">🤩</tg-emoji>',  
+            "Crystalys": '<tg-emoji emoji-id="5467629917703264949">🤩</tg-emoji>', 
+            "Dragon Lance": '<tg-emoji emoji-id="5429427424850906507">🫤</tg-emoji>',  
+            "Skadi": '<tg-emoji emoji-id="5467912754184609175">🤩</tg-emoji>',  
+            "Mjollnir": '<tg-emoji emoji-id="5467553437220624541">🤩</tg-emoji>',  
+            "Eternal Shroud": '<tg-emoji emoji-id="5429168489862565021">🤤</tg-emoji>',  
+            "Radiance": '<tg-emoji emoji-id="5467917160821053680">🤩</tg-emoji>',  
+            "Bloodstone": '<tg-emoji emoji-id="5467872957017647753">🤩</tg-emoji>',  
+            "Vanguard": '<tg-emoji emoji-id="5467905512869745249">🤩</tg-emoji>',  
+            "Overwhelming Blink": '<tg-emoji emoji-id="5467811268402372102">🤩</tg-emoji>', 
+            "Force Staff": '<tg-emoji emoji-id="5467816044406004412">🤩</tg-emoji>',    
+            "Blade Mail": '<tg-emoji emoji-id="5467910258808610438">🤩</tg-emoji>',  
+            "Lotus Orb": '<tg-emoji emoji-id="5467854656161996490">🤩</tg-emoji>',  
+            "Diffusal Blade": '<tg-emoji emoji-id="5467589596550291093">🤩</tg-emoji>',
+            "Disperser": '<tg-emoji emoji-id="5467511685843540004">🤩</tg-emoji>',  
+            "Silver Edge": '<tg-emoji emoji-id="5467413421286774948">🤩</tg-emoji>', 
+            "Solar Crest": '<tg-emoji emoji-id="5470022991876216864">🤩</tg-emoji>',     
+            "Octarine Core": '<tg-emoji emoji-id="5469910390718616277">🤩</tg-emoji>',  
+            "Refresher": '<tg-emoji emoji-id="5467413301027691972">🤩</tg-emoji>',      
+            "Soul Ring": '<tg-emoji emoji-id="5467735694157831691">🤩</tg-emoji>',  
+            "Pipe": '<tg-emoji emoji-id="5467784545115857970">🤩</tg-emoji>',  
+            "Cyclone": '<tg-emoji emoji-id="5469770533698556516">🤩</tg-emoji>',
+            "Wind Waker": '<tg-emoji emoji-id="5467755674345690984">🤩</tg-emoji>',  
+            "Hurricane Pike": '<tg-emoji emoji-id="5429505296902945143">🤗</tg-emoji>',    
+            "Veil Of Discord": '<tg-emoji emoji-id="5467619223234698435">🤩</tg-emoji>',  
+            "Glimmer Cape": '<tg-emoji emoji-id="5467869675662631035">🤩</tg-emoji>',   
+            "Shadow Amulet": '<tg-emoji emoji-id="5467818432407819955">🤩</tg-emoji>',  
+            "Tranquil Boots": '<tg-emoji emoji-id="5467458642997434165">🤩</tg-emoji>',  
+            "Arcane Boots": '<tg-emoji emoji-id="5467688316373590211">🤩</tg-emoji>',  
+            "Travel Boots": '<tg-emoji emoji-id="5467854351219318497">🤩</tg-emoji>',
+            "Travel Boots 2": '<tg-emoji emoji-id="5467653724706986524">🤩</tg-emoji>',
+            "Boots": '<tg-emoji emoji-id="5429649362990960283">💜</tg-emoji>',  
+            "Phase Boots": '<tg-emoji emoji-id="5467564569775857363">🤩</tg-emoji>',
+            "Mask Of Madness": '<tg-emoji emoji-id="5467883471097585936">🤩</tg-emoji>',  
+            "Ancient Janggo": '<tg-emoji emoji-id="5467804241835876590">🤩</tg-emoji>',
+            "Boots Of Bearing": '<tg-emoji emoji-id="5467809013544541750">🤩</tg-emoji>', 
+            "Meteor Hammer": '<tg-emoji emoji-id="5469909724998687900">🤩</tg-emoji>',  
+            "Guardian Greaves": '<tg-emoji emoji-id="5427047918479642257">👇</tg-emoji>',    
+            "Ring Of Basilius": '<tg-emoji emoji-id="5467867145926891521">🤩</tg-emoji>',         
+            "Smoke Of Deceit": '<tg-emoji emoji-id="5467832077518921780">🤩</tg-emoji>',  
+            "Dust": '<tg-emoji emoji-id="5467852414189067273">🤩</tg-emoji>',  
+            "Bottle": '<tg-emoji emoji-id="5467423492985085154">🤩</tg-emoji>',  
+            "Magic Stick": '<tg-emoji emoji-id="5467520726749699871">🤩</tg-emoji>',
+            "Holy Locket": '<tg-emoji emoji-id="5429324818082202689">🥹</tg-emoji>', 
+            "Magic Wand": '<tg-emoji emoji-id="5467791386998758693">🤩</tg-emoji>',  
+            "Aether Lens": '<tg-emoji emoji-id="5467863087182797856">🤩</tg-emoji>',  
+            "Swift Blink": '<tg-emoji emoji-id="5467512635031313209">🤩</tg-emoji>',    
+            "Null Talisman": '<tg-emoji emoji-id="5469971357779384692">🤩</tg-emoji>',  
+            "Bracer": '<tg-emoji emoji-id="5469634555033965479">🤩</tg-emoji>',  
+            "Wraith Band": '<tg-emoji emoji-id="5467754252711516912">🤩</tg-emoji>',  
+            "Soul Booster": '<tg-emoji emoji-id="5467565600568006619">🤩</tg-emoji>',  
+            "Kaya": '<tg-emoji emoji-id="5429406474000437184">👩‍❤️‍💋‍👨</tg-emoji>',  
+            "Yasha": '<tg-emoji emoji-id="5467560339233070091">🤩</tg-emoji>',  
+            "Sange And Yasha": '<tg-emoji emoji-id="5429589242038749865">🤚</tg-emoji>',  
+            "Orchid": '<tg-emoji emoji-id="5467520726749699874">🤩</tg-emoji>',  
+            "Bloodthorn": '<tg-emoji emoji-id="5467694776004401553">🤩</tg-emoji>',  
+            "Ethereal Blade": '<tg-emoji emoji-id="5467641462575358888">🤩</tg-emoji>',  
+            "Heavens Halberd": '<tg-emoji emoji-id="5467846439889558895">🤩</tg-emoji>',      
+            "Sange": '<tg-emoji emoji-id="5469885926584898014">🤩</tg-emoji>',  
+            "Urn Of Shadows": '<tg-emoji emoji-id="5467630226940910178">🤩</tg-emoji>',  
+            "Spirit Vessel": '<tg-emoji emoji-id="5429261402890079825">😩</tg-emoji>',    
+            "Crimson Guard": '<tg-emoji emoji-id="5470036121591240703">🤩</tg-emoji>',    
+            "Refresher Shard": '<tg-emoji emoji-id="5467436815973636888">🤩</tg-emoji>',  
+            "Echo Sabre": '<tg-emoji emoji-id="5429603432610695458">🤱</tg-emoji>',
+            "Harpoon": '<tg-emoji emoji-id="5467597984621420624">🤩</tg-emoji>',    
+            "Arcane Blink": '<tg-emoji emoji-id="5467886499049528800">🤩</tg-emoji>',    
+            "Abaddon’s Aghanim’s Scepter": '<tg-emoji emoji-id="5469857141714083939">🤩</tg-emoji>',    
+            "Mekansm": '<tg-emoji emoji-id="5467932824566784067">🤩</tg-emoji>',  
+            "Rod Of Atos": '<tg-emoji emoji-id="5467818376573246343">🤩</tg-emoji>',
+            "Kaya And Sange": '<tg-emoji emoji-id="5467789192270470219">🤩</tg-emoji>',
+            "Phylactery": '<tg-emoji emoji-id="5208510580775737094">😎</tg-emoji>',
+            "Angels Demise": '<tg-emoji emoji-id="5467410049737448975">🤩</tg-emoji>',
+            "Bfury": '<tg-emoji emoji-id="5469748109674306463">🤩</tg-emoji>',
+            "Monkey King Bar": '<tg-emoji emoji-id="5470163106594312935">🤩</tg-emoji>',
+            "Hand Of Midas": '<tg-emoji emoji-id="5429484178548752495">🤡</tg-emoji>',
+            "Basher": '<tg-emoji emoji-id="5469746426047125184">🤩</tg-emoji>',
+            "Abyssal Blade": '<tg-emoji emoji-id="5467666536594431270">🤩</tg-emoji>',
+            "Aeon Disk": '<tg-emoji emoji-id="5467791133595686879">🤩</tg-emoji>',
+            "Armlet": '<tg-emoji emoji-id="5469824396883416139">🤩</tg-emoji>',
+            "Witch Blade": '<tg-emoji emoji-id="5467826399572156107">🤩</tg-emoji>',
+            "Devastator": '<tg-emoji emoji-id="5467805345642470314">🤩</tg-emoji>',
+            "Revenants Brooch": '<tg-emoji emoji-id="5469908634076992123">🤩</tg-emoji>',
+            "Ward Observer": '<tg-emoji emoji-id="5467632846870962993">🤩</tg-emoji>',
+            "Ward Sentry": '<tg-emoji emoji-id="5467462169165586203">🤩</tg-emoji>',
+            "Ward Dispenser": '<tg-emoji emoji-id="5469962815089431997">🤩</tg-emoji>',
+            "Falcon Blade": '<tg-emoji emoji-id="5467861553879473110">🤩</tg-emoji>',
+            "Mage Slayer": '<tg-emoji emoji-id="5470013504293461332">🤩</tg-emoji>',
+            "Dagon": '<tg-emoji emoji-id="5467488218142235587">🤩</tg-emoji>',
+            "Dagon 2": '<tg-emoji emoji-id="5469969296195082383">🤩</tg-emoji>',
+            "Dagon 3": '<tg-emoji emoji-id="5469622112513709919">🤩</tg-emoji>',
+            "Dagon 4": '<tg-emoji emoji-id="5469844480150492940">🤩</tg-emoji>',
+            "Dagon 5": '<tg-emoji emoji-id="5469686244965374270">🤩</tg-emoji>',
+            "Nullifier": '<tg-emoji emoji-id="5467639448235695534">🤩</tg-emoji>',
+            "Helm Of The Dominator": '<tg-emoji emoji-id="5467464140555575688">🤩</tg-emoji>',
+            "Helm Of The Overlord": '<tg-emoji emoji-id="5467741569673092276">🤩</tg-emoji>',
+            "Maelstrom": '<tg-emoji emoji-id="5467923019156446536">🤩</tg-emoji>',
+            "Ghost": '<tg-emoji emoji-id="5470035653439803744">🤩</tg-emoji>',
+            "Quelling Blade": '<tg-emoji emoji-id="5467378189670046307">🤩</tg-emoji>',
+            "Shivas Guard": '<tg-emoji emoji-id="5467835062521190904">🤩</tg-emoji>',
+            "Infused Raindrop": '<tg-emoji emoji-id="5429589508326716866">💑</tg-emoji>',
+            "Gem": '<tg-emoji emoji-id="5467526344566921150">🤩</tg-emoji>',
+            "Yasha And Kaya": '<tg-emoji emoji-id="5429591746004680178">💤</tg-emoji>',
+            "Lifesteal": '<tg-emoji emoji-id="5469950286669829137">🤩</tg-emoji>',
+            "Lesser Crit": '<tg-emoji emoji-id="5467629917703264949">🤩</tg-emoji>',
+            "Vladmir": '<tg-emoji emoji-id="5467690648540830431">🤩</tg-emoji>',
+            "Orb Of Frost": '<tg-emoji emoji-id="5429604854244872076">😶‍🌫️</tg-emoji>',
+            "Wind Lace": '<tg-emoji emoji-id="5429632793007129283">🤕</tg-emoji>',
+            "Fluffy Hat": '<tg-emoji emoji-id="5429599227837712299">😑</tg-emoji>',
+            "Blight Stone": '<tg-emoji emoji-id="5429570795154210156">👩‍🦰</tg-emoji>',
+            "Mithril Hammer": '<tg-emoji emoji-id="5467426739980361549">🤩</tg-emoji>',
+            "Ogre Axe": '<tg-emoji emoji-id="5467868851028908643">🤩</tg-emoji>',
+            "Circlet": '<tg-emoji emoji-id="5440652308994098468">👹</tg-emoji>',
+            "Cloak": '<tg-emoji emoji-id="5438211616518734925">🤢</tg-emoji>',
+            "Clarity": '<tg-emoji emoji-id="5467785249490493699">🤩</tg-emoji>',
+            "Ring Of Health": '<tg-emoji emoji-id="5467752805307539172">🤩</tg-emoji>',
+            "Eagle": '<tg-emoji emoji-id="5467582647293204653">🤩</tg-emoji>',
+            "Branches": '<tg-emoji emoji-id="5467442214747526492">🤩</tg-emoji>',
+            "Robe": '<tg-emoji emoji-id="5467691451699716884">🤩</tg-emoji>',
+            "Tango": '<tg-emoji emoji-id="5467809876832968643">🤩</tg-emoji>',
+            "Tiara Of Selemene": '<tg-emoji emoji-id="5470172177565240449">🤩</tg-emoji>',
+            "Aegis": '<tg-emoji emoji-id="5467744176718240540">🤩</tg-emoji>',
+            "Vitality Booster": '<tg-emoji emoji-id="5467811242632567795">🤩</tg-emoji>',
+            "Headdress": '<tg-emoji emoji-id="5467884171177255427">🤩</tg-emoji>',
+            "Pers": '<tg-emoji emoji-id="5467634204080624390">🤩</tg-emoji>',
+            "Relic": '<tg-emoji emoji-id="5467765355201976698">🤩</tg-emoji>',
+            "Void Stone": '<tg-emoji emoji-id="5467395210625440792">🤩</tg-emoji>',
+            "Ultimate Orb": '<tg-emoji emoji-id="5467578854837085359">🤩</tg-emoji>',
+            "Gauntlets": '<tg-emoji emoji-id="5467430596860992009">🤩</tg-emoji>',
+            "Point Booster": '<tg-emoji emoji-id="5467599337536119160">🤩</tg-emoji>',
+            "Famango": '<tg-emoji emoji-id="5467577836929835133">🤩</tg-emoji>',
+            "Platemail": '<tg-emoji emoji-id="5467920592499924802">🤩</tg-emoji>',
+            "Orb Of Corrosion": '<tg-emoji emoji-id="5467924105783171604">🤩</tg-emoji>',
+            "Blade Of Alacrity": '<tg-emoji emoji-id="5467464917944656239">🤩</tg-emoji>',
+            "Cheese": '<tg-emoji emoji-id="5467903739048254682">🤩</tg-emoji>',
+            "Gungir": '<tg-emoji emoji-id="5467458591457827736">🤩</tg-emoji>',
+            "Staff Of Wizardry": '<tg-emoji emoji-id="5467822662950609346">🤩</tg-emoji>',
+            "Diadem": '<tg-emoji emoji-id="5469685862713284861">🤩</tg-emoji>',
+            "Blood Grenade": '<tg-emoji emoji-id="5280926765928193216">👨‍🦱</tg-emoji>',
+            "Mystic Staff": '<tg-emoji emoji-id="5467388080979730073">🤩</tg-emoji>',
+            "Gloves": '<tg-emoji emoji-id="5469841349119332616">🤩</tg-emoji>',
+            "Broadsword": '<tg-emoji emoji-id="5467756065187716276">🤩</tg-emoji>',
+            "Chainmail": '<tg-emoji emoji-id="5467372309859818911">🤩</tg-emoji>',
+            "Energy Booster": '<tg-emoji emoji-id="5467828508401100211">🤩</tg-emoji>',
+            "Cornucopia": '<tg-emoji emoji-id="5467743695681904292">🤩</tg-emoji>',
+            "Blitz Knuckles": '<tg-emoji emoji-id="5467602112084990687">🤩</tg-emoji>', 
+            "Enchanted Mango": '<tg-emoji emoji-id="5467870783764192653">🤩</tg-emoji>',
+            "Belt Of Strength": '<tg-emoji emoji-id="5467715709675001734">🤩</tg-emoji>',
+            "Javelin": '<tg-emoji emoji-id="5467443365798766241">🤩</tg-emoji>',
+            "Roshans Banner": '<tg-emoji emoji-id="5467430893213734638">🤩</tg-emoji>',
+            "Slippers": '<tg-emoji emoji-id="5467824982232948778">🤩</tg-emoji>',
+            "Hyperstone": '<tg-emoji emoji-id="5469995989416825772">🤩</tg-emoji>',
+            "Ring Of Tarrasque": '<tg-emoji emoji-id="5467665836514761681">🤩</tg-emoji>',
+            "Flask": '<tg-emoji emoji-id="5467399406808492353">🤩</tg-emoji>',
+            "Faerie Fire": '<tg-emoji emoji-id="5314334224147322409">👩‍🦲</tg-emoji>',
+            "Orb Of Venom": '<tg-emoji emoji-id="5469911017783841138">🤩</tg-emoji>',
+            "Oblivion Staff": '<tg-emoji emoji-id="5467710761872678029">🤩</tg-emoji>',
+            "Demon Edge": '<tg-emoji emoji-id="5469879359579903518">🤩</tg-emoji>',
+            "Ring Of Protection": '<tg-emoji emoji-id="5467518867028859087">🤩</tg-emoji>',
+            "Sobi Mask": '<tg-emoji emoji-id="5467627091614789052">🤩</tg-emoji>',
+            "Buckler": '<tg-emoji emoji-id="5467614331266948301">🤩</tg-emoji>',
+            "Greater Famango": '<tg-emoji emoji-id="5467476810709098517">🤩</tg-emoji>',
+            "Consecrated Wraps": '<tg-emoji emoji-id="5341441218746293135">👘</tg-emoji>',
+            "Ring Of Regen": '<tg-emoji emoji-id="5467603203006685200">🤩</tg-emoji>',
+            "Hydras Breath": '<tg-emoji emoji-id="5343760363647178272">👲</tg-emoji>',
+            "Essence Distiller": '<tg-emoji emoji-id="5341457728600577852">💨</tg-emoji>',
+            "Chasm Stone": '<tg-emoji emoji-id="5346305063050580881">🤕</tg-emoji>',
+            "Voodoo Mask": '<tg-emoji emoji-id="5467416891620352938">🤩</tg-emoji>',
+            "Reaver": '<tg-emoji emoji-id="5346110470967303740">🥴</tg-emoji>',
+            "Shawl": '<tg-emoji emoji-id="5346268319605383344">🕺</tg-emoji>',
+            "Specialists Array": '<tg-emoji emoji-id="5341312588770743680">🧰</tg-emoji>',
+            "Crellas Crozier": '<tg-emoji emoji-id="5341699256086465595">🧙</tg-emoji>',
+            "Claymore": '<tg-emoji emoji-id="5467518123999517884">🤩</tg-emoji>',
+            "Talisman Of Evasion": '<tg-emoji emoji-id="5469849462312556864">🤩</tg-emoji>',
+            "Splintmail": '<tg-emoji emoji-id="5388862240424235116">🤎</tg-emoji>',
+            "Crown": '<tg-emoji emoji-id="5467598594506775207">🤩</tg-emoji>',
+            "Wizard Hat": '<tg-emoji emoji-id="5389046430096728598">🤍</tg-emoji>',
+            "Foragers Mana": '<tg-emoji emoji-id="5389065267823282566">👩‍🍼</tg-emoji>',
+            "Foragers Health": '<tg-emoji emoji-id="5389097630401859068">😐</tg-emoji>'
         }
         self.rank_emojis = {
-            "Herald": '<emoji document_id=5963157659195542640>🎖</emoji>',
-            "Guardian": '<emoji document_id=5963215018483780860>🎖</emoji>',
-            "Crusader": '<emoji document_id=5960576663023523045>🎖</emoji>',
-            "Archon": '<emoji document_id=5963052342302477581>🎖</emoji>',
-            "Legend": '<emoji document_id=5963061984504056919>🎖</emoji>',
-            "Ancient": '<emoji document_id=5963027435787127662>🎖</emoji>',
-            "Divine": '<emoji document_id=5963113657255594572>🎖</emoji>',
-            "Immortal": '<emoji document_id=5960656609544768701>🎖</emoji>'
+            "Herald": '<tg-emoji emoji-id="5963157659195542640">🎖</tg-emoji>',
+            "Guardian": '<tg-emoji emoji-id="5963215018483780860">🎖</tg-emoji>',
+            "Crusader": '<tg-emoji emoji-id="5960576663023523045">🎖</tg-emoji>',
+            "Archon": '<tg-emoji emoji-id="5963052342302477581">🎖</tg-emoji>',
+            "Legend": '<tg-emoji emoji-id="5963061984504056919">🎖</tg-emoji>',
+            "Ancient": '<tg-emoji emoji-id="5963027435787127662">🎖</tg-emoji>',
+            "Divine": '<tg-emoji emoji-id="5963113657255594572">🎖</tg-emoji>',
+            "Immortal": '<tg-emoji emoji-id="5960656609544768701">🎖</tg-emoji>'
         }
         self.hero_emojis = {
-            "Anti-Mage": '<tg-emoji emoji-id=6062179938386055768>🟢</tg-emoji>',
-            "Axe": '<tg-emoji emoji-id=6061943874098564891>🔴</tg-emoji>',
-            "Juggernaut": '<tg-emoji emoji-id=6064624766914924449>🟢</tg-emoji>',
-            "Pudge": '<tg-emoji emoji-id=6062065073780690927>🔴</tg-emoji>',
-            "Invoker": '<tg-emoji emoji-id=6062314229128499676>📚</tg-emoji>',
-            "Bane": '<tg-emoji emoji-id=6062010952897793745>📚</tg-emoji>',
-            "Bloodseeker": '<tg-emoji emoji-id=6062032122791598368>🟢</tg-emoji>',
-            "Crystal Maiden": '<tg-emoji emoji-id=6064219008469569795>🔵</tg-emoji>',
-            "Drow Ranger": '<tg-emoji emoji-id=6061854143641816935>🟢</tg-emoji>',
-            "Earthshaker": '<tg-emoji emoji-id=6062153554401955565>🔴</tg-emoji>',
-            "Mirana": '<tg-emoji emoji-id=6062297886777937723>🟢</tg-emoji>',
-            "Morphling": '<tg-emoji emoji-id=6064443858597449152>🟢</tg-emoji>',
-            "Shadow Fiend": '<tg-emoji emoji-id=6064205264574222013>🟢</tg-emoji>',
-            "Phantom Lancer": '<tg-emoji emoji-id=6061901993872462041>🟢</tg-emoji>',
-            "Puck": '<tg-emoji emoji-id=6062166374879335422>🔵</tg-emoji>',
-            "Razor": '<tg-emoji emoji-id=6062104175162954182>🟢</tg-emoji>',
-            "Sand King": '<tg-emoji emoji-id=6064151371324592043>📚</tg-emoji>',
-            "Storm Spirit": '<tg-emoji emoji-id=6061887283609474004>🔵</tg-emoji>',
-            "Sven": '<tg-emoji emoji-id=6062262753945457249>🔴</tg-emoji>',
-            "Tiny": '<tg-emoji emoji-id=6061984912511078154>🔴</tg-emoji>',
-            "Vengeful Spirit": '<tg-emoji emoji-id=6064293105245359489>📚</tg-emoji>',
-            "Windranger": '<tg-emoji emoji-id=6064229565499182127>📚</tg-emoji>',
-            "Zeus": '<tg-emoji emoji-id=6062297027784480121>🔵</tg-emoji>',
-            "Kunkka": '<tg-emoji emoji-id=6062241455202635774>🔴</tg-emoji>',
-            "Lina": '<tg-emoji emoji-id=6064308803350826942>🔵</tg-emoji>',
-            "Lion": '<tg-emoji emoji-id=6064289772350737513>🔵</tg-emoji>',
-            "Shadow Shaman": '<tg-emoji emoji-id=6064493624383508136>🔵</tg-emoji>',
-            "Slardar": '<tg-emoji emoji-id=6062362513150843237>🔴</tg-emoji>',
-            "Tidehunter": '<tg-emoji emoji-id=6064434495568743878>🔴</tg-emoji>',
-            "Witch Doctor": '<tg-emoji emoji-id=6064291872589746598>🔵</tg-emoji>',
-            "Lich": '<tg-emoji emoji-id=6062058639919682717>🔵</tg-emoji>',
-            "Riki": '<tg-emoji emoji-id=6062018357421412977>🟢</tg-emoji>',
-            "Enigma": '<tg-emoji emoji-id=6062003333625811037>📚</tg-emoji>',
-            "Tinker": '<tg-emoji emoji-id=6062141403939475826>🔵</tg-emoji>',
-            "Sniper": '<tg-emoji emoji-id=6064553891364605714>🟢</tg-emoji>',
-            "Necrophos": '<tg-emoji emoji-id=6062095984660319884>🔵</tg-emoji>',
-            "Warlock": '<tg-emoji emoji-id=6062060237647516154>🔵</tg-emoji>',
-            "Beastmaster": '<tg-emoji emoji-id=6062239913309376880>📚</tg-emoji>',
-            "Queen of Pain": '<tg-emoji emoji-id=6064401802277686782>🔵</tg-emoji>',
-            "Venomancer": '<tg-emoji emoji-id=6062083580794772209>📚</tg-emoji>',
-            "Faceless Void": '<tg-emoji emoji-id=6061881588482838965>🟢</tg-emoji>',
-            "Wraith King": '<tg-emoji emoji-id=6064260386184499015>🔴</tg-emoji>',
-            "Death Prophet": '<tg-emoji emoji-id=6064637574507400571>🔵</tg-emoji>',
-            "Phantom Assassin": '<tg-emoji emoji-id=6064314197829751274>🟢</tg-emoji>',
-            "Pugna": '<tg-emoji emoji-id=6062085620904235332>🔵</tg-emoji>',
-            "Templar Assassin": '<tg-emoji emoji-id=6064522215980797912>🟢</tg-emoji>',
-            "Viper": '<tg-emoji emoji-id=6061862059266544998>🟢</tg-emoji>',
-            "Luna": '<tg-emoji emoji-id=6064138744120741611>🟢</tg-emoji>',
-            "Dragon Knight": '<tg-emoji emoji-id=6061964279488188460>🔴</tg-emoji>',
-            "Dazzle": '<tg-emoji emoji-id=6062278211532755233>📚</tg-emoji>',
-            "Clockwerk": '<tg-emoji emoji-id=6064468047853260553>📚</tg-emoji>',
-            "Leshrac": '<tg-emoji emoji-id=6064245985159155473>🔵</tg-emoji>',
-            "Nature's Prophet": '<tg-emoji emoji-id=6064634018274485796>🔵</tg-emoji>',
-            "Lifestealer": '<tg-emoji emoji-id=6062018963011801353>🔴</tg-emoji>',
-            "Dark Seer": '<tg-emoji emoji-id=6062398247278744408>📚</tg-emoji>',
-            "Clinkz": '<tg-emoji emoji-id=6064101545408991778>🟢</tg-emoji>',
-            "Omniknight": '<tg-emoji emoji-id=6061980239586660582>🔴</tg-emoji>',
-            "Enchantress": '<tg-emoji emoji-id=6061974132143166052>🔵</tg-emoji>',
-            "Huskar": '<tg-emoji emoji-id=6062174595446739362>🔴</tg-emoji>',
-            "Night Stalker": '<tg-emoji emoji-id=6061937216899256550>🔴</tg-emoji>',
-            "Broodmother": '<tg-emoji emoji-id=6062384902815354947>📚</tg-emoji>',
-            "Bounty Hunter": '<tg-emoji emoji-id=6064255494216748369>🟢</tg-emoji>',
-            "Weaver": '<tg-emoji emoji-id=6062351603933909860>🟢</tg-emoji>',
-            "Jakiro": '<tg-emoji emoji-id=6062211179978166339>🔵</tg-emoji>',
-            "Batrider": '<tg-emoji emoji-id=6064421267069472479>📚</tg-emoji>',
-            "Chen": '<tg-emoji emoji-id=6064294763102736140>📚</tg-emoji>',
-            "Spectre": '<tg-emoji emoji-id=6061877302105477141>🟢</tg-emoji>',
-            "Doom": '<tg-emoji emoji-id=6062238092243243286>🔴</tg-emoji>',
-            "Ancient Apparition": '<tg-emoji emoji-id=6062298535318000351>🔵</tg-emoji>',
-            "Ursa": '<tg-emoji emoji-id=6061953550659883060>🟢</tg-emoji>',
-            "Spirit Breaker": '<tg-emoji emoji-id=6062212988159398402>🔴</tg-emoji>',
-            "Gyrocopter": '<tg-emoji emoji-id=6062215659629061561>🟢</tg-emoji>',
-            "Alchemist": '<tg-emoji emoji-id=6061874604866015790>🔴</tg-emoji>',
-            "Silencer": '<tg-emoji emoji-id=6062244603413664044>🔵</tg-emoji>',
-            "Outworld Destroyer": '<tg-emoji emoji-id=6064612483308457397>🔵</tg-emoji>',
-            "Lycan": '<tg-emoji emoji-id=6064375495602999258>📚</tg-emoji>',
-            "Brewmaster": '<tg-emoji emoji-id=6061862883900264920>📚</tg-emoji>',
-            "Shadow Demon": '<tg-emoji emoji-id=6062334733302370465>🔵</tg-emoji>',
-            "Lone Druid": '<tg-emoji emoji-id=6064222487393078839>📚</tg-emoji>',
-            "Chaos Knight": '<tg-emoji emoji-id=6062017154830570512>🔴</tg-emoji>',
-            "Meepo": '<tg-emoji emoji-id=6062221629633599535>🟢</tg-emoji>',
-            "Treant Protector": '<tg-emoji emoji-id=6062215127053111729>🔴</tg-emoji>',
-            "Ogre Magi": '<tg-emoji emoji-id=6061878204048609835>🔴</tg-emoji>',
-            "Undying": '<tg-emoji emoji-id=6064609433881678147>🔴</tg-emoji>',
-            "Rubick": '<tg-emoji emoji-id=6062239977733886601>🔵</tg-emoji>',
-            "Disruptor": '<tg-emoji emoji-id=6064448153564745401>🔵</tg-emoji>',
-            "Nyx Assassin": '<tg-emoji emoji-id=6061919702022622872>📚</tg-emoji>',
-            "Naga Siren": '<tg-emoji emoji-id=6061868110875463788>🟢</tg-emoji>',
-            "Keeper of the Light": '<tg-emoji emoji-id=6064394346214461058>🔵</tg-emoji>',
-            "Io": '<tg-emoji emoji-id=6062230820863611549>📚</tg-emoji>',
-            "Visage": '<tg-emoji emoji-id=6062254202665569743>📚</tg-emoji>',
-            "Slark": '<tg-emoji emoji-id=6062168303319650843>🟢</tg-emoji>',
-            "Medusa": '<tg-emoji emoji-id=6062362427251495358>🟢</tg-emoji>',
-            "Troll Warlord": '<tg-emoji emoji-id=6064360695145697016>🟢</tg-emoji>',
-            "Centaur Warrunner": '<tg-emoji emoji-id=6062097041222274851>🔴</tg-emoji>',
-            "Magnus": '<tg-emoji emoji-id=6064496922918391606>📚</tg-emoji>',
-            "Timbersaw": '<tg-emoji emoji-id=6064568103411388841>🔴</tg-emoji>',
-            "Bristleback": '<tg-emoji emoji-id=6061862102216217916>🔴</tg-emoji>',
-            "Tusk": '<tg-emoji emoji-id=6062111506672128077>🔴</tg-emoji>',
-            "Skywrath Mage": '<tg-emoji emoji-id=6064350679281962923>🔵</tg-emoji>',
-            "Abaddon": '<tg-emoji emoji-id=6064623817727152506>📚</tg-emoji>',
-            "Elder Titan": '<tg-emoji emoji-id=6062004720900247816>🔴</tg-emoji>',
-            "Legion Commander": '<tg-emoji emoji-id=6062003041568037236>🔴</tg-emoji>',
-            "Techies": '<tg-emoji emoji-id=6064194488501276422>📚</tg-emoji>',
-            "Ember Spirit": '<tg-emoji emoji-id=6062314413812098321>🟢</tg-emoji>',
-            "Earth Spirit": '<tg-emoji emoji-id=6061952988019167874>🔴</tg-emoji>',
-            "Underlord": '<tg-emoji emoji-id=6062200060307836531>🔴</tg-emoji>',
-            "Terrorblade": '<tg-emoji emoji-id=6064443330316472109>🟢</tg-emoji>',
-            "Phoenix": '<tg-emoji emoji-id=6062297770813821507>📚</tg-emoji>',
-            "Oracle": '<tg-emoji emoji-id=6062071215583924862>🔵</tg-emoji>',
-            "Winter Wyvern": '<tg-emoji emoji-id=6062264639436100075>📚</tg-emoji>',
-            "Arc Warden": '<tg-emoji emoji-id=6062221122827456836>🟢</tg-emoji>',
-            "Monkey King": '<tg-emoji emoji-id=6062069394517791133>🟢</tg-emoji>',
-            "Dark Willow": '<tg-emoji emoji-id=6064600805292379746>📚</tg-emoji>',
-            "Pangolier": '<tg-emoji emoji-id=6061906576602568469>📚</tg-emoji>',
-            "Grimstroke": '<tg-emoji emoji-id=6061874050815234471>🔵</tg-emoji>',
-            "Hoodwink": '<tg-emoji emoji-id=6062098656129979353>🟢</tg-emoji>',
-            "Void Spirit": '<tg-emoji emoji-id=6064163289858838043>📚</tg-emoji>',
-            "Snapfire": '<tg-emoji emoji-id=6062098398431940095>📚</tg-emoji>',
-            "Mars": '<tg-emoji emoji-id=6062056565450477147>🔴</tg-emoji>',
-            "Dawnbreaker": '<tg-emoji emoji-id=6062338388319540368>🔴</tg-emoji>',
-            "Marci": '<tg-emoji emoji-id=6062225477924295349>📚</tg-emoji>',
-            "Primal Beast": '<tg-emoji emoji-id=6062167156563384847>🔴</tg-emoji>',
-            "Muerta": '<tg-emoji emoji-id=6061974394136171083>🔵</tg-emoji>',
-            "Largo": '<tg-emoji emoji-id=6269259626194150042>🐸</tg-emoji>',
-            "Kez": '<tg-emoji emoji-id=5442844181129104405>🤩</tg-emoji>',
-            "Ringmaster": '<tg-emoji emoji-id=6269209104493845341>🤡</tg-emoji>',
-
-            
+            "Anti-Mage": '<tg-emoji emoji-id="6062179938386055768">🟢</tg-emoji>',
+            "Axe": '<tg-emoji emoji-id="6061943874098564891">🔴</tg-emoji>',
+            "Juggernaut": '<tg-emoji emoji-id="6064624766914924449">🟢</tg-emoji>',
+            "Pudge": '<tg-emoji emoji-id="6062065073780690927">🔴</tg-emoji>',
+            "Invoker": '<tg-emoji emoji-id="6062314229128499676">📚</tg-emoji>',
+            "Bane": '<tg-emoji emoji-id="6062010952897793745">📚</tg-emoji>',
+            "Bloodseeker": '<tg-emoji emoji-id="6062032122791598368">🟢</tg-emoji>',
+            "Crystal Maiden": '<tg-emoji emoji-id="6064219008469569795">🔵</tg-emoji>',
+            "Drow Ranger": '<tg-emoji emoji-id="6061854143641816935">🟢</tg-emoji>',
+            "Earthshaker": '<tg-emoji emoji-id="6062153554401955565">🔴</tg-emoji>',
+            "Mirana": '<tg-emoji emoji-id="6062297886777937723">🟢</tg-emoji>',
+            "Morphling": '<tg-emoji emoji-id="6064443858597449152">🟢</tg-emoji>',
+            "Shadow Fiend": '<tg-emoji emoji-id="6064205264574222013">🟢</tg-emoji>',
+            "Phantom Lancer": '<tg-emoji emoji-id="6061901993872462041">🟢</tg-emoji>',
+            "Puck": '<tg-emoji emoji-id="6062166374879335422">🔵</tg-emoji>',
+            "Razor": '<tg-emoji emoji-id="6062104175162954182">🟢</tg-emoji>',
+            "Sand King": '<tg-emoji emoji-id="6064151371324592043">📚</tg-emoji>',
+            "Storm Spirit": '<tg-emoji emoji-id="6061887283609474004">🔵</tg-emoji>',
+            "Sven": '<tg-emoji emoji-id="6062262753945457249">🔴</tg-emoji>',
+            "Tiny": '<tg-emoji emoji-id="6061984912511078154">🔴</tg-emoji>',
+            "Vengeful Spirit": '<tg-emoji emoji-id="6064293105245359489">📚</tg-emoji>',
+            "Windranger": '<tg-emoji emoji-id="6064229565499182127">📚</tg-emoji>',
+            "Zeus": '<tg-emoji emoji-id="6062297027784480121">🔵</tg-emoji>',
+            "Kunkka": '<tg-emoji emoji-id="6062241455202635774">🔴</tg-emoji>',
+            "Lina": '<tg-emoji emoji-id="6064308803350826942">🔵</tg-emoji>',
+            "Lion": '<tg-emoji emoji-id="6064289772350737513">🔵</tg-emoji>',
+            "Shadow Shaman": '<tg-emoji emoji-id="6064493624383508136">🔵</tg-emoji>',
+            "Slardar": '<tg-emoji emoji-id="6062362513150843237">🔴</tg-emoji>',
+            "Tidehunter": '<tg-emoji emoji-id="6064434495568743878">🔴</tg-emoji>',
+            "Witch Doctor": '<tg-emoji emoji-id="6064291872589746598">🔵</tg-emoji>',
+            "Lich": '<tg-emoji emoji-id="6062058639919682717">🔵</tg-emoji>',
+            "Riki": '<tg-emoji emoji-id="6062018357421412977">🟢</tg-emoji>',
+            "Enigma": '<tg-emoji emoji-id="6062003333625811037">📚</tg-emoji>',
+            "Tinker": '<tg-emoji emoji-id="6062141403939475826">🔵</tg-emoji>',
+            "Sniper": '<tg-emoji emoji-id="6064553891364605714">🟢</tg-emoji>',
+            "Necrophos": '<tg-emoji emoji-id="6062095984660319884">🔵</tg-emoji>',
+            "Warlock": '<tg-emoji emoji-id="6062060237647516154">🔵</tg-emoji>',
+            "Beastmaster": '<tg-emoji emoji-id="6062239913309376880">📚</tg-emoji>',
+            "Queen of Pain": '<tg-emoji emoji-id="6064401802277686782">🔵</tg-emoji>',
+            "Venomancer": '<tg-emoji emoji-id="6062083580794772209">📚</tg-emoji>',
+            "Faceless Void": '<tg-emoji emoji-id="6061881588482838965">🟢</tg-emoji>',
+            "Wraith King": '<tg-emoji emoji-id="6064260386184499015">🔴</tg-emoji>',
+            "Death Prophet": '<tg-emoji emoji-id="6064637574507400571">🔵</tg-emoji>',
+            "Phantom Assassin": '<tg-emoji emoji-id="6064314197829751274">🟢</tg-emoji>',
+            "Pugna": '<tg-emoji emoji-id="6062085620904235332">🔵</tg-emoji>',
+            "Templar Assassin": '<tg-emoji emoji-id="6064522215980797912">🟢</tg-emoji>',
+            "Viper": '<tg-emoji emoji-id="6061862059266544998">🟢</tg-emoji>',
+            "Luna": '<tg-emoji emoji-id="6064138744120741611">🟢</tg-emoji>',
+            "Dragon Knight": '<tg-emoji emoji-id="6061964279488188460">🔴</tg-emoji>',
+            "Dazzle": '<tg-emoji emoji-id="6062278211532755233">📚</tg-emoji>',
+            "Clockwerk": '<tg-emoji emoji-id="6064468047853260553">📚</tg-emoji>',
+            "Leshrac": '<tg-emoji emoji-id="6064245985159155473">🔵</tg-emoji>',
+            "Nature's Prophet": '<tg-emoji emoji-id="6064634018274485796">🔵</tg-emoji>',
+            "Lifestealer": '<tg-emoji emoji-id="6062018963011801353">🔴</tg-emoji>',
+            "Dark Seer": '<tg-emoji emoji-id="6062398247278744408">📚</tg-emoji>',
+            "Clinkz": '<tg-emoji emoji-id="6064101545408991778">🟢</tg-emoji>',
+            "Omniknight": '<tg-emoji emoji-id="6061980239586660582">🔴</tg-emoji>',
+            "Enchantress": '<tg-emoji emoji-id="6061974132143166052">🔵</tg-emoji>',
+            "Huskar": '<tg-emoji emoji-id="6062174595446739362">🔴</tg-emoji>',
+            "Night Stalker": '<tg-emoji emoji-id="6061937216899256550">🔴</tg-emoji>',
+            "Broodmother": '<tg-emoji emoji-id="6062384902815354947">📚</tg-emoji>',
+            "Bounty Hunter": '<tg-emoji emoji-id="6064255494216748369">🟢</tg-emoji>',
+            "Weaver": '<tg-emoji emoji-id="6062351603933909860">🟢</tg-emoji>',
+            "Jakiro": '<tg-emoji emoji-id="6062211179978166339">🔵</tg-emoji>',
+            "Batrider": '<tg-emoji emoji-id="6064421267069472479">📚</tg-emoji>',
+            "Chen": '<tg-emoji emoji-id="6064294763102736140">📚</tg-emoji>',
+            "Spectre": '<tg-emoji emoji-id="6061877302105477141">🟢</tg-emoji>',
+            "Doom": '<tg-emoji emoji-id="6062238092243243286">🔴</tg-emoji>',
+            "Ancient Apparition": '<tg-emoji emoji-id="6062298535318000351">🔵</tg-emoji>',
+            "Ursa": '<tg-emoji emoji-id="6061953550659883060">🟢</tg-emoji>',
+            "Spirit Breaker": '<tg-emoji emoji-id="6062212988159398402">🔴</tg-emoji>',
+            "Gyrocopter": '<tg-emoji emoji-id="6062215659629061561">🟢</tg-emoji>',
+            "Alchemist": '<tg-emoji emoji-id="6061874604866015790">🔴</tg-emoji>',
+            "Silencer": '<tg-emoji emoji-id="6062244603413664044">🔵</tg-emoji>',
+            "Outworld Destroyer": '<tg-emoji emoji-id="6064612483308457397">🔵</tg-emoji>',
+            "Lycan": '<tg-emoji emoji-id="6064375495602999258">📚</tg-emoji>',
+            "Brewmaster": '<tg-emoji emoji-id="6061862883900264920">📚</tg-emoji>',
+            "Shadow Demon": '<tg-emoji emoji-id="6062334733302370465">🔵</tg-emoji>',
+            "Lone Druid": '<tg-emoji emoji-id="6064222487393078839">📚</tg-emoji>',
+            "Chaos Knight": '<tg-emoji emoji-id="6062017154830570512">🔴</tg-emoji>',
+            "Meepo": '<tg-emoji emoji-id="6062221629633599535">🟢</tg-emoji>',
+            "Treant Protector": '<tg-emoji emoji-id="6062215127053111729">🔴</tg-emoji>',
+            "Ogre Magi": '<tg-emoji emoji-id="6061878204048609835">🔴</tg-emoji>',
+            "Undying": '<tg-emoji emoji-id="6064609433881678147">🔴</tg-emoji>',
+            "Rubick": '<tg-emoji emoji-id="6062239977733886601">🔵</tg-emoji>',
+            "Disruptor": '<tg-emoji emoji-id="6064448153564745401">🔵</tg-emoji>',
+            "Nyx Assassin": '<tg-emoji emoji-id="6061919702022622872">📚</tg-emoji>',
+            "Naga Siren": '<tg-emoji emoji-id="6061868110875463788">🟢</tg-emoji>',
+            "Keeper of the Light": '<tg-emoji emoji-id="6064394346214461058">🔵</tg-emoji>',
+            "Io": '<tg-emoji emoji-id="6062230820863611549">📚</tg-emoji>',
+            "Visage": '<tg-emoji emoji-id="6062254202665569743">📚</tg-emoji>',
+            "Slark": '<tg-emoji emoji-id="6062168303319650843">🟢</tg-emoji>',
+            "Medusa": '<tg-emoji emoji-id="6062362427251495358">🟢</tg-emoji>',
+            "Troll Warlord": '<tg-emoji emoji-id="6064360695145697016">🟢</tg-emoji>',
+            "Centaur Warrunner": '<tg-emoji emoji-id="6062097041222274851">🔴</tg-emoji>',
+            "Magnus": '<tg-emoji emoji-id="6064496922918391606">📚</tg-emoji>',
+            "Timbersaw": '<tg-emoji emoji-id="6064568103411388841">🔴</tg-emoji>',
+            "Bristleback": '<tg-emoji emoji-id="6061862102216217916">🔴</tg-emoji>',
+            "Tusk": '<tg-emoji emoji-id="6062111506672128077">🔴</tg-emoji>',
+            "Skywrath Mage": '<tg-emoji emoji-id="6064350679281962923">🔵</tg-emoji>',
+            "Abaddon": '<tg-emoji emoji-id="6064623817727152506">📚</tg-emoji>',
+            "Elder Titan": '<tg-emoji emoji-id="6062004720900247816">🔴</tg-emoji>',
+            "Legion Commander": '<tg-emoji emoji-id="6062003041568037236">🔴</tg-emoji>',
+            "Techies": '<tg-emoji emoji-id="6064194488501276422">📚</tg-emoji>',
+            "Ember Spirit": '<tg-emoji emoji-id="6062314413812098321">🟢</tg-emoji>',
+            "Earth Spirit": '<tg-emoji emoji-id="6061952988019167874">🔴</tg-emoji>',
+            "Underlord": '<tg-emoji emoji-id="6062200060307836531">🔴</tg-emoji>',
+            "Terrorblade": '<tg-emoji emoji-id="6064443330316472109">🟢</tg-emoji>',
+            "Phoenix": '<tg-emoji emoji-id="6062297770813821507">📚</tg-emoji>',
+            "Oracle": '<tg-emoji emoji-id="6062071215583924862">🔵</tg-emoji>',
+            "Winter Wyvern": '<tg-emoji emoji-id="6062264639436100075">📚</tg-emoji>',
+            "Arc Warden": '<tg-emoji emoji-id="6062221122827456836">🟢</tg-emoji>',
+            "Monkey King": '<tg-emoji emoji-id="6062069394517791133">🟢</tg-emoji>',
+            "Dark Willow": '<tg-emoji emoji-id="6064600805292379746">📚</tg-emoji>',
+            "Pangolier": '<tg-emoji emoji-id="6061906576602568469">📚</tg-emoji>',
+            "Grimstroke": '<tg-emoji emoji-id="6061874050815234471">🔵</tg-emoji>',
+            "Hoodwink": '<tg-emoji emoji-id="6062098656129979353">🟢</tg-emoji>',
+            "Void Spirit": '<tg-emoji emoji-id="6064163289858838043">📚</tg-emoji>',
+            "Snapfire": '<tg-emoji emoji-id="6062098398431940095">📚</tg-emoji>',
+            "Mars": '<tg-emoji emoji-id="6062056565450477147">🔴</tg-emoji>',
+            "Dawnbreaker": '<tg-emoji emoji-id="6062338388319540368">🔴</tg-emoji>',
+            "Marci": '<tg-emoji emoji-id="6062225477924295349">📚</tg-emoji>',
+            "Primal Beast": '<tg-emoji emoji-id="6062167156563384847">🔴</tg-emoji>',
+            "Muerta": '<tg-emoji emoji-id="6061974394136171083">🔵</tg-emoji>',
+            "Largo": '<tg-emoji emoji-id="6269259626194150042">🐸</tg-emoji>',
+            "Kez": '<tg-emoji emoji-id="5442844181129104405">🤩</tg-emoji>',
+            "Ringmaster": '<tg-emoji emoji-id="6269209104493845341">🤡</tg-emoji>',
         }
 
-        self.hero_emojis2 = {
-            "Anti-Mage": '<emoji document_id="6062179938386055768">🟢</emoji>',
-            "Axe": '<emoji document_id="6061943874098564891">🔴</emoji>',
-            "Juggernaut": '<emoji document_id="6064624766914924449">🟢</emoji>',
-            "Pudge": '<emoji document_id="6062065073780690927">🔴</emoji>',
-            "Invoker": '<emoji document_id="6062314229128499676">📚</emoji>',
-            "Bane": '<emoji document_id="6062010952897793745">📚</emoji>',
-            "Bloodseeker": '<emoji document_id="6062032122791598368">🟢</emoji>',
-            "Crystal Maiden": '<emoji document_id="6064219008469569795">🔵</emoji>',
-            "Drow Ranger": '<emoji document_id="6061854143641816935">🟢</emoji>',
-            "Earthshaker": '<emoji document_id="6062153554401955565">🔴</emoji>',
-            "Mirana": '<emoji document_id="6062297886777937723">🟢</emoji>',
-            "Morphling": '<emoji document_id="6064443858597449152">🟢</emoji>',
-            "Shadow Fiend": '<emoji document_id="6064205264574222013">🟢</emoji>',
-            "Phantom Lancer": '<emoji document_id="6061901993872462041">🟢</emoji>',
-            "Puck": '<emoji document_id="6062166374879335422">🔵</emoji>',
-            "Razor": '<emoji document_id="6062104175162954182">🟢</emoji>',
-            "Sand King": '<emoji document_id="6064151371324592043">📚</emoji>',
-            "Storm Spirit": '<emoji document_id="6061887283609474004">🔵</emoji>',
-            "Sven": '<emoji document_id="6062262753945457249">🔴</emoji>',
-            "Tiny": '<emoji document_id="6061984912511078154">🔴</emoji>',
-            "Vengeful Spirit": '<emoji document_id="6064293105245359489">📚</emoji>',
-            "Windranger": '<emoji document_id="6064229565499182127">📚</emoji>',
-            "Zeus": '<emoji document_id="6062297027784480121">🔵</emoji>',
-            "Kunkka": '<emoji document_id="6062241455202635774">🔴</emoji>',
-            "Lina": '<emoji document_id="6064308803350826942">🔵</emoji>',
-            "Lion": '<emoji document_id="6064289772350737513">🔵</emoji>',
-            "Shadow Shaman": '<emoji document_id="6064493624383508136">🔵</emoji>',
-            "Slardar": '<emoji document_id="6062362513150843237">🔴</emoji>',
-            "Tidehunter": '<emoji document_id="6064434495568743878">🔴</emoji>',
-            "Witch Doctor": '<emoji document_id="6064291872589746598">🔵</emoji>',
-            "Lich": '<emoji document_id="6062058639919682717">🔵</emoji>',
-            "Riki": '<emoji document_id="6062018357421412977">🟢</emoji>',
-            "Enigma": '<emoji document_id="6062003333625811037">📚</emoji>',
-            "Tinker": '<emoji document_id="6062141403939475826">🔵</emoji>',
-            "Sniper": '<emoji document_id="6064553891364605714">🟢</emoji>',
-            "Necrophos": '<emoji document_id="6062095984660319884">🔵</emoji>',
-            "Warlock": '<emoji document_id="6062060237647516154">🔵</emoji>',
-            "Beastmaster": '<emoji document_id="6062239913309376880">📚</emoji>',
-            "Queen of Pain": '<emoji document_id="6064401802277686782">🔵</emoji>',
-            "Venomancer": '<emoji document_id="6062083580794772209">📚</emoji>',
-            "Faceless Void": '<emoji document_id="6061881588482838965">🟢</emoji>',
-            "Wraith King": '<emoji document_id="6064260386184499015">🔴</emoji>',
-            "Death Prophet": '<emoji document_id="6064637574507400571">🔵</emoji>',
-            "Phantom Assassin": '<emoji document_id="6064314197829751274">🟢</emoji>',
-            "Pugna": '<emoji document_id="6062085620904235332">🔵</emoji>',
-            "Templar Assassin": '<emoji document_id="6064522215980797912">🟢</emoji>',
-            "Viper": '<emoji document_id="6061862059266544998">🟢</emoji>',
-            "Luna": '<emoji document_id="6064138744120741611">🟢</emoji>',
-            "Dragon Knight": '<emoji document_id="6061964279488188460">🔴</emoji>',
-            "Dazzle": '<emoji document_id="6062278211532755233">📚</emoji>',
-            "Clockwerk": '<emoji document_id="6064468047853260553">📚</emoji>',
-            "Leshrac": '<emoji document_id="6064245985159155473">🔵</emoji>',
-            "Nature's Prophet": '<emoji document_id="6064634018274485796">🔵</emoji>',
-            "Lifestealer": '<emoji document_id="6062018963011801353">🔴</emoji>',
-            "Dark Seer": '<emoji document_id="6062398247278744408">📚</emoji>',
-            "Clinkz": '<emoji document_id="6064101545408991778">🟢</emoji>',
-            "Omniknight": '<emoji document_id="6061980239586660582">🔴</emoji>',
-            "Enchantress": '<emoji document_id="6061974132143166052">🔵</emoji>',
-            "Huskar": '<emoji document_id="6062174595446739362">🔴</emoji>',
-            "Night Stalker": '<emoji document_id="6061937216899256550">🔴</emoji>',
-            "Broodmother": '<emoji document_id="6062384902815354947">📚</emoji>',
-            "Bounty Hunter": '<emoji document_id="6064255494216748369">🟢</emoji>',
-            "Weaver": '<emoji document_id="6062351603933909860">🟢</emoji>',
-            "Jakiro": '<emoji document_id="6062211179978166339">🔵</emoji>',
-            "Batrider": '<emoji document_id="6064421267069472479">📚</emoji>',
-            "Chen": '<emoji document_id="6064294763102736140">📚</emoji>',
-            "Spectre": '<emoji document_id="6061877302105477141">🟢</emoji>',
-            "Doom": '<emoji document_id="6062238092243243286">🔴</emoji>',
-            "Ancient Apparition": '<emoji document_id="6062298535318000351">🔵</emoji>',
-            "Ursa": '<emoji document_id="6061953550659883060">🟢</emoji>',
-            "Spirit Breaker": '<emoji document_id="6062212988159398402">🔴</emoji>',
-            "Gyrocopter": '<emoji document_id="6062215659629061561">🟢</emoji>',
-            "Alchemist": '<emoji document_id="6061874604866015790">🔴</emoji>',
-            "Silencer": '<emoji document_id="6062244603413664044">🔵</emoji>',
-            "Outworld Destroyer": '<emoji document_id="6064612483308457397">🔵</emoji>',
-            "Lycan": '<emoji document_id="6064375495602999258">📚</emoji>',
-            "Brewmaster": '<emoji document_id="6061862883900264920">📚</emoji>',
-            "Shadow Demon": '<emoji document_id="6062334733302370465">🔵</emoji>',
-            "Lone Druid": '<emoji document_id="6064222487393078839">📚</emoji>',
-            "Chaos Knight": '<emoji document_id="6062017154830570512">🔴</emoji>',
-            "Meepo": '<emoji document_id="6062221629633599535">🟢</emoji>',
-            "Treant Protector": '<emoji document_id="6062215127053111729">🔴</emoji>',
-            "Ogre Magi": '<emoji document_id="6061878204048609835">🔴</emoji>',
-            "Undying": '<emoji document_id="6064609433881678147">🔴</emoji>',
-            "Rubick": '<emoji document_id="6062239977733886601">🔵</emoji>',
-            "Disruptor": '<emoji document_id="6064448153564745401">🔵</emoji>',
-            "Nyx Assassin": '<emoji document_id="6061919702022622872">📚</emoji>',
-            "Naga Siren": '<emoji document_id="6061868110875463788">🟢</emoji>',
-            "Keeper of the Light": '<emoji document_id="6064394346214461058">🔵</emoji>',
-            "Io": '<emoji document_id="6062230820863611549">📚</emoji>',
-            "Visage": '<emoji document_id="6062254202665569743">📚</emoji>',
-            "Slark": '<emoji document_id="6062168303319650843">🟢</emoji>',
-            "Medusa": '<emoji document_id="6062362427251495358">🟢</emoji>',
-            "Troll Warlord": '<emoji document_id="6064360695145697016">🟢</emoji>',
-            "Centaur Warrunner": '<emoji document_id="6062097041222274851">🔴</emoji>',
-            "Magnus": '<emoji document_id="6064496922918391606">📚</emoji>',
-            "Timbersaw": '<emoji document_id="6064568103411388841">🔴</emoji>',
-            "Bristleback": '<emoji document_id="6061862102216217916">🔴</emoji>',
-            "Tusk": '<emoji document_id="6062111506672128077">🔴</emoji>',
-            "Skywrath Mage": '<emoji document_id="6064350679281962923">🔵</emoji>',
-            "Abaddon": '<emoji document_id="6064623817727152506">📚</emoji>',
-            "Elder Titan": '<emoji document_id="6062004720900247816">🔴</emoji>',
-            "Legion Commander": '<emoji document_id="6062003041568037236">🔴</emoji>',
-            "Techies": '<emoji document_id="6064194488501276422">📚</emoji>',
-            "Ember Spirit": '<emoji document_id="6062314413812098321">🟢</emoji>',
-            "Earth Spirit": '<emoji document_id="6061952988019167874">🔴</emoji>',
-            "Underlord": '<emoji document_id="6062200060307836531">🔴</emoji>',
-            "Terrorblade": '<emoji document_id="6064443330316472109">🟢</emoji>',
-            "Phoenix": '<emoji document_id="6062297770813821507">📚</emoji>',
-            "Oracle": '<emoji document_id="6062071215583924862">🔵</emoji>',
-            "Winter Wyvern": '<emoji document_id="6062264639436100075">📚</emoji>',
-            "Arc Warden": '<emoji document_id="6062221122827456836">🟢</emoji>',
-            "Monkey King": '<emoji document_id="6062069394517791133">🟢</emoji>',
-            "Dark Willow": '<emoji document_id="6064600805292379746">📚</emoji>',
-            "Pangolier": '<emoji document_id="6061906576602568469">📚</emoji>',
-            "Grimstroke": '<emoji document_id="6061874050815234471">🔵</emoji>',
-            "Hoodwink": '<emoji document_id="6062098656129979353">🟢</emoji>',
-            "Void Spirit": '<emoji document_id="6064163289858838043">📚</emoji>',
-            "Snapfire": '<emoji document_id="6062098398431940095">📚</emoji>',
-            "Mars": '<emoji document_id="6062056565450477147">🔴</emoji>',
-            "Dawnbreaker": '<emoji document_id="6062338388319540368">🔴</emoji>',
-            "Marci": '<emoji document_id="6062225477924295349">📚</emoji>',
-            "Primal Beast": '<emoji document_id="6062167156563384847">🔴</emoji>',
-            "Muerta": '<emoji document_id="6061974394136171083">🔵</emoji>',
-            "Largo": '<emoji document_id="6269259626194150042">🐸</emoji>',
-            "Kez": '<emoji document_id="5442844181129104405">🤩</emoji>',
-            "Ringmaster": '<emoji document_id="6269209104493845341">🤡</emoji>',
-            
-        }
         self.item_emojis_norm = {self._norm_item_name(k): v for k, v in self.item_emojis.items()}
         self._load_heroes()
         self._load_items()
@@ -604,20 +468,17 @@ class DotaStatsMod(loader.Module):
     def _norm_item_name(self, name: str) -> str:
         if not name:
             return ""
-        # Normalize to make matching resilient to punctuation/case differences from OpenDota.
         name = name.lower().replace("’", "'")
         name = name.replace("'", "")
         name = name.replace("-", " ")
         name = " ".join(name.split())
         return name
 
-    # 🔥 сюда добавляем метод конвертации SteamID -> account_id
     def _to_account_id(self, steam_id64: int) -> int:
         return steam_id64 - 76561197960265728
 
     def _to_account_id(self, raw_id: int) -> int:
         return raw_id - 76561197960265728 if raw_id > 76561197960265728 else raw_id
-
 
     def _load_heroes(self):
         heroes_data = [
@@ -748,13 +609,11 @@ class DotaStatsMod(loader.Module):
             {"name": "Largo", "is_radiant": True, "id": 125},
             {"name": "Kez", "is_radiant": False, "id": 126},
             {"name": "Ringmaster", "is_radiant": True, "id": 127},
-
         ]
 
         for data in heroes_data:
             emoji = self.hero_emojis.get(data["name"], "❓")
             self.heroes[data["id"]] = {"name": data["name"], "emoji": emoji}
-
 
     async def close_msg(self, call):
         try:
@@ -762,14 +621,6 @@ class DotaStatsMod(loader.Module):
         except Exception as e:
             await call.answer(f"Не получилось удалить сообщение 😡\n{e}", alert=True)
 
-    
-        
-
-
-
-
-
-    # ---------------- Загрузка данных ----------------
     def _load_heroes(self):
         try:
             resp = requests.get(f"{API_URL}/heroes")
@@ -788,9 +639,7 @@ class DotaStatsMod(loader.Module):
             print(f"[DotaStats] Ошибка загрузки предметов: {e}")
             self.items = {}
 
-    # ---------------- Форматирование времени ----------------
     def _format_match_time(self, start_time: int) -> str:
-        """Форматирует время матча в читаемый формат"""
         try:
             match_time = datetime.fromtimestamp(start_time, tz=timezone.utc)
             now = datetime.now(timezone.utc)
@@ -819,17 +668,15 @@ class DotaStatsMod(loader.Module):
             print(f"[DotaStats] Ошибка форматирования времени: {e}")
             return "неизвестно"
 
-    # ---------------- Профиль ----------------
     @loader.command(
         en_doc="- show your profile (uses PLAYER_ID)",
         ru_doc="- показать свой профиль (использует PLAYER_ID)",
         ua_doc="- показати свій профіль (використовує PLAYER_ID)",
     )
     async def profile2cmd(self, message: Message):
-        """Показать свой профиль"""
         pid = self.config["PLAYER_ID"]
         if not pid:
-            return await utils.answer(message, "<emoji document_id=5390972675684337321>🤐</emoji> Не задан Steam ID")
+            return await utils.answer(message, "<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Не задан Steam ID")
         await self._send_profile(message, pid)
 
     @loader.command(
@@ -838,7 +685,6 @@ class DotaStatsMod(loader.Module):
         ua_doc="- показати профіль за Steam account_id",
     )
     async def profileidcmd(self, message: Message):
-        """Показать профиль по Steam ID"""
         args = utils.get_args_raw(message)
         if not args or not args.isdigit():
             return await utils.answer(message, "Используй: .profileid <id>")
@@ -850,7 +696,6 @@ class DotaStatsMod(loader.Module):
         ua_doc="- перевірити доступність сайту та API OpenDota",
     )
     async def odcheckcmd(self, message: Message):
-        """Проверить доступность OpenDota"""
         checks = [
             ("Сайт", await self._check_endpoint_async("https://www.opendota.com")),
             ("API", await self._check_endpoint_async(f"{API_URL}/heroes")),
@@ -881,7 +726,7 @@ class DotaStatsMod(loader.Module):
                 )
 
         if not pid:
-            lines.append("\n<emoji document_id=5390972675684337321>🤐</emoji> PLAYER_ID не задан, проверка матчей игрока пропущена")
+            lines.append("\n<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> PLAYER_ID не задан, проверка матчей игрока пропущена")
 
         await utils.answer(message, "\n".join(lines), parse_mode="html")
 
@@ -890,13 +735,11 @@ class DotaStatsMod(loader.Module):
             r = await self._get_json_async(f"/players/{pid}")
             profile = r.get("profile", {})
 
-            # Получаем статистику побед/поражений
             wl = await self._get_json_async(f"/players/{pid}/wl")
             win, lose = wl.get("win", 0), wl.get("lose", 0)
             total = win + lose
             wr = round(win / total * 100, 2) if total > 0 else 0
 
-            # Обработка ранга
             rank_tier = r.get("rank_tier")
             leaderboard_rank = r.get("leaderboard_rank")
             rank_names = {
@@ -919,36 +762,32 @@ class DotaStatsMod(loader.Module):
                     else:
                         rank_info = f"{rank_name} {rank_icon}"
 
-
-            # Формируем сообщение со ВСЕЙ информацией
             msg = (
-                f"<blockquote><emoji document_id=5235611059909323996>⭐️</emoji> Профиль: <code>{profile.get('personaname', 'Unknown')}</code></blockquote>\n"
-                f"<blockquote><emoji document_id=5422683699130933153>🪪</emoji> Steam ID: <code>{pid}</code></blockquote>\n"
-                f"<blockquote><emoji document_id=5456498809875995940>🏆</emoji> Ранг: {rank_info}</blockquote>\n"
-                f"<blockquote><emoji document_id=5429381339851796035>✅</emoji> Победы: {win}</blockquote>\n"
-                f"<blockquote><emoji document_id=5465225015190367274>👎</emoji> Поражения: {lose}</blockquote>\n"
-                f"<blockquote><emoji document_id=5364265190353286344>📊</emoji> Винрейт: {wr}%</blockquote>\n"
+                f"<blockquote><tg-emoji emoji-id=\"5235611059909323996\">⭐️</tg-emoji> Профиль: <code>{profile.get('personaname', 'Unknown')}</code></blockquote>\n"
+                f"<blockquote><tg-emoji emoji-id=\"5422683699130933153\">🪪</tg-emoji> Steam ID: <code>{pid}</code></blockquote>\n"
+                f"<blockquote><tg-emoji emoji-id=\"5456498809875995940\">🏆</tg-emoji> Ранг: {rank_info}</blockquote>\n"
+                f"<blockquote><tg-emoji emoji-id=\"5429381339851796035\">✅</tg-emoji> Победы: {win}</blockquote>\n"
+                f"<blockquote><tg-emoji emoji-id=\"5465225015190367274\">👎</tg-emoji> Поражения: {lose}</blockquote>\n"
+                f"<blockquote><tg-emoji emoji-id=\"5364265190353286344\">📊</tg-emoji> Винрейт: {wr}%</blockquote>\n"
             )
             await utils.answer(message, msg, parse_mode="html")
         except Exception as e:
-            await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка загрузки профиля: {str(e)}")
+            await utils.answer(message, f"<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Ошибка загрузки профиля: {str(e)}")
 
-    # ---------------- Последние игры ----------------
     @loader.command(
         en_doc="- last 40 matches for PLAYER_ID",
         ru_doc="- последние 40 матчей по PLAYER_ID",
         ua_doc="- останні 40 матчів для PLAYER_ID",
     )
     async def dota2cmd(self, message: Message):
-        """Показать последние 40 игр"""
         pid = self.config["PLAYER_ID"]
         if not pid:
-            return await utils.answer(message, "<emoji document_id=5390972675684337321>🤐</emoji> Не задан Steam ID")
+            return await utils.answer(message, "<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Не задан Steam ID")
 
         try:
             matches = await self._fetch_player_matches_async(pid, limit=40)
             if not matches:
-                return await utils.answer(message, "<emoji document_id=5390972675684337321>🤐</emoji> Нет данных матчей")
+                return await utils.answer(message, "<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Нет данных матчей")
 
             pages = self._build_pages(matches)
 
@@ -972,25 +811,21 @@ class DotaStatsMod(loader.Module):
         except Exception as e:
             return await utils.answer(message, f"Ошибка: {e}")
 
-
-    # ---------------- Последние игры по ID ----------------
     @loader.command(
         en_doc="- last 40 matches (Steam64 or account_id)",
         ru_doc="- последние 40 матчей (Steam64 или account_id)",
         ua_doc="- останні 40 матчів (Steam64 або account_id)",
     )
     async def dota2idcmd(self, message: Message):
-        """Показать последние 40 игр по Steam ID"""
         args = utils.get_args_raw(message)
         if not args or not args.isdigit():
             return await utils.answer(
                 message,
-                "<emoji document_id=5390972675684337321>🤐</emoji> Используй: .dota2id <steam_id>"
+                "<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Используй: .dota2id <steam_id>"
             )
 
         raw_id = int(args)
 
-        # 🔥 Конвертация Steam64 → Steam32
         if raw_id > 76561197960265728:
             pid = raw_id - 76561197960265728
         else:
@@ -1001,13 +836,8 @@ class DotaStatsMod(loader.Module):
             if not matches:
                 return await utils.answer(
                     message,
-                    "<emoji document_id=5390972675684337321>🤐</emoji> Нет данных матчей (профиль скрыт или нет игр)"
+                    "<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Нет данных матчей (профиль скрыт или нет игр)"
                 )
-
-            msg = (
-                "<emoji document_id=5319120041780726017>🎮</emoji> "
-                f"<b>Последние 40 игр игрока {pid}:</b>\n\n"
-            )
 
             pages = self._build_pages(matches)
 
@@ -1028,20 +858,15 @@ class DotaStatsMod(loader.Module):
                 "player_id": str(pid),
             }
 
-
         except Exception as e:
             return await utils.answer(message, f"Ошибка: {e}")
 
-
-
-    # ---------------- Детали матча ----------------
     @loader.command(
         en_doc="- match details by match_id",
         ru_doc="- подробности матча по match_id",
         ua_doc="- деталі матчу за match_id",
     )
     async def matchcmd(self, message: Message):
-        """Показать подробности матча по ID"""
         args = utils.get_args_raw(message)
         if not args or not args.isdigit():
             return await utils.answer(message, "Используй: .match id")
@@ -1050,19 +875,16 @@ class DotaStatsMod(loader.Module):
     async def _send_match_info(self, message: Message, match_id: str):
         try:
             r = await asyncio.to_thread(self._get_match_data, match_id)
-            await utils.answer(message, self._format_match_text(r, str(match_id)))
+            await utils.answer(message, self._format_match_text(r, str(match_id)), parse_mode="html")
         except Exception as e:
-            await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка загрузки матча: {str(e)}")
+            await utils.answer(message, f"<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Ошибка загрузки матча: {str(e)}")
 
-    # ---------------- Статистика по герою ----------------
     @loader.command(
         en_doc="- hero stats: last 20 games or all-time with -all",
         ru_doc="- статистика героя: последние 20 игр или вся с -all",
         ua_doc="- статистика героя: останні 20 ігор або вся з -all",
     )
     async def herocmd(self, message: Message):
-        """Статистика по герою (.hero <name> [-all])"""
-
         args = utils.get_args_raw(message)
         if not args:
             return await utils.answer(
@@ -1074,7 +896,6 @@ class DotaStatsMod(loader.Module):
         hero_query = parts[0].lower()
         mode_all = "-all" in parts
 
-        # Поиск героя
         hero_id = None
         hero_name = None
 
@@ -1084,7 +905,7 @@ class DotaStatsMod(loader.Module):
                 hero_name = name
                 break
 
-        hero_icon = self.hero_emojis2.get(hero_name, "")    
+        hero_icon = self.hero_emojis.get(hero_name, "")
 
         if not hero_id:
             return await utils.answer(message, "Герой не найден")
@@ -1094,7 +915,6 @@ class DotaStatsMod(loader.Module):
             return await utils.answer(message, "Не задан Steam ID")
 
         try:
-            # ================= ВСЯ СТАТИСТИКА =================
             if mode_all:
                 heroes_stats = await self._get_json_async(
                     f"/players/{account_id}/heroes"
@@ -1115,7 +935,6 @@ class DotaStatsMod(loader.Module):
                 total_wr = winrate
                 total_wr_color = "🟢" if total_wr >= 55 else "🟡" if total_wr >= 50 else "🔴"
 
-                # Берём до 100 матчей для среднего KDA
                 matches = await self._get_json_async(
                     f"/players/{account_id}/matches",
                     params={"hero_id": hero_id, "limit": 100},
@@ -1130,24 +949,21 @@ class DotaStatsMod(loader.Module):
                 avg_d = round(total_deaths / total_games, 1) if total_games else 0
                 avg_a = round(total_assists / total_games, 1) if total_games else 0
 
-
                 text = (
                     f"─────── ✦ ───────\n"
                     f"<b>Герой: {hero_icon} <code>{hero_name}</code></b>\n\n"
                     f"─────── ✦ ───────\n\n"
-
-                    f"<b>〚<emoji document_id=5231200819986047254>📊</emoji>〛 Вся статистика:</b>\n"
-                    f"〚<emoji document_id=5375437280758496345>🎮</emoji>〛 Матчей➛ <b>{games}</b>\n"
-                    f"〚<emoji document_id=5429381339851796035>✅</emoji>〛 Побед➛ <b>{wins}</b>\n"
-                    f"〚<emoji document_id=5352703271536454445>❌</emoji>〛 Поражений➛ <b>{losses}</b>\n"
-                    f"〚<emoji document_id=5244837092042750681>📈</emoji>〛 Винрейт➛ {total_wr_color} <b>{total_wr}%</b>\n"
-                    f"<b>〚<emoji document_id=5240271820979981346>⚔️</emoji>〛 Средний KDA (≈100 игр)</b>\n"
+                    f"<b>〚<tg-emoji emoji-id=\"5231200819986047254\">📊</tg-emoji>〛 Вся статистика:</b>\n"
+                    f"〚<tg-emoji emoji-id=\"5375437280758496345\">🎮</tg-emoji>〛 Матчей➛ <b>{games}</b>\n"
+                    f"〚<tg-emoji emoji-id=\"5429381339851796035\">✅</tg-emoji>〛 Побед➛ <b>{wins}</b>\n"
+                    f"〚<tg-emoji emoji-id=\"5352703271536454445\">❌</tg-emoji>〛 Поражений➛ <b>{losses}</b>\n"
+                    f"〚<tg-emoji emoji-id=\"5244837092042750681\">📈</tg-emoji>〛 Винрейт➛ {total_wr_color} <b>{total_wr}%</b>\n"
+                    f"<b>〚<tg-emoji emoji-id=\"5240271820979981346\">⚔️</tg-emoji>〛 Средний KDA (≈100 игр)</b>\n"
                     f"{avg_k} / {avg_d} / {avg_a}"
                 )
 
                 return await utils.answer(message, text, parse_mode="HTML")
 
-            # ================= ПОСЛЕДНИЕ 20 =================
             matches = await self._get_json_async(
                 f"/players/{account_id}/matches",
                 params={"hero_id": hero_id, "limit": 20},
@@ -1174,19 +990,16 @@ class DotaStatsMod(loader.Module):
             avg_d = round(total_deaths / total, 1) if total else 0
             avg_a = round(total_assists / total, 1) if total else 0
 
-
-
             text = (
                 f"─────── ✦ ───────\n"
                 f"<b>Герой: {hero_icon} <code>{hero_name}</code></b>\n\n"
                 f"─────── ✦ ───────\n\n"
-
-                f"<b>〚<emoji document_id=5231200819986047254>📊</emoji>〛 Последние 20 игр:</b>\n"
-                f"〚<emoji document_id=5375437280758496345>🎮</emoji>〛 Матчей➛ <b>{total}</b>\n"
-                f"〚<emoji document_id=5429381339851796035>✅</emoji>〛 Побед➛ <b>{wins}</b>\n"
-                f"〚<emoji document_id=5352703271536454445>❌</emoji>〛 Поражений➛ <b>{losses}</b>\n"
-                f"〚<emoji document_id=5244837092042750681>📈</emoji>〛 Винрейт➛ {recent_wr_color} <b>{recent_wr}%</b>\n"
-                f"<b>〚<emoji document_id=5240271820979981346>⚔️</emoji>〛 Средний KDA</b>\n"
+                f"<b>〚<tg-emoji emoji-id=\"5231200819986047254\">📊</tg-emoji>〛 Последние 20 игр:</b>\n"
+                f"〚<tg-emoji emoji-id=\"5375437280758496345\">🎮</tg-emoji>〛 Матчей➛ <b>{total}</b>\n"
+                f"〚<tg-emoji emoji-id=\"5429381339851796035\">✅</tg-emoji>〛 Побед➛ <b>{wins}</b>\n"
+                f"〚<tg-emoji emoji-id=\"5352703271536454445\">❌</tg-emoji>〛 Поражений➛ <b>{losses}</b>\n"
+                f"〚<tg-emoji emoji-id=\"5244837092042750681\">📈</tg-emoji>〛 Винрейт➛ {recent_wr_color} <b>{recent_wr}%</b>\n"
+                f"<b>〚<tg-emoji emoji-id=\"5240271820979981346\">⚔️</tg-emoji>〛 Средний KDA</b>\n"
                 f"{avg_k} / {avg_d} / {avg_a}"
             )
 
@@ -1201,15 +1014,14 @@ class DotaStatsMod(loader.Module):
         ua_doc="- порівняти статистику з іншим гравцем",
     )
     async def comparecmd(self, message: Message):
-        """Сравнения статистики себя и противника .compare <id противника>"""
         args = utils.get_args_raw(message)
         my_raw = self.config["PLAYER_ID"]
 
         if not my_raw:
-            return await utils.answer(message, f"<emoji document_id=5375557664396835394>❌</emoji> Не задан PLAYER_ID")
+            return await utils.answer(message, f"<tg-emoji emoji-id=\"5375557664396835394\">❌</tg-emoji> Не задан PLAYER_ID")
 
         if not args:
-            return await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Укажи SteamID или account_id игрока")
+            return await utils.answer(message, f"<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Укажи SteamID или account_id игрока")
 
         try:
             my_id = self._to_account_id(int(my_raw))
@@ -1226,7 +1038,7 @@ class DotaStatsMod(loader.Module):
             )
 
             if not my_matches or not other_matches:
-                return await utils.answer(message, "<emoji document_id=5375557664396835394>❌</emoji> У одного из игроков нет матчей")
+                return await utils.answer(message, "<tg-emoji emoji-id=\"5375557664396835394\">❌</tg-emoji> У одного из игроков нет матчей")
 
             def calc_stats(matches):
                 games = len(matches)
@@ -1244,25 +1056,23 @@ class DotaStatsMod(loader.Module):
             o_games, o_wins, o_wr, o_kda = calc_stats(other_matches)
 
             msg = (
-                f"<blockquote><emoji document_id=5240271820979981346>⚔️</emoji> СРАВНЕНИЕ ИГРОКОВ\n"
-                f"<emoji document_id=5425013375291629746>😳</emoji> <b>Ты</b>\n"
-                f"<emoji document_id=5375437280758496345>🎮</emoji> Матчей: {my_games}\n"
-                f"<emoji document_id=5456498809875995940>🏆</emoji> Побед: {my_wins} ({my_wr}%)\n"
-                f"<emoji document_id=5240271820979981346>⚔️</emoji> KDA: {my_kda}\n\n"
-                f"<emoji document_id=6021829047057652150>🧍‍♀️</emoji> <b>Оппонент</b>\n"
-                f"<emoji document_id=5375437280758496345>🎮</emoji> Матчей: {o_games}\n"
-                f"<emoji document_id=5456498809875995940>🏆</emoji> Побед: {o_wins} ({o_wr}%)\n"
-                f"<emoji document_id=5240271820979981346>⚔️</emoji> KDA: {o_kda}\n"
+                f"<blockquote><tg-emoji emoji-id=\"5240271820979981346\">⚔️</tg-emoji> СРАВНЕНИЕ ИГРОКОВ\n"
+                f"<tg-emoji emoji-id=\"5425013375291629746\">😳</tg-emoji> <b>Ты</b>\n"
+                f"<tg-emoji emoji-id=\"5375437280758496345\">🎮</tg-emoji> Матчей: {my_games}\n"
+                f"<tg-emoji emoji-id=\"5456498809875995940\">🏆</tg-emoji> Побед: {my_wins} ({my_wr}%)\n"
+                f"<tg-emoji emoji-id=\"5240271820979981346\">⚔️</tg-emoji> KDA: {my_kda}\n\n"
+                f"<tg-emoji emoji-id=\"6021829047057652150\">🧍‍♀️</tg-emoji> <b>Оппонент</b>\n"
+                f"<tg-emoji emoji-id=\"5375437280758496345\">🎮</tg-emoji> Матчей: {o_games}\n"
+                f"<tg-emoji emoji-id=\"5456498809875995940\">🏆</tg-emoji> Побед: {o_wins} ({o_wr}%)\n"
+                f"<tg-emoji emoji-id=\"5240271820979981346\">⚔️</tg-emoji> KDA: {o_kda}\n"
                 f"</blockquote>"
             )
 
-            await utils.answer(message, msg)
+            await utils.answer(message, msg, parse_mode="html")
 
         except Exception as e:
-            await utils.answer(message, f"<emoji document_id=5390972675684337321>🤐</emoji> Ошибка compare: {e}")
+            await utils.answer(message, f"<tg-emoji emoji-id=\"5390972675684337321\">🤐</tg-emoji> Ошибка compare: {e}")
 
-
-        
     def _get_match_data(self, match_id: str):
         data = requests.get(f"{API_URL}/matches/{match_id}").json()
         if "match_id" not in data:
@@ -1273,15 +1083,15 @@ class DotaStatsMod(loader.Module):
         duration = f"{match_data['duration'] // 60}:{match_data['duration'] % 60:02d}"
         radiant_win = match_data.get("radiant_win", False)
         result = (
-            "<emoji document_id=5368338090660209672>🌿</emoji> Radiant Победа"
+            "<tg-emoji emoji-id=\"5368338090660209672\">🌿</tg-emoji> Radiant Победа"
             if radiant_win
-            else "<emoji document_id=5397751602956239123>🔥</emoji> Dire Победа"
+            else "<tg-emoji emoji-id=\"5397751602956239123\">🔥</tg-emoji> Dire Победа"
         )
 
         radiant, dire = [], []
         for p in match_data.get("players", []):
             hero_name = self.heroes.get(p["hero_id"], f"Unknown({p['hero_id']})")
-            hero_icon = self.hero_emojis2.get(hero_name, "")
+            hero_icon = self.hero_emojis.get(hero_name, "")
             kda = f"{p['kills']}/{p['deaths']}/{p['assists']}"
             gpm = p.get("gold_per_min", 0)
             xpm = p.get("xp_per_min", 0)
@@ -1389,7 +1199,6 @@ class DotaStatsMod(loader.Module):
                         )
                         out.append(f"{item_icon} {item_name}")
                     else:
-                        # Fallback: show ID if constants not loaded or missing
                         out.append(f"🧩 Unknown({iid})")
                 return " | ".join(out) if out else "Нет предметов"
 
@@ -1399,7 +1208,7 @@ class DotaStatsMod(loader.Module):
             line = (
                 f"- <code>{hero_name}</code> {hero_icon} | {kda} | GPM: {gpm} | "
                 f"XPM: {xpm} | Net: {net} | Steam ID: <code>{account_id}</code>\n"
-                f"  <emoji document_id=5445221832074483553>💼</emoji> {main_items_str}\n"
+                f"  <tg-emoji emoji-id=\"5445221832074483553\">💼</tg-emoji> {main_items_str}\n"
                 f"  🎒 {backpack_items_str}"
             )
 
@@ -1409,11 +1218,11 @@ class DotaStatsMod(loader.Module):
                 dire.append(line)
 
         return (
-            f"<blockquote><emoji document_id=5217703082099498813>🤬</emoji> Матч <code>{match_id}</code>\n"
-            f"<emoji document_id=5373236586760651455>⏱️</emoji> Длительность: <code>{duration}</code>\n"
+            f"<blockquote><tg-emoji emoji-id=\"5217703082099498813\">🤬</tg-emoji> Матч <code>{match_id}</code>\n"
+            f"<tg-emoji emoji-id=\"5373236586760651455\">⏱️</tg-emoji> Длительность: <code>{duration}</code>\n"
             f"Результат: {result}\n\n"
-            f"<emoji document_id=5368338090660209672>🌿</emoji> Radiant:\n" + "\n".join(radiant) +
-            f"\n\n<emoji document_id=5397751602956239123>🔥</emoji> Dire:\n" + "\n".join(dire) +
+            f"<tg-emoji emoji-id=\"5368338090660209672\">🌿</tg-emoji> Radiant:\n" + "\n".join(radiant) +
+            f"\n\n<tg-emoji emoji-id=\"5397751602956239123\">🔥</tg-emoji> Dire:\n" + "\n".join(dire) +
             f"</blockquote>"
         )
 
@@ -1424,7 +1233,7 @@ class DotaStatsMod(loader.Module):
         for i in range(0, len(matches), per_page):
             chunk = matches[i:i+per_page]
 
-            text = "<b><emoji document_id=5319120041780726017>🎮</emoji>Последние 40 игр<emoji document_id=5319120041780726017>🎮</emoji>:</b>\n\n"
+            text = "<b><tg-emoji emoji-id=\"5319120041780726017\">🎮</tg-emoji>Последние 40 игр<tg-emoji emoji-id=\"5319120041780726017\">🎮</tg-emoji>:</b>\n\n"
 
             for m in chunk:
                 hero_name = self.heroes.get(m["hero_id"], f"Unknown({m['hero_id']})")
@@ -1432,9 +1241,9 @@ class DotaStatsMod(loader.Module):
                 kda = f"{m['kills']}/{m['deaths']}/{m['assists']}"
 
                 win = (
-                    '<tg-emoji emoji-id=5429381339851796035>✅</tg-emoji> Победа' 
+                    '<tg-emoji emoji-id="5429381339851796035">✅</tg-emoji> Победа' 
                     if self.is_win(m)
-                    else '<tg-emoji emoji-id=5352703271536454445>❌</tg-emoji> Поражение'
+                    else '<tg-emoji emoji-id="5352703271536454445">❌</tg-emoji> Поражение'
                 )
 
                 match_time = self._format_match_time(m.get("start_time", 0))
@@ -1456,7 +1265,6 @@ class DotaStatsMod(loader.Module):
             )
 
         return pages
-
 
     def _player_opendota_url(self, player_id):
         return f"https://www.opendota.com/players/{player_id}"
@@ -1480,7 +1288,7 @@ class DotaStatsMod(loader.Module):
                 self._btn(
                     f"{page+1}/{total}",
                     style="primary",
-                    callback=self._noop  # <-- было self.noop
+                    callback=self._noop
                 ),
                 self._btn(
                     "Вперёд ▶️",
@@ -1556,11 +1364,11 @@ class DotaStatsMod(loader.Module):
         self._pages_cache.pop(msg_id, None)
         await call.delete()
 
-
     def _close_btn(self):
         return [[
             self._btn(
                 "❌ Закрыть",
+                style="danger",
                 action="close"
             )
         ]]
