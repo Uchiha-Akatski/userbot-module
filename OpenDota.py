@@ -128,7 +128,7 @@ class DotaStatsMod(loader.Module):
             ),
             loader.ConfigValue(
                 "TIMEZONE",
-                2,
+                0,
                 "Часовой пояс (0=UTC+0, 1=UTC+1, 2=UTC+2, 3=UTC+3, 4=UTC+4, 5=UTC+5, 6=UTC+6, 7=UTC+7, 8=UTC+8, 9=UTC+9, 10=UTC+10, 11=UTC+11, 12=UTC+12, -1=UTC-1... -12=UTC-12)",
                 validator=loader.validators.Choice([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12])
             )
