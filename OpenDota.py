@@ -1,23 +1,25 @@
 # -- version --
-__version__ = (2, 2, 10)
+__version__ = (2, 3, 0)
 # -- version --
 
 # meta developer: @Itachi_Uchiha_sss
+# meta banner: https://t.me/Itachi_Uchiha_sss
 
 import requests
 from requests import RequestException
 from .. import loader, utils
-from telethon.tl.types import Message 
+from telethon.tl.types import Message
 from datetime import datetime, timezone, timedelta
 import time
 import asyncio
 
 API_URL = "https://api.opendota.com/api"
 
+
 @loader.tds
 class DotaStatsMod(loader.Module):
     strings = {"name": "OpenDota"}
-   
+
     def is_win(self, match):
         is_radiant = match["player_slot"] < 128
         return match["radiant_win"] == is_radiant
@@ -119,6 +121,7 @@ class DotaStatsMod(loader.Module):
 
     def __init__(self):
         self._pages_cache = {}
+        self._vs_cache = {}
         self.config = loader.ModuleConfig(
             loader.ConfigValue(
                 "PLAYER_ID",
@@ -134,7 +137,8 @@ class DotaStatsMod(loader.Module):
             )
         )
         self.heroes = {}
-        self.item_emojis = {            
+        self.items = {}
+        self.item_emojis = {
             "Blink": '<tg-emoji emoji-id="5467710328080981143">🤩</tg-emoji>',
             "Black King Bar": '<tg-emoji emoji-id="5467828615775279955">🤩</tg-emoji>',
             "Ultimate Scepter": '<tg-emoji emoji-id="5467777522844327342">🤩</tg-emoji>',
@@ -151,76 +155,76 @@ class DotaStatsMod(loader.Module):
             "Heart": '<tg-emoji emoji-id="5469829838606982639">🤩</tg-emoji>',
             "Heart Of Tarrasque": '<tg-emoji emoji-id="5469829838606982639">🤩</tg-emoji>',
             "Invis Sword": '<tg-emoji emoji-id="5469889422688278238">🤩</tg-emoji>',
-            "Manta": '<tg-emoji emoji-id="5467786310347413191">🤩</tg-emoji>', 
+            "Manta": '<tg-emoji emoji-id="5467786310347413191">🤩</tg-emoji>',
             "Sphere": '<tg-emoji emoji-id="5467841560806709776">🤩</tg-emoji>',
-            "Moon Shard": '<tg-emoji emoji-id="5469874360237970537">🤩</tg-emoji>',  
-            "Crystalys": '<tg-emoji emoji-id="5467629917703264949">🤩</tg-emoji>', 
-            "Dragon Lance": '<tg-emoji emoji-id="5429427424850906507">🫤</tg-emoji>',  
-            "Skadi": '<tg-emoji emoji-id="5467912754184609175">🤩</tg-emoji>',  
-            "Mjollnir": '<tg-emoji emoji-id="5467553437220624541">🤩</tg-emoji>',  
-            "Eternal Shroud": '<tg-emoji emoji-id="5429168489862565021">🤤</tg-emoji>',  
-            "Radiance": '<tg-emoji emoji-id="5467917160821053680">🤩</tg-emoji>',  
-            "Bloodstone": '<tg-emoji emoji-id="5467872957017647753">🤩</tg-emoji>',  
-            "Vanguard": '<tg-emoji emoji-id="5467905512869745249">🤩</tg-emoji>',  
-            "Overwhelming Blink": '<tg-emoji emoji-id="5467811268402372102">🤩</tg-emoji>', 
-            "Force Staff": '<tg-emoji emoji-id="5467816044406004412">🤩</tg-emoji>',    
-            "Blade Mail": '<tg-emoji emoji-id="5467910258808610438">🤩</tg-emoji>',  
-            "Lotus Orb": '<tg-emoji emoji-id="5467854656161996490">🤩</tg-emoji>',  
+            "Moon Shard": '<tg-emoji emoji-id="5469874360237970537">🤩</tg-emoji>',
+            "Crystalys": '<tg-emoji emoji-id="5467629917703264949">🤩</tg-emoji>',
+            "Dragon Lance": '<tg-emoji emoji-id="5429427424850906507">🫤</tg-emoji>',
+            "Skadi": '<tg-emoji emoji-id="5467912754184609175">🤩</tg-emoji>',
+            "Mjollnir": '<tg-emoji emoji-id="5467553437220624541">🤩</tg-emoji>',
+            "Eternal Shroud": '<tg-emoji emoji-id="5429168489862565021">🤤</tg-emoji>',
+            "Radiance": '<tg-emoji emoji-id="5467917160821053680">🤩</tg-emoji>',
+            "Bloodstone": '<tg-emoji emoji-id="5467872957017647753">🤩</tg-emoji>',
+            "Vanguard": '<tg-emoji emoji-id="5467905512869745249">🤩</tg-emoji>',
+            "Overwhelming Blink": '<tg-emoji emoji-id="5467811268402372102">🤩</tg-emoji>',
+            "Force Staff": '<tg-emoji emoji-id="5467816044406004412">🤩</tg-emoji>',
+            "Blade Mail": '<tg-emoji emoji-id="5467910258808610438">🤩</tg-emoji>',
+            "Lotus Orb": '<tg-emoji emoji-id="5467854656161996490">🤩</tg-emoji>',
             "Diffusal Blade": '<tg-emoji emoji-id="5467589596550291093">🤩</tg-emoji>',
-            "Disperser": '<tg-emoji emoji-id="5467511685843540004">🤩</tg-emoji>',  
-            "Silver Edge": '<tg-emoji emoji-id="5467413421286774948">🤩</tg-emoji>', 
-            "Solar Crest": '<tg-emoji emoji-id="5470022991876216864">🤩</tg-emoji>',     
-            "Octarine Core": '<tg-emoji emoji-id="5469910390718616277">🤩</tg-emoji>',  
-            "Refresher": '<tg-emoji emoji-id="5467413301027691972">🤩</tg-emoji>',      
-            "Soul Ring": '<tg-emoji emoji-id="5467735694157831691">🤩</tg-emoji>',  
-            "Pipe": '<tg-emoji emoji-id="5467784545115857970">🤩</tg-emoji>',  
+            "Disperser": '<tg-emoji emoji-id="5467511685843540004">🤩</tg-emoji>',
+            "Silver Edge": '<tg-emoji emoji-id="5467413421286774948">🤩</tg-emoji>',
+            "Solar Crest": '<tg-emoji emoji-id="5470022991876216864">🤩</tg-emoji>',
+            "Octarine Core": '<tg-emoji emoji-id="5469910390718616277">🤩</tg-emoji>',
+            "Refresher": '<tg-emoji emoji-id="5467413301027691972">🤩</tg-emoji>',
+            "Soul Ring": '<tg-emoji emoji-id="5467735694157831691">🤩</tg-emoji>',
+            "Pipe": '<tg-emoji emoji-id="5467784545115857970">🤩</tg-emoji>',
             "Cyclone": '<tg-emoji emoji-id="5469770533698556516">🤩</tg-emoji>',
-            "Wind Waker": '<tg-emoji emoji-id="5467755674345690984">🤩</tg-emoji>',  
-            "Hurricane Pike": '<tg-emoji emoji-id="5429505296902945143">🤗</tg-emoji>',    
-            "Veil Of Discord": '<tg-emoji emoji-id="5467619223234698435">🤩</tg-emoji>',  
-            "Glimmer Cape": '<tg-emoji emoji-id="5467869675662631035">🤩</tg-emoji>',   
-            "Shadow Amulet": '<tg-emoji emoji-id="5467818432407819955">🤩</tg-emoji>',  
-            "Tranquil Boots": '<tg-emoji emoji-id="5467458642997434165">🤩</tg-emoji>',  
-            "Arcane Boots": '<tg-emoji emoji-id="5467688316373590211">🤩</tg-emoji>',  
+            "Wind Waker": '<tg-emoji emoji-id="5467755674345690984">🤩</tg-emoji>',
+            "Hurricane Pike": '<tg-emoji emoji-id="5429505296902945143">🤗</tg-emoji>',
+            "Veil Of Discord": '<tg-emoji emoji-id="5467619223234698435">🤩</tg-emoji>',
+            "Glimmer Cape": '<tg-emoji emoji-id="5467869675662631035">🤩</tg-emoji>',
+            "Shadow Amulet": '<tg-emoji emoji-id="5467818432407819955">🤩</tg-emoji>',
+            "Tranquil Boots": '<tg-emoji emoji-id="5467458642997434165">🤩</tg-emoji>',
+            "Arcane Boots": '<tg-emoji emoji-id="5467688316373590211">🤩</tg-emoji>',
             "Travel Boots": '<tg-emoji emoji-id="5467854351219318497">🤩</tg-emoji>',
             "Travel Boots 2": '<tg-emoji emoji-id="5467653724706986524">🤩</tg-emoji>',
-            "Boots": '<tg-emoji emoji-id="5429649362990960283">💜</tg-emoji>',  
+            "Boots": '<tg-emoji emoji-id="5429649362990960283">💜</tg-emoji>',
             "Phase Boots": '<tg-emoji emoji-id="5467564569775857363">🤩</tg-emoji>',
-            "Mask Of Madness": '<tg-emoji emoji-id="5467883471097585936">🤩</tg-emoji>',  
+            "Mask Of Madness": '<tg-emoji emoji-id="5467883471097585936">🤩</tg-emoji>',
             "Ancient Janggo": '<tg-emoji emoji-id="5467804241835876590">🤩</tg-emoji>',
-            "Boots Of Bearing": '<tg-emoji emoji-id="5467809013544541750">🤩</tg-emoji>', 
-            "Meteor Hammer": '<tg-emoji emoji-id="5469909724998687900">🤩</tg-emoji>',  
-            "Guardian Greaves": '<tg-emoji emoji-id="5427047918479642257">👇</tg-emoji>',    
-            "Ring Of Basilius": '<tg-emoji emoji-id="5467867145926891521">🤩</tg-emoji>',         
-            "Smoke Of Deceit": '<tg-emoji emoji-id="5467832077518921780">🤩</tg-emoji>',  
-            "Dust": '<tg-emoji emoji-id="5467852414189067273">🤩</tg-emoji>',  
-            "Bottle": '<tg-emoji emoji-id="5467423492985085154">🤩</tg-emoji>',  
+            "Boots Of Bearing": '<tg-emoji emoji-id="5467809013544541750">🤩</tg-emoji>',
+            "Meteor Hammer": '<tg-emoji emoji-id="5469909724998687900">🤩</tg-emoji>',
+            "Guardian Greaves": '<tg-emoji emoji-id="5427047918479642257">👇</tg-emoji>',
+            "Ring Of Basilius": '<tg-emoji emoji-id="5467867145926891521">🤩</tg-emoji>',
+            "Smoke Of Deceit": '<tg-emoji emoji-id="5467832077518921780">🤩</tg-emoji>',
+            "Dust": '<tg-emoji emoji-id="5467852414189067273">🤩</tg-emoji>',
+            "Bottle": '<tg-emoji emoji-id="5467423492985085154">🤩</tg-emoji>',
             "Magic Stick": '<tg-emoji emoji-id="5467520726749699871">🤩</tg-emoji>',
-            "Holy Locket": '<tg-emoji emoji-id="5429324818082202689">🥹</tg-emoji>', 
-            "Magic Wand": '<tg-emoji emoji-id="5467791386998758693">🤩</tg-emoji>',  
-            "Aether Lens": '<tg-emoji emoji-id="5467863087182797856">🤩</tg-emoji>',  
-            "Swift Blink": '<tg-emoji emoji-id="5467512635031313209">🤩</tg-emoji>',    
-            "Null Talisman": '<tg-emoji emoji-id="5469971357779384692">🤩</tg-emoji>',  
-            "Bracer": '<tg-emoji emoji-id="5469634555033965479">🤩</tg-emoji>',  
-            "Wraith Band": '<tg-emoji emoji-id="5467754252711516912">🤩</tg-emoji>',  
-            "Soul Booster": '<tg-emoji emoji-id="5467565600568006619">🤩</tg-emoji>',  
-            "Kaya": '<tg-emoji emoji-id="5429406474000437184">👩‍❤️‍💋‍👨</tg-emoji>',  
-            "Yasha": '<tg-emoji emoji-id="5467560339233070091">🤩</tg-emoji>',  
-            "Sange And Yasha": '<tg-emoji emoji-id="5429589242038749865">🤚</tg-emoji>',  
-            "Orchid": '<tg-emoji emoji-id="5467520726749699874">🤩</tg-emoji>',  
-            "Bloodthorn": '<tg-emoji emoji-id="5467694776004401553">🤩</tg-emoji>',  
-            "Ethereal Blade": '<tg-emoji emoji-id="5467641462575358888">🤩</tg-emoji>',  
-            "Heavens Halberd": '<tg-emoji emoji-id="5467846439889558895">🤩</tg-emoji>',      
-            "Sange": '<tg-emoji emoji-id="5469885926584898014">🤩</tg-emoji>',  
-            "Urn Of Shadows": '<tg-emoji emoji-id="5467630226940910178">🤩</tg-emoji>',  
-            "Spirit Vessel": '<tg-emoji emoji-id="5429261402890079825">😩</tg-emoji>',    
-            "Crimson Guard": '<tg-emoji emoji-id="5470036121591240703">🤩</tg-emoji>',    
-            "Refresher Shard": '<tg-emoji emoji-id="5467436815973636888">🤩</tg-emoji>',  
+            "Holy Locket": '<tg-emoji emoji-id="5429324818082202689">🥹</tg-emoji>',
+            "Magic Wand": '<tg-emoji emoji-id="5467791386998758693">🤩</tg-emoji>',
+            "Aether Lens": '<tg-emoji emoji-id="5467863087182797856">🤩</tg-emoji>',
+            "Swift Blink": '<tg-emoji emoji-id="5467512635031313209">🤩</tg-emoji>',
+            "Null Talisman": '<tg-emoji emoji-id="5469971357779384692">🤩</tg-emoji>',
+            "Bracer": '<tg-emoji emoji-id="5469634555033965479">🤩</tg-emoji>',
+            "Wraith Band": '<tg-emoji emoji-id="5467754252711516912">🤩</tg-emoji>',
+            "Soul Booster": '<tg-emoji emoji-id="5467565600568006619">🤩</tg-emoji>',
+            "Kaya": '<tg-emoji emoji-id="5429406474000437184">👩‍❤️‍💋‍👨</tg-emoji>',
+            "Yasha": '<tg-emoji emoji-id="5467560339233070091">🤩</tg-emoji>',
+            "Sange And Yasha": '<tg-emoji emoji-id="5429589242038749865">🤚</tg-emoji>',
+            "Orchid": '<tg-emoji emoji-id="5467520726749699874">🤩</tg-emoji>',
+            "Bloodthorn": '<tg-emoji emoji-id="5467694776004401553">🤩</tg-emoji>',
+            "Ethereal Blade": '<tg-emoji emoji-id="5467641462575358888">🤩</tg-emoji>',
+            "Heavens Halberd": '<tg-emoji emoji-id="5467846439889558895">🤩</tg-emoji>',
+            "Sange": '<tg-emoji emoji-id="5469885926584898014">🤩</tg-emoji>',
+            "Urn Of Shadows": '<tg-emoji emoji-id="5467630226940910178">🤩</tg-emoji>',
+            "Spirit Vessel": '<tg-emoji emoji-id="5429261402890079825">😩</tg-emoji>',
+            "Crimson Guard": '<tg-emoji emoji-id="5470036121591240703">🤩</tg-emoji>',
+            "Refresher Shard": '<tg-emoji emoji-id="5467436815973636888">🤩</tg-emoji>',
             "Echo Sabre": '<tg-emoji emoji-id="5429603432610695458">🤱</tg-emoji>',
-            "Harpoon": '<tg-emoji emoji-id="5467597984621420624">🤩</tg-emoji>',    
-            "Arcane Blink": '<tg-emoji emoji-id="5467886499049528800">🤩</tg-emoji>',    
-            "Abaddon’s Aghanim’s Scepter": '<tg-emoji emoji-id="5469857141714083939">🤩</tg-emoji>',    
-            "Mekansm": '<tg-emoji emoji-id="5467932824566784067">🤩</tg-emoji>',  
+            "Harpoon": '<tg-emoji emoji-id="5467597984621420624">🤩</tg-emoji>',
+            "Arcane Blink": '<tg-emoji emoji-id="5467886499049528800">🤩</tg-emoji>',
+            "Abaddon’s Aghanim’s Scepter": '<tg-emoji emoji-id="5469857141714083939">🤩</tg-emoji>',
+            "Mekansm": '<tg-emoji emoji-id="5467932824566784067">🤩</tg-emoji>',
             "Rod Of Atos": '<tg-emoji emoji-id="5467818376573246343">🤩</tg-emoji>',
             "Kaya And Sange": '<tg-emoji emoji-id="5467789192270470219">🤩</tg-emoji>',
             "Phylactery": '<tg-emoji emoji-id="5208510580775737094">😎</tg-emoji>',
@@ -297,7 +301,7 @@ class DotaStatsMod(loader.Module):
             "Chainmail": '<tg-emoji emoji-id="5467372309859818911">🤩</tg-emoji>',
             "Energy Booster": '<tg-emoji emoji-id="5467828508401100211">🤩</tg-emoji>',
             "Cornucopia": '<tg-emoji emoji-id="5467743695681904292">🤩</tg-emoji>',
-            "Blitz Knuckles": '<tg-emoji emoji-id="5467602112084990687">🤩</tg-emoji>', 
+            "Blitz Knuckles": '<tg-emoji emoji-id="5467602112084990687">🤩</tg-emoji>',
             "Enchanted Mango": '<tg-emoji emoji-id="5467870783764192653">🤩</tg-emoji>',
             "Belt Of Strength": '<tg-emoji emoji-id="5467715709675001734">🤩</tg-emoji>',
             "Javelin": '<tg-emoji emoji-id="5467443365798766241">🤩</tg-emoji>',
@@ -485,146 +489,8 @@ class DotaStatsMod(loader.Module):
         name = " ".join(name.split())
         return name
 
-    def _to_account_id(self, steam_id64: int) -> int:
-        return steam_id64 - 76561197960265728
-
     def _to_account_id(self, raw_id: int) -> int:
         return raw_id - 76561197960265728 if raw_id > 76561197960265728 else raw_id
-
-    def _load_heroes(self):
-        heroes_data = [
-            {"name": "Anti-Mage", "is_radiant": True, "id": 1},
-            {"name": "Axe", "is_radiant": False, "id": 2},
-            {"name": "Invoker", "is_radiant": True, "id": 3},
-            {"name": "Pudge", "is_radiant": False, "id": 4},
-            {"name": "Invoker", "is_radiant": True, "id": 5},
-            {"name": "Bane", "is_radiant": False, "id": 6},
-            {"name": "Bloodseeker", "is_radiant": True, "id": 7},
-            {"name": "Crystal Maiden", "is_radiant": False, "id": 8},
-            {"name": "Drow Ranger", "is_radiant": True, "id": 9},
-            {"name": "Earthshaker", "is_radiant": False, "id": 10},
-            {"name": "Mirana", "is_radiant": True, "id": 11}, 
-            {"name": "Morphling", "is_radiant": False, "id": 12},
-            {"name": "Shadow Fiend", "is_radiant": True, "id": 13},
-            {"name": "Phantom Lancer", "is_radiant": False, "id": 14},
-            {"name": "Puck", "is_radiant": True, "id": 15},
-            {"name": "Razor", "is_radiant": False, "id": 16},
-            {"name": "Sand King", "is_radiant": True, "id": 17},
-            {"name": "Storm Spirit", "is_radiant": False, "id": 18},
-            {"name": "Sven", "is_radiant": True, "id": 19},
-            {"name": "Tiny", "is_radiant": False, "id": 20},
-            {"name": "Vengeful Spirit", "is_radiant": True, "id": 21},
-            {"name": "Windranger", "is_radiant": False, "id": 22},
-            {"name": "Zeus", "is_radiant": True, "id": 23},
-            {"name": "Kunkka", "is_radiant": False, "id": 24},
-            {"name": "Lina", "is_radiant": True, "id": 25},
-            {"name": "Lion", "is_radiant": False, "id": 26},
-            {"name": "Shadow Shaman", "is_radiant": True, "id": 27},
-            {"name": "Slardar", "is_radiant": False, "id": 28},
-            {"name": "Tidehunter", "is_radiant": True, "id": 29},
-            {"name": "Witch Doctor", "is_radiant": False, "id": 30},
-            {"name": "Lich", "is_radiant": True, "id": 31},
-            {"name": "Riki", "is_radiant": False, "id": 32},
-            {"name": "Enigma", "is_radiant": True, "id": 33},
-            {"name": "Tinker", "is_radiant": False, "id": 34},
-            {"name": "Sniper", "is_radiant": True, "id": 35},
-            {"name": "Necrophos", "is_radiant": False, "id": 36},
-            {"name": "Warlock", "is_radiant": True, "id": 37},
-            {"name": "Beastmaster", "is_radiant": False, "id": 38},
-            {"name": "Queen of Pain", "is_radiant": True, "id": 39},
-            {"name": "Venomancer", "is_radiant": False, "id": 40},
-            {"name": "Faceless Void", "is_radiant": True, "id": 41},
-            {"name": "Wraith King", "is_radiant": False, "id": 42},
-            {"name": "Death Prophet", "is_radiant": True, "id": 43},
-            {"name": "Phantom Assassin", "is_radiant": False, "id": 44},
-            {"name": "Pugna", "is_radiant": True, "id": 45},
-            {"name": "Templar Assassin", "is_radiant": False, "id": 46},
-            {"name": "Viper", "is_radiant": True, "id": 47},
-            {"name": "Luna", "is_radiant": False, "id": 48},
-            {"name": "Dragon Knight", "is_radiant": True, "id": 49},
-            {"name": "Dazzle", "is_radiant": False, "id": 50},
-            {"name": "Clockwerk", "is_radiant": True, "id": 51},
-            {"name": "Leshrac", "is_radiant": False, "id": 52},
-            {"name": "Nature's Prophet", "is_radiant": True, "id": 53},
-            {"name": "Lifestealer", "is_radiant": False, "id": 54},
-            {"name": "Dark Seer", "is_radiant": True, "id": 55},
-            {"name": "Clinkz", "is_radiant": False, "id": 56},
-            {"name": "Omniknight", "is_radiant": True, "id": 57},
-            {"name": "Enchantress", "is_radiant": False, "id": 58},
-            {"name": "Huskar", "is_radiant": True, "id": 59},
-            {"name": "Night Stalker", "is_radiant": False, "id": 60},
-            {"name": "Broodmother", "is_radiant": True, "id": 61},
-            {"name": "Bounty Hunter", "is_radiant": False, "id": 62},
-            {"name": "Weaver", "is_radiant": True, "id": 63},
-            {"name": "Jakiro", "is_radiant": False, "id": 64},
-            {"name": "Batrider", "is_radiant": True, "id": 65},
-            {"name": "Chen", "is_radiant": False, "id": 66},
-            {"name": "Spectre", "is_radiant": True, "id": 67},
-            {"name": "Doom", "is_radiant": False, "id": 68},
-            {"name": "Ancient Apparition", "is_radiant": True, "id": 69},
-            {"name": "Ursa", "is_radiant": False, "id": 70},
-            {"name": "Spirit Breaker", "is_radiant": True, "id": 71},
-            {"name": "Gyrocopter", "is_radiant": False, "id": 72},
-            {"name": "Alchemist", "is_radiant": True, "id": 73},
-            {"name": "Silencer", "is_radiant": False, "id": 74},
-            {"name": "Outworld Destroyer", "is_radiant": True, "id": 75},
-            {"name": "Lycan", "is_radiant": False, "id": 76},
-            {"name": "Brewmaster", "is_radiant": True, "id": 77},
-            {"name": "Shadow Demon", "is_radiant": False, "id": 78},
-            {"name": "Lone Druid", "is_radiant": True, "id": 79},
-            {"name": "Chaos Knight", "is_radiant": False, "id": 80},
-            {"name": "Meepo", "is_radiant": True, "id": 81},
-            {"name": "Treant Protector", "is_radiant": False, "id": 82},
-            {"name": "Ogre Magi", "is_radiant": True, "id": 83},
-            {"name": "Undying", "is_radiant": False, "id": 84},
-            {"name": "Rubick", "is_radiant": True, "id": 85},
-            {"name": "Disruptor", "is_radiant": False, "id": 86},
-            {"name": "Nyx Assassin", "is_radiant": True, "id": 87},
-            {"name": "Naga Siren", "is_radiant": False, "id": 88},
-            {"name": "Keeper of the Light", "is_radiant": True, "id": 89},
-            {"name": "Io", "is_radiant": False, "id": 90},
-            {"name": "Visage", "is_radiant": True, "id": 91},
-            {"name": "Slark", "is_radiant": False, "id": 92},
-            {"name": "Medusa", "is_radiant": True, "id": 93},
-            {"name": "Troll Warlord", "is_radiant": False, "id": 94},
-            {"name": "Centaur Warrunner", "is_radiant": True, "id": 95},
-            {"name": "Magnus", "is_radiant": False, "id": 96},
-            {"name": "Timbersaw", "is_radiant": True, "id": 97},
-            {"name": "Bristleback", "is_radiant": False, "id": 98},
-            {"name": "Tusk", "is_radiant": True, "id": 99},
-            {"name": "Skywrath Mage", "is_radiant": False, "id": 100},
-            {"name": "Abaddon", "is_radiant": True, "id": 101},
-            {"name": "Elder Titan", "is_radiant": False, "id": 102},
-            {"name": "Legion Commander", "is_radiant": True, "id": 103},
-            {"name": "Techies", "is_radiant": False, "id": 104},
-            {"name": "Ember Spirit", "is_radiant": True, "id": 105},
-            {"name": "Earth Spirit", "is_radiant": False, "id": 106},
-            {"name": "Underlord", "is_radiant": True, "id": 107},
-            {"name": "Terrorblade", "is_radiant": False, "id": 108},
-            {"name": "Phoenix", "is_radiant": True, "id": 109},
-            {"name": "Oracle", "is_radiant": False, "id": 110},
-            {"name": "Winter Wyvern", "is_radiant": True, "id": 111},
-            {"name": "Arc Warden", "is_radiant": False, "id": 112},
-            {"name": "Monkey King", "is_radiant": True, "id": 113},
-            {"name": "Dark Willow", "is_radiant": False, "id": 114},
-            {"name": "Pangolier", "is_radiant": True, "id": 115},
-            {"name": "Grimstroke", "is_radiant": False, "id": 116},
-            {"name": "Hoodwink", "is_radiant": True, "id": 117},
-            {"name": "Void Spirit", "is_radiant": False, "id": 118},
-            {"name": "Snapfire", "is_radiant": True, "id": 119},
-            {"name": "Mars", "is_radiant": False, "id": 120},
-            {"name": "Dawnbreaker", "is_radiant": True, "id": 121},
-            {"name": "Marci", "is_radiant": False, "id": 122},
-            {"name": "Primal Beast", "is_radiant": True, "id": 123},
-            {"name": "Muerta", "is_radiant": False, "id": 124},
-            {"name": "Largo", "is_radiant": True, "id": 125},
-            {"name": "Kez", "is_radiant": False, "id": 126},
-            {"name": "Ringmaster", "is_radiant": True, "id": 127},
-        ]
-
-        for data in heroes_data:
-            emoji = self.hero_emojis.get(data["name"], "❓")
-            self.heroes[data["id"]] = {"name": data["name"], "emoji": emoji}
 
     async def close_msg(self, call):
         try:
@@ -656,9 +522,9 @@ class DotaStatsMod(loader.Module):
             match_time = datetime.fromtimestamp(start_time, tz=timezone.utc) + timedelta(hours=tz_offset)
             now = datetime.now(timezone.utc) + timedelta(hours=tz_offset)
             time_diff = now - match_time
-            
+
             seconds = int(time_diff.total_seconds())
-            
+
             if seconds < 60:
                 return f"только что ({match_time.strftime('%d.%m.%Y %H:%M')})"
             elif seconds < 3600:
@@ -752,7 +618,7 @@ class DotaStatsMod(loader.Module):
                 1: "Herald", 2: "Guardian", 3: "Crusader", 4: "Archon",
                 5: "Legend", 6: "Ancient", 7: "Divine", 8: "Immortal",
             }
-            
+
             rank_info = "Неизвестно"
             rank_icon = ""
             if rank_tier:
@@ -807,7 +673,7 @@ class DotaStatsMod(loader.Module):
                     pages[0]["match_ids"],
                 )
             )
-            
+
             msg_id = str(msg.inline_message_id)
             self._pages_cache[msg_id] = {
                 "pages": pages,
@@ -1079,6 +945,235 @@ class DotaStatsMod(loader.Module):
         except Exception as e:
             await utils.answer(message, f'<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> Ошибка compare: {e}')
 
+    async def _collect_vs_data(self, my_id: int, other_id: int, limit: int = 100):
+        my_matches = await self._get_json_async(
+            f"/players/{my_id}/matches",
+            params={"limit": limit},
+        )
+        if not my_matches:
+            return {"matches": [], "against": [], "together": []}
+
+        against = []
+        together = []
+
+        for m in my_matches:
+            try:
+                match_data = await asyncio.to_thread(self._get_match_data, str(m["match_id"]))
+            except Exception:
+                continue
+
+            players = match_data.get("players", [])
+            my_p = next((p for p in players if p.get("account_id") == my_id), None)
+            other_p = next((p for p in players if p.get("account_id") == other_id), None)
+
+            if not my_p or not other_p:
+                continue
+
+            same_team = (my_p["player_slot"] < 128) == (other_p["player_slot"] < 128)
+            my_win = self.is_win(my_p)
+
+            entry = {
+                "match_id": m["match_id"],
+                "my_win": my_win,
+                "my_hero": self.heroes.get(my_p["hero_id"], "?"),
+                "other_hero": self.heroes.get(other_p["hero_id"], "?"),
+                "my_kda": f"{my_p['kills']}/{my_p['deaths']}/{my_p['assists']}",
+                "other_kda": f"{other_p['kills']}/{other_p['deaths']}/{other_p['assists']}",
+                "duration": match_data.get("duration", 0),
+                "start_time": match_data.get("start_time", 0),
+            }
+
+            if same_team:
+                together.append(entry)
+            else:
+                against.append(entry)
+
+        return {
+            "matches": against + together,
+            "against": against,
+            "together": together,
+        }
+
+    def _build_vs_pages(self, data, mode: str = "against", per_page: int = 5):
+        if mode == "against":
+            matches = data["against"]
+            title = '⚔️ Личные встречи — против'
+        elif mode == "together":
+            matches = data["together"]
+            title = '🤝 Личные встречи — вместе'
+        else:
+            matches = data["matches"]
+            title = '🎮 Личные встречи — все'
+
+        total = len(matches)
+        wins = sum(1 for m in matches if m["my_win"])
+        losses = total - wins
+        wr = round(wins / total * 100, 1) if total else 0
+
+        pages = []
+
+        if total == 0:
+            pages.append({
+                "text": f'<b>{title}</b>\n\nМатчей не найдено',
+                "match_ids": [],
+            })
+            return pages
+
+        for i in range(0, total, per_page):
+            chunk = matches[i:i + per_page]
+
+            text = (
+                f'<b>{title}</b>\n'
+                f'<blockquote>'
+                f'<tg-emoji emoji-id="5375437280758496345">🎮</tg-emoji> Всего: <b>{total}</b> | '
+                f'<tg-emoji emoji-id="5429381339851796035">✅</tg-emoji> {wins} | '
+                f'<tg-emoji emoji-id="5352703271536454445">❌</tg-emoji> {losses} | '
+                f'<tg-emoji emoji-id="5244837092042750681">📈</tg-emoji> {wr}%'
+                f'</blockquote>\n\n'
+            )
+
+            for m in chunk:
+                win = (
+                    '<tg-emoji emoji-id="5429381339851796035">✅</tg-emoji> Победа'
+                    if m["my_win"]
+                    else '<tg-emoji emoji-id="5352703271536454445">❌</tg-emoji> Поражение'
+                )
+
+                my_icon = self.hero_emojis.get(m["my_hero"], "")
+                other_icon = self.hero_emojis.get(m["other_hero"], "")
+                match_time = self._format_match_time(m.get("start_time", 0))
+                duration = f'{m["duration"] // 60}:{m["duration"] % 60:02d}'
+
+                text += (
+                    f"<blockquote>"
+                    f"<b>Матч <code>{m['match_id']}</code></b>\n"
+                    f"Ты: {my_icon} {m['my_hero']} — {m['my_kda']}\n"
+                    f"Он: {other_icon} {m['other_hero']} — {m['other_kda']}\n"
+                    f"{win}\n"
+                    f"Время: {match_time} | <tg-emoji emoji-id=5375363394436109945>🕖</tg-emoji> {duration}"
+                    f"</blockquote>\n\n"
+                )
+
+            pages.append({
+                "text": text,
+                "match_ids": [str(m["match_id"]) for m in chunk],
+            })
+
+        return pages
+
+    def _vs_markup(self, page: int, total: int, my_id: int, other_id: int, mode: str = "against"):
+        def mode_btn(label, mode_key):
+            style = "danger" if mode == mode_key else "primary"
+            return self._btn(label, style=style, callback=self.vs_mode, args=(page, mode_key))
+
+        return [
+            [
+                mode_btn("⚔️ Против", "against"),
+                mode_btn("🤝 Вместе", "together"),
+                mode_btn("🎮 Все", "all"),
+            ],
+            [
+                self._btn("◀️", style="primary", callback=self.vs_prev, args=(page, mode)),
+                self._btn(f"{page+1}/{total}", style="primary", callback=self._noop),
+                self._btn("▶️", style="primary", callback=self.vs_next, args=(page, mode)),
+            ],
+            [
+                self._btn("📊 Противник", style="success", url=self._player_opendota_url(other_id)),
+                self._btn("👤 Мой профиль", style="success", url=self._player_opendota_url(my_id)),
+            ],
+            [
+                self._btn("❌ Закрыть", style="danger", action="close"),
+            ],
+        ]
+
+    async def vs_prev(self, call, page: int, mode: str):
+        msg_id = str(call.inline_message_id)
+        payload = self._vs_cache.get(msg_id)
+        if not payload:
+            return
+        pages = self._build_vs_pages(payload["data"], mode=mode)
+        page = max(0, page - 1)
+        await call.edit(
+            pages[page]["text"],
+            reply_markup=self._vs_markup(page, len(pages), payload["my_id"], payload["other_id"], mode),
+        )
+        payload["pages"] = pages
+        payload["mode"] = mode
+
+    async def vs_next(self, call, page: int, mode: str):
+        msg_id = str(call.inline_message_id)
+        payload = self._vs_cache.get(msg_id)
+        if not payload:
+            return
+        pages = self._build_vs_pages(payload["data"], mode=mode)
+        page = min(len(pages) - 1, page + 1)
+        await call.edit(
+            pages[page]["text"],
+            reply_markup=self._vs_markup(page, len(pages), payload["my_id"], payload["other_id"], mode),
+        )
+        payload["pages"] = pages
+        payload["mode"] = mode
+
+    async def vs_mode(self, call, page: int, mode: str):
+        msg_id = str(call.inline_message_id)
+        payload = self._vs_cache.get(msg_id)
+        if not payload:
+            return
+        pages = self._build_vs_pages(payload["data"], mode=mode)
+        page = min(page, len(pages) - 1)
+        await call.edit(
+            pages[page]["text"],
+            reply_markup=self._vs_markup(page, len(pages), payload["my_id"], payload["other_id"], mode),
+        )
+        payload["pages"] = pages
+        payload["mode"] = mode
+
+    @loader.command(
+        en_doc="- head-to-head stats vs another player",
+        ru_doc="- статистика личных встреч против игрока",
+        ua_doc="- статистика особистих зустрічей проти гравця",
+    )
+    async def vscmd(self, message: Message):
+        args = utils.get_args_raw(message)
+        my_raw = self.config["PLAYER_ID"]
+
+        if not my_raw:
+            return await utils.answer(message, '<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> Не задан PLAYER_ID')
+        if not args or not args.isdigit():
+            return await utils.answer(message, "Используй: .vs <account_id противника>")
+
+        try:
+            my_id = self._to_account_id(int(my_raw))
+            other_id = self._to_account_id(int(args.strip()))
+
+            data = await self._collect_vs_data(my_id, other_id, limit=40)
+
+            if not data["matches"]:
+                return await utils.answer(
+                    message,
+                    f'<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> Не найдено матчей с игроком <code>{other_id}</code>'
+                )
+
+            pages = self._build_vs_pages(data, mode="against")
+
+            msg = await utils.answer(
+                message,
+                pages[0]["text"],
+                reply_markup=self._vs_markup(0, len(pages), my_id, other_id, mode="against"),
+            )
+
+            msg_id = str(msg.inline_message_id)
+            self._vs_cache[msg_id] = {
+                "pages": pages,
+                "data": data,
+                "my_id": my_id,
+                "other_id": other_id,
+                "mode": "against",
+            }
+
+        except Exception as e:
+            await utils.answer(message, f'<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> Ошибка: {e}')
+
     def _get_match_data(self, match_id: str):
         data = requests.get(f"{API_URL}/matches/{match_id}").json()
         if "match_id" not in data:
@@ -1247,19 +1342,26 @@ class DotaStatsMod(loader.Module):
                 kda = f"{m['kills']}/{m['deaths']}/{m['assists']}"
 
                 win = (
-                    '<tg-emoji emoji-id="5429381339851796035">✅</tg-emoji> Победа' 
+                    '<tg-emoji emoji-id="5429381339851796035">✅</tg-emoji> Победа'
                     if self.is_win(m)
                     else '<tg-emoji emoji-id="5352703271536454445">❌</tg-emoji> Поражение'
                 )
 
                 match_time = self._format_match_time(m.get("start_time", 0))
 
+                duration_sec = m.get("duration")
+                duration_str = (
+                    f" | <tg-emoji emoji-id=5375363394436109945>🕖</tg-emoji> {duration_sec // 60}:{duration_sec % 60:02d}"
+                    if duration_sec
+                    else ""
+                )
+
                 text += (
                     f"<blockquote>"
                     f"<b>Матч <code>{m['match_id']}</code></b>\n"
                     f"Герой: {hero_icon} {hero_name}\n"
                     f"KDA: {kda} | {win}\n"
-                    f"Время: {match_time}"
+                    f"Время: {match_time}{duration_str}"
                     f"</blockquote>\n\n"
                 )
 
@@ -1279,10 +1381,9 @@ class DotaStatsMod(loader.Module):
         return f"https://www.opendota.com/matches/{match_id}"
 
     def _btn(self, text, style="danger", **kwargs):
-        return {"text": text, "style": style,  **kwargs}
+        return {"text": text, "style": style, **kwargs}
 
     def _pagination_markup(self, page, total, player_id, match_ids):
-        first_match_id = match_ids[0] if match_ids else None
         markup = [
             [
                 self._btn(
@@ -1310,22 +1411,19 @@ class DotaStatsMod(loader.Module):
                     url=self._player_opendota_url(player_id)
                 ),
             ],
-        ]
-
-        markup.append(
             [
                 self._btn(
                     "❌ Закрыть",
                     style="danger",
                     action="close"
                 )
-            ]
-        )
+            ],
+        ]
 
         return markup
 
     async def _noop(self, call):
-        await call.answer()    
+        await call.answer()
 
     async def prev_page(self, call, page: int):
         msg_id = str(call.inline_message_id) if hasattr(call, 'inline_message_id') else call.inline_message_id
@@ -1364,17 +1462,3 @@ class DotaStatsMod(loader.Module):
                 pages[page]["match_ids"],
             )
         )
-
-    async def close_msg(self, call):
-        msg_id = str(call.inline_message_id) if hasattr(call, 'inline_message_id') else call.inline_message_id
-        self._pages_cache.pop(msg_id, None)
-        await call.delete()
-
-    def _close_btn(self):
-        return [[
-            self._btn(
-                "❌ Закрыть",
-                style="danger",
-                action="close"
-            )
-        ]]
