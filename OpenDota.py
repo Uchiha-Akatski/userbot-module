@@ -32,7 +32,7 @@ class DotaStatsMod(loader.Module):
                     return str(value)
         return f"unexpected response type: {type(payload).__name__}"
 
-    def _get_json(self, path: str, *, params=None, timeout: int = 15, retries: int = 2):
+    def _get_json(self, path: str, *, params=None, timeout: int = 25, retries: int = 2):
         last_error = None
 
         for attempt in range(retries + 1):
@@ -55,7 +55,7 @@ class DotaStatsMod(loader.Module):
 
         raise ConnectionError(f"Ошибка запроса к OpenDota: {last_error}")
 
-    async def _get_json_async(self, path: str, *, params=None, timeout: int = 15, retries: int = 2):
+    async def _get_json_async(self, path: str, *, params=None, timeout: int = 25, retries: int = 2):
         return await asyncio.to_thread(
             self._get_json,
             path,
@@ -961,6 +961,7 @@ class DotaStatsMod(loader.Module):
                 match_data = await asyncio.to_thread(self._get_match_data, str(m["match_id"]))
             except Exception:
                 continue
+            await asyncio.sleep(0.1)
 
             players = match_data.get("players", [])
             my_p = next((p for p in players if p.get("account_id") == my_id), None)
