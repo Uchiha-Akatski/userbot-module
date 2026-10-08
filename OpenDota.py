@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 3, 0)
+__version__ = (2, 4, 2)
 # -- version --
 
 # meta developer: @Itachi_Uchiha_sss
@@ -540,6 +540,23 @@ class DotaStatsMod(loader.Module):
             print(f"[DotaStats] Ошибка форматирования времени: {e}")
             return "неизвестно"
 
+    def _format_rank(self, rank_code):
+        if not rank_code:
+            return None
+        rank_names = {
+            1: "Herald", 2: "Guardian", 3: "Crusader", 4: "Archon",
+            5: "Legend", 6: "Ancient", 7: "Divine", 8: "Immortal",
+        }
+        major = rank_code // 10
+        minor = rank_code % 10
+        name = rank_names.get(major)
+        if not name:
+            return None
+        icon = self.rank_emojis.get(name, "")
+        if major < 8:
+            return f"{name} {minor} {icon}"
+        return f"{name} {icon}"
+
     @loader.command(
         en_doc="- show your profile (uses PLAYER_ID)",
         ru_doc="- показать свой профиль (использует PLAYER_ID)",
@@ -982,6 +999,7 @@ class DotaStatsMod(loader.Module):
                 "other_kda": f"{other_p['kills']}/{other_p['deaths']}/{other_p['assists']}",
                 "duration": match_data.get("duration", 0),
                 "start_time": match_data.get("start_time", 0),
+                "my_rank": my_p.get("rank_tier"),
             }
 
             if same_team:
@@ -1045,13 +1063,17 @@ class DotaStatsMod(loader.Module):
                 match_time = self._format_match_time(m.get("start_time", 0))
                 duration = f'{m["duration"] // 60}:{m["duration"] % 60:02d}'
 
+                rank_str = self._format_rank(m.get("my_rank"))
+                rank_line = f"Ранг: {rank_str}\n" if rank_str else ""
+
                 text += (
                     f"<blockquote>"
                     f"<b>Матч <code>{m['match_id']}</code></b>\n"
                     f"Ты: {my_icon} {m['my_hero']} — {m['my_kda']}\n"
                     f"Он: {other_icon} {m['other_hero']} — {m['other_kda']}\n"
+                    f"{rank_line}"
                     f"{win}\n"
-                    f"Время: {match_time} | <tg-emoji emoji-id=5375363394436109945>🕖</tg-emoji> {duration}"
+                    f'Время: {match_time} | <tg-emoji emoji-id="5375363394436109945">🕖</tg-emoji> {duration}'
                     f"</blockquote>\n\n"
                 )
 
@@ -1198,13 +1220,8 @@ class DotaStatsMod(loader.Module):
             gpm = p.get("gold_per_min", 0)
             xpm = p.get("xp_per_min", 0)
             net = p.get("total_gold", 0)
+            hero_damage = p.get("hero_damage", 0)
             account_id = p.get("account_id", "N/A")
-
-            def _first_nonzero(*vals):
-                for v in vals:
-                    if v not in (None, 0):
-                        return v
-                return 0
 
             def _extract_items(player):
                 main = [0] * 6
@@ -1309,7 +1326,7 @@ class DotaStatsMod(loader.Module):
 
             line = (
                 f"- <code>{hero_name}</code> {hero_icon} | {kda} | GPM: {gpm} | "
-                f"XPM: {xpm} | Net: {net} | Steam ID: <code>{account_id}</code>\n"
+                f"XPM: {xpm} | Net: {net} | Урон: {hero_damage} | Steam ID: <code>{account_id}</code>\n"
                 f'  <tg-emoji emoji-id="5445221832074483553">💼</tg-emoji> {main_items_str}\n'
                 f"  🎒 {backpack_items_str}"
             )
@@ -1352,16 +1369,20 @@ class DotaStatsMod(loader.Module):
 
                 duration_sec = m.get("duration")
                 duration_str = (
-                    f" | <tg-emoji emoji-id=5375363394436109945>🕖</tg-emoji> {duration_sec // 60}:{duration_sec % 60:02d}"
+                    f' | <tg-emoji emoji-id="5375363394436109945">🕖</tg-emoji> {duration_sec // 60}:{duration_sec % 60:02d}'
                     if duration_sec
                     else ""
                 )
+
+                rank_str = self._format_rank(m.get("average_rank"))
+                rank_line = f"Ранг игры: {rank_str}\n" if rank_str else ""
 
                 text += (
                     f"<blockquote>"
                     f"<b>Матч <code>{m['match_id']}</code></b>\n"
                     f"Герой: {hero_icon} {hero_name}\n"
                     f"KDA: {kda} | {win}\n"
+                    f"{rank_line}"
                     f"Время: {match_time}{duration_str}"
                     f"</blockquote>\n\n"
                 )
