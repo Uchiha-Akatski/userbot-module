@@ -313,3 +313,16 @@ class StariyBog(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+
+    async def обеспечениеcmd(self, message):
+        """| А-а-а! Не надо! Нет-нет-нет-нет-нет-нет-нет-нет-нет! Сука ебаная, читер! Блин, мне кажется, у него программное обеспечение! Нет такой хуйни! У него программное обеспечение!"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/463",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
