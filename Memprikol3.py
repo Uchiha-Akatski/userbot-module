@@ -359,7 +359,7 @@ class  Memprikol3(loader.Module):
         )
         return
 
-    async def понедельникmd(self, message):
+    async def понедельникcmd(self, message):
         """| grrrrrr Понедельник"""
 
         reply = await message.get_reply_message()
