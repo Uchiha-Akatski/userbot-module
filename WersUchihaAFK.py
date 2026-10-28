@@ -4,7 +4,7 @@
 # meta pic: https://raw.githubusercontent.com/Uchiha-Akatski/itachi/main/photo_2026-10-28_18-02-31.jpg
 
 from .. import loader, utils
-from hikkaritl import types, functions
+from telethon.tl import types, functions
 import time
 import datetime
 import logging
@@ -17,12 +17,12 @@ import re
 from collections import defaultdict
 
 try:
-    from hikkaritl.types import InputMediaWebPage
+    from telethon.tl.types import InputMediaWebPage
 except ImportError:
     InputMediaWebPage = None
 
 try:
-    from hikkaritl.tl.types import (
+    from telethon.tl.types import (
         KeyboardButtonUrl,
         ReplyInlineMarkup,
         KeyboardButtonRow,
@@ -30,7 +30,7 @@ try:
     )
 except ImportError:
     try:
-        from hikkaritl.tl.types import (
+        from telethon.tl.types import (
             KeyboardButtonUrl,
             ReplyInlineMarkup,
             KeyboardButtonRow,
@@ -42,7 +42,7 @@ except ImportError:
         KeyboardButtonRow = None
         KeyboardButtonCallback = None
 
-__version__ = (1, 20, 4)
+__version__ = (1, 20, 5)
 
 name = "WersUchihaAFK"
 logger = logging.getLogger(name)
