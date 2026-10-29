@@ -4,7 +4,16 @@
 # meta pic: https://raw.githubusercontent.com/Uchiha-Akatski/itachi/main/photo_2026-10-28_18-02-31.jpg
 
 from .. import loader, utils
-from telethon.tl import types, functions
+
+# Telethon first, hikkaritl as fallback (Hikka/Heroku forks)
+try:
+    from telethon.tl import types, functions
+except ImportError:
+    try:
+        from hikkaritl.tl import types, functions
+    except ImportError:
+        from telethon import types, functions
+
 import time
 import datetime
 import logging
@@ -15,7 +24,6 @@ import asyncio
 import hashlib
 import re
 from collections import defaultdict
-
 
 try:
     from zoneinfo import ZoneInfo
@@ -30,7 +38,10 @@ except ImportError:
 try:
     from telethon.tl.types import InputMediaWebPage
 except ImportError:
-    InputMediaWebPage = None
+    try:
+        from hikkaritl.tl.types import InputMediaWebPage
+    except ImportError:
+        InputMediaWebPage = None
 
 try:
     from telethon.tl.types import (
@@ -41,7 +52,7 @@ try:
     )
 except ImportError:
     try:
-        from telethon.tl.types import (
+        from hikkaritl.tl.types import (
             KeyboardButtonUrl,
             ReplyInlineMarkup,
             KeyboardButtonRow,
@@ -53,13 +64,20 @@ except ImportError:
         KeyboardButtonRow = None
         KeyboardButtonCallback = None
 
-__version__ = (1, 21, 0)
+__version__ = (1, 21, 6)
 
 name = "WersUchihaAFK"
 logger = logging.getLogger(name)
 
 UPDATE_RAW_URL = "https://raw.githubusercontent.com/Uchiha-Akatski/userbot-module/refs/heads/main/WersUchihaAFK.py"
+UPDATE_RAW_URL_ALT = "https://raw.githubusercontent.com/Uchiha-Akatski/userbot-module/main/WersUchihaAFK.py"
 UPDATE_API_COMMITS = "https://api.github.com/repos/Uchiha-Akatski/userbot-module/commits?path=WersUchihaAFK.py&per_page=1"
+UPDATE_API_COMMITS_ALT = "https://api.github.com/repos/Uchiha-Akatski/userbot-module/commits?path=WersUchihaAFK.py&sha=main&per_page=1"
+GITHUB_HEADERS = {
+    "Accept": "application/vnd.github+json",
+    "User-Agent": "WersUchihaAFK-Updater/1.21",
+    "X-GitHub-Api-Version": "2022-11-28",
+}
 
 
 AFK_REPLY_PLACEHOLDERS = (
@@ -90,11 +108,16 @@ WAKE_TIME_PLACEHOLDERS = (
 
 @loader.tds
 class WersUchihaAFKMod(loader.Module):
-    """WersUchihaAFK — AFK/SLEEP с авто-аватаркой, тегами, обратной связью через инлайн-бота и авто-обновлениями"""
+    """WersUchihaAFK — AFK/SLEEP с авто-аватаркой, тегами, Rich-логами и авто-обновлениями"""
 
     strings = {
         "name": "WersUchihaAFK",
-        "back": "<emoji document_id=5883964170268840032>👤</emoji> <b><a href=\"tg://user?id={user_id}\">{display_name}</a> вернулся в строй!</b>",
+        "back": (
+            "<blockquote><emoji document_id=5883964170268840032>👤</emoji> <b><a href=\"tg://user?id={user_id}\">{display_name}</a> вернулся в строй!</b></blockquote>\n"
+            "<blockquote><emoji document_id=5870729937215819584>⏰</emoji> <b>Был в AFK:</b> <code>{duration}</code></blockquote>\n"
+            "{log_text}"
+            "<blockquote><emoji document_id=5897663599819624992>🪐</emoji> <b>{unit_name}</b> | <i>Powered by {userbot_name}</i></blockquote>"
+        ),
         "afk_on": (
             "<blockquote><emoji document_id=5870730156259152122>😀</emoji> <b>AFK включён!</b></blockquote>\n"
             "<blockquote><emoji document_id=5877700484453634587>✈️</emoji> WersUchihaAFK будет отвечать этим:</blockquote>"
@@ -118,7 +141,12 @@ class WersUchihaAFKMod(loader.Module):
             "<blockquote><emoji document_id=5897663599819624992>🪐</emoji> <b>{unit_name}</b> | <i>Sleep Mode • {userbot_name}</i></blockquote>"
         ),
         "wake_text": "<blockquote><emoji document_id=5873146865637133757>🎤</emoji> <b>Проснусь через:</b> <code>{}</code></blockquote>\n",
-        "sleep_off": "<emoji document_id=5883964170268840032>👤</emoji> <b><a href=\"tg://user?id={user_id}\">{display_name}</a> проснулся и готов к бою!</b>",
+        "sleep_off": (
+            "<blockquote><emoji document_id=5883964170268840032>👤</emoji> <b><a href=\"tg://user?id={user_id}\">{display_name}</a> проснулся и готов к бою!</b></blockquote>\n"
+            "<blockquote><emoji document_id=5870729937215819584>⏰</emoji> <b>Спал:</b> <code>{duration}</code></blockquote>\n"
+            "{log_text}"
+            "<blockquote><emoji document_id=5897663599819624992>🪐</emoji> <b>{unit_name}</b> | <i>Sleep Mode • {userbot_name}</i></blockquote>"
+        ),
         "preset_saved": "<emoji document_id=5870730156259152122>✅</emoji> <b>Пресет '{}' сохранён!</b>",
         "preset_loaded": "<emoji document_id=5870730156259152122>✅</emoji> <b>Пресет '{}' загружен!</b>",
         "preset_deleted": "<emoji document_id=5870730156259152122>✅</emoji> <b>Пресет '{}' удалён!</b>",
@@ -194,7 +222,7 @@ class WersUchihaAFKMod(loader.Module):
             loader.ConfigValue("change_nickname", True, "Добавлять тег в ник при AFK/SLEEP.", validator=loader.validators.Boolean()),
             loader.ConfigValue("afk_tag", "#WersAFK", "Тег, который добавляется в ник при AFK."),
             loader.ConfigValue("sleep_tag", "#ItachiSleep", "Тег, который добавляется в ник при SLEEP."),
-            loader.ConfigValue("unit_name", "Unit Alpha", "Название юнита в текстах."),
+            loader.ConfigValue("unit_name", "Unit Delta", "Название юнита в текстах."),
             loader.ConfigValue("auto_update", True, "Проверять обновления каждые 5 минут.", validator=loader.validators.Boolean()),
         )
 
@@ -324,15 +352,67 @@ class WersUchihaAFKMod(loader.Module):
 
  
 
+        self._detected_userbot = self._detect_userbot()
+
         if self._get_config_value("auto_update", True):
             self._update_task = asyncio.create_task(self._update_loop())
 
+    def _detect_userbot(self) -> str:
+        """Определяет юзербот по ядру / модулям системы."""
+        try:
+            mods = {str(m).lower() for m in sys.modules}
+            joined = " ".join(mods)
 
+            # Heroku (форк Hikka)
+            if any(x in joined for x in ("heroku", "herokutl", "heroku.client")):
+                return "Heroku Userbot"
+            # Hikka
+            if any(x in joined for x in ("hikka", "hikka.client", "hikka.loader")):
+                return "Hikka Userbot"
+            # Hikari / hikkaritl
+            if any(x in joined for x in ("hikari", "hikkaritl", "hikari.client")):
+                return "Hikari Userbot"
+            # FoxUserbot / FTG / GeekTG leftovers
+            if "fox" in joined and "userbot" in joined:
+                return "Fox Userbot"
+            if "geektg" in joined or "friendly-telegram" in joined:
+                return "GeekTG Userbot"
 
+            # По путям установки
+            try:
+                import inspect
+                from .. import loader as _ldr
+                p = (inspect.getfile(_ldr) or "").lower()
+                if "heroku" in p:
+                    return "Heroku Userbot"
+                if "hikka" in p:
+                    return "Hikka Userbot"
+                if "hikari" in p:
+                    return "Hikari Userbot"
+            except Exception:
+                pass
 
+            # По атрибутам клиента / инлайн
+            try:
+                if hasattr(self, "inline") and self.inline is not None:
+                    bot_u = str(getattr(self.inline, "bot_username", "") or "").lower()
+                    if "heroku" in bot_u:
+                        return "Heroku Userbot"
+            except Exception:
+                pass
+        except Exception as e:
+            logger.debug(f"detect userbot: {e}")
+        return "Hikari Userbot"
+
+    def _get_userbot_name(self) -> str:
+        name_ub = getattr(self, "_detected_userbot", None)
+        if not name_ub:
+            name_ub = self._detect_userbot()
+            self._detected_userbot = name_ub
+        return name_ub
 
     def _get_unit_name(self) -> str:
-        return self._get_config_value("unit_name", "Unit Alpha") or "Unit Alpha"
+        return self._get_config_value("unit_name", "Unit Delta") or "Unit Delta"
 
     def _get_display_name(self) -> str:
         first = self._me.first_name or ""
@@ -429,27 +509,19 @@ class WersUchihaAFKMod(loader.Module):
             count = data["count"]
             last_time = data.get("last_time", "—")
             lines.append(
-                f' <a href="tg://user?id={user_id}">{name}</a> '
-                f"(<code>{user_id}</code>)  — <b>{count}</b> сообщений"
-                f"последнее: <code>{last_time}</code>"
+                f'<emoji document_id=5870695289714643076>👤</emoji> <a href="tg://user?id={user_id}">{name}</a> '
+                f'(<code>{user_id}</code>) — <b>{count}</b> сообщ., '
+                f'последнее: <code>{last_time}</code>'
             )
-        return"\n\n<blockquote><b>Пока тебя не было, тебе писали:</b>\n" + "\n".join(lines)+ "</blockquote>"
-    
-    def _format_afk_log_clean(self):
-        """Возвращает строки для вставки в таблицу"""
-        if not self.chat_messages:
-            return ""
-        lines = []
-        sorted_items = sorted(
-            self.chat_messages.items(),
-            key=lambda kv: (kv[1].get("count", 0), kv[1].get("last_time", "")),
-            reverse=True,
+        body = "\n".join(lines)
+        return (
+            "\n<blockquote><emoji document_id=5260702125708557233>✋</emoji> "
+            "<b>Пока тебя не было, тебе писали:</b>\n"
+            + body
+            + "</blockquote>\n"
         )
-        for user_id, data in sorted_items:
-            name = data["name"]
-            count = data["count"]
-            lines.append(f"<tg-emoji emoji-id=5902335789798265487>👤</tg-emoji> <b>{name}</b> | <tg-emoji emoji-id=6021367625836140615>🪪</tg-emoji> <code>{user_id}</code> | <tg-emoji emoji-id=5219688538106239995>✍️</tg-emoji> <b>{count}</b>")
-        return "<br/>".join(lines)
+
+
 
     def _format_afk_log_rich(self):
         """Формирует красивую таблицу для {log_block} с премиум-эмодзи"""
@@ -462,7 +534,7 @@ class WersUchihaAFKMod(loader.Module):
             key=lambda kv: (kv[1].get("count", 0), kv[1].get("last_time", "")),
             reverse=True,
         )
-        for user_id, data in self.chat_messages.items():
+        for user_id, data in sorted_items:
             name = data["name"]
             count = data["count"]
             last_time = data.get("last_time", "—")
@@ -642,17 +714,25 @@ class WersUchihaAFKMod(loader.Module):
 
     async def _restore_avatar(self):
         """
-        При выходе из AFK/SLEEP:
-        1) Удаляет аватарку режима (AFK/SLEEP) — она пропадает из профиля
-        2) Предыдущая аватарка автоматически становится основной
-        3) Если вдруг удалить не удалось — fallback: заливает сохранённую старую
+        Удаляет ТОЛЬКО mode-аватарку, если она реально ставилась.
+        Если AFK_AVATAR/SLEEP_AVATAR пустые — ничего не трогаем (свою аву не удаляем!).
         """
         if not self._get_config_value("change_avatar", True):
             return
 
+        mode_data = self._db.get(name, "mode_photo_id", None)
+        avatar_was_set = bool(self._db.get(name, "avatar_was_set", False))
+
+        # Не ставили mode-аву — выходим, свою аватарку НЕ трогаем
+        if not avatar_was_set and not (isinstance(mode_data, dict) and mode_data.get("id")):
+            self._db.set(name, "mode_photo_id", None)
+            self._db.set(name, "avatar_was_set", False)
+            self._old_photo_path = None
+            self._db.set(name, "old_photo_path", None)
+            return
+
         deleted = False
         try:
-            mode_data = self._db.get(name, "mode_photo_id", None)
             if mode_data and isinstance(mode_data, dict) and mode_data.get("id"):
                 try:
                     fr = mode_data.get("file_reference", b"")
@@ -675,8 +755,8 @@ class WersUchihaAFKMod(loader.Module):
                 except Exception as e:
                     logger.warning(f"Не удалось удалить mode-аватарку по id: {e}")
 
-            # Fallback: удаляем верхнюю (текущую) аватарку — это должна быть mode
-            if not deleted:
+            # Fallback удаления верхней ТОЛЬКО если mode-ава точно ставилась
+            if not deleted and avatar_was_set:
                 try:
                     photos = await self.client.get_profile_photos("me", limit=1)
                     if photos:
@@ -688,7 +768,6 @@ class WersUchihaAFKMod(loader.Module):
                 except Exception as e:
                     logger.warning(f"Fallback delete верхней аватарки: {e}")
 
-            # Если удалить не вышло совсем — поднимаем старую заново (хуже, но лучше чем ничего)
             if not deleted and self._old_photo_path and os.path.exists(self._old_photo_path):
                 try:
                     file = await self.client.upload_file(self._old_photo_path)
@@ -700,8 +779,8 @@ class WersUchihaAFKMod(loader.Module):
         except Exception as e:
             logger.error(f"Не удалось восстановить аватарку: {e}")
         finally:
-            # Чистим временные данные
             self._db.set(name, "mode_photo_id", None)
+            self._db.set(name, "avatar_was_set", False)
             if self._old_photo_path and os.path.exists(self._old_photo_path):
                 try:
                     os.remove(self._old_photo_path)
@@ -711,11 +790,17 @@ class WersUchihaAFKMod(loader.Module):
             self._db.set(name, "old_photo_path", None)
 
     async def _set_mode_avatar(self, mode: str):
+        """Ставит mode-аву ТОЛЬКО если в конфиге есть URL. Иначе — no-op."""
         if not self._get_config_value("change_avatar", True):
             return
-        url = self._get_config_value("AFK_AVATAR" if mode == "afk" else "SLEEP_AVATAR", "")
-        if url:
-            await self._download_and_set_avatar(url)
+        url = (self._get_config_value("AFK_AVATAR" if mode == "afk" else "SLEEP_AVATAR", "") or "").strip()
+        if not url:
+            # Явно сбрасываем флаги — чтобы restore ничего не удалял
+            self._db.set(name, "avatar_was_set", False)
+            self._db.set(name, "mode_photo_id", None)
+            return
+        ok = await self._download_and_set_avatar(url)
+        self._db.set(name, "avatar_was_set", bool(ok))
 
 
 
@@ -741,26 +826,119 @@ class WersUchihaAFKMod(loader.Module):
         except Exception:
             return None
 
-    async def _fetch_remote(self):
+    def _http_get(self, url: str, headers: dict = None, timeout: int = 20):
+        """
+        Устойчивый GET: requests → urllib.
+        GitHub без User-Agent часто отдаёт 403 — поэтому заголовки обязательны.
+        """
+        hdrs = {
+            "User-Agent": "WersUchihaAFK-Updater/1.21",
+            "Accept": "*/*",
+        }
+        if headers:
+            hdrs.update(headers)
+
+        # 1) requests
         try:
             import requests
-            r = requests.get(UPDATE_RAW_URL, timeout=20)
-            if r.status_code != 200:
-                return None, None, None, None
-            content = r.text
-            version = self._parse_remote_version(content)
-            commit_msg = "—"
+            r = requests.get(url, timeout=timeout, headers=hdrs)
+            return r.status_code, r.text, (r.content if r.content is not None else b"")
+        except Exception as e:
+            logger.debug(f"requests GET {url}: {e}")
+
+        # 2) urllib
+        try:
+            import urllib.request
+            req = urllib.request.Request(url, headers=hdrs)
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                raw = resp.read()
+                code = getattr(resp, "status", 200) or 200
+                try:
+                    text = raw.decode("utf-8", errors="replace")
+                except Exception:
+                    text = str(raw)
+                return code, text, raw
+        except Exception as e:
+            logger.debug(f"urllib GET {url}: {e}")
+
+        return None, None, None
+
+    def _extract_commit_from_api_json(self, data) -> str:
+        try:
+            if isinstance(data, list) and data:
+                item = data[0]
+            elif isinstance(data, dict):
+                item = data
+            else:
+                return ""
+            msg = (
+                (item.get("commit") or {}).get("message")
+                or item.get("message")
+                or ""
+            )
+            msg = (msg or "").strip()
+            if not msg:
+                # sha как запасной идентификатор
+                sha = item.get("sha") or (item.get("commit") or {}).get("tree", {}).get("sha")
+                if sha:
+                    return f"sha {str(sha)[:7]}"
+            return msg
+        except Exception:
+            return ""
+
+    def _fetch_commit_message(self) -> str:
+        """Тянет текст последнего коммита несколькими способами."""
+        urls = [UPDATE_API_COMMITS, UPDATE_API_COMMITS_ALT]
+        for url in urls:
             try:
-                cr = requests.get(UPDATE_API_COMMITS, timeout=15, headers={"Accept": "application/vnd.github.v3+json"})
-                if cr.status_code == 200:
-                    data = cr.json()
-                    if data and isinstance(data, list):
-                        commit_msg = data[0].get("commit", {}).get("message", "—") or "—"
-                        if len(commit_msg) > 200:
-                            commit_msg = commit_msg[:200] + "…"
-            except Exception:
-                pass
-            content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
+                code, body, _ = self._http_get(url, headers=GITHUB_HEADERS, timeout=15)
+                if code != 200 or not body:
+                    logger.debug(f"commits API {code} for {url}")
+                    continue
+                import json
+                data = json.loads(body)
+                msg = self._extract_commit_from_api_json(data)
+                if msg:
+                    msg = msg.split("\n")[0].strip()  # первая строка
+                    if len(msg) > 200:
+                        msg = msg[:200] + "…"
+                    return msg
+            except Exception as e:
+                logger.debug(f"commit fetch {url}: {e}")
+
+        # Fallback: коммит из комментария в самом файле (# meta / # commit)
+        return ""
+
+    def _fetch_module_source(self):
+        for url in (UPDATE_RAW_URL, UPDATE_RAW_URL_ALT):
+            try:
+                code, body, raw = self._http_get(url, timeout=20)
+                if code == 200 and body and "__version__" in body:
+                    return body
+            except Exception as e:
+                logger.debug(f"raw fetch {url}: {e}")
+        return None
+
+    async def _fetch_remote(self):
+        try:
+            content = self._fetch_module_source()
+            if not content:
+                return None, None, None, None
+
+            version = self._parse_remote_version(content)
+            commit_msg = self._fetch_commit_message() or "—"
+
+            # Если API молчит — попробуем вытащить из шапки файла
+            if commit_msg == "—":
+                m = re.search(r"#\s*meta\s+commit:\s*(.+)", content, re.I)
+                if m:
+                    commit_msg = m.group(1).strip()[:200]
+                else:
+                    m = re.search(r"#\s*commit:\s*(.+)", content, re.I)
+                    if m:
+                        commit_msg = m.group(1).strip()[:200]
+
+            content_hash = hashlib.md5(content.encode("utf-8")).hexdigest()
             return version, content, commit_msg, content_hash
         except Exception as e:
             logger.error(f"Fetch remote error: {e}")
@@ -788,38 +966,81 @@ class WersUchihaAFKMod(loader.Module):
             commit=utils.escape_html(commit_msg),
         )
 
-        markup = None
+        buttons = self._build_update_buttons()
+        await self._send_update_notify(text, buttons)
+
+    def _build_update_buttons(self):
+        """Инлайн-кнопки Обновить / Игнорировать в формате, который понимает бот."""
+        # 1) Button.inline (Telethon/Hikari)
+        try:
+            try:
+                from telethon import Button
+            except ImportError:
+                from hikkaritl import Button
+            return [
+                [
+                    Button.inline("🔄 Обновить", b"wersafk_upd"),
+                    Button.inline("🗑 Игнорировать", b"wersafk_ign"),
+                ]
+            ]
+        except Exception as e:
+            logger.debug(f"Button.inline failed: {e}")
+
+        # 2) Raw TL markup
         if KeyboardButtonCallback and ReplyInlineMarkup and KeyboardButtonRow:
             try:
-                markup = ReplyInlineMarkup(rows=[
+                return ReplyInlineMarkup(rows=[
                     KeyboardButtonRow(buttons=[
                         KeyboardButtonCallback(text="🔄 Обновить", data=b"wersafk_upd"),
                         KeyboardButtonCallback(text="🗑 Игнорировать", data=b"wersafk_ign"),
                     ])
                 ])
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"ReplyInlineMarkup failed: {e}")
+        return None
 
-        await self._send_update_notify(text, markup)
-
-    async def _send_update_notify(self, text: str, markup=None):
+    async def _send_update_notify(self, text: str, buttons=None):
+        """Шлём уведомление с кнопками (от бота предпочтительно)."""
+        # От инлайн-бота
         try:
             if hasattr(self, "inline") and self.inline and getattr(self.inline, "bot", None):
                 bot = self.inline.bot
-                await bot.send_message(
-                    self._me.id,
-                    text,
-                    buttons=markup,
-                    link_preview=False,
-                )
-                return
+                try:
+                    await bot.send_message(self._me.id, text, buttons=buttons, link_preview=False)
+                    return
+                except TypeError:
+                    await bot.send_message(self._me.id, text, reply_markup=buttons, link_preview=False)
+                    return
+                except Exception as e:
+                    logger.warning(f"bot.send_message with buttons failed: {e}")
+                    try:
+                        await bot.send_message(self._me.id, text, link_preview=False)
+                        # кнопки не прикрепились — попробуем через client
+                    except Exception:
+                        pass
         except Exception as e:
             logger.warning(f"Inline bot notify failed: {e}")
 
+        # Fallback: от аккаунта юзербота, но С кнопками
         try:
-            await self.client.send_message("me", text)
+            await self.client.send_message(self._me.id, text, buttons=buttons, link_preview=False)
+            return
+        except TypeError:
+            try:
+                await self.client.send_message(self._me.id, text, reply_markup=buttons, link_preview=False)
+                return
+            except Exception:
+                pass
         except Exception as e:
-            logger.error(f"Fallback notify failed: {e}")
+            logger.warning(f"client notify with buttons failed: {e}")
+
+        try:
+            await self.client.send_message("me", text, buttons=buttons)
+        except Exception:
+            try:
+                await self.client.send_message("me", text)
+            except Exception as e:
+                logger.error(f"Fallback notify failed: {e}")
 
     async def _install_update(self):
         try:
@@ -1028,14 +1249,19 @@ class WersUchihaAFKMod(loader.Module):
                 "reason_row": reason_row,
                 "come_row": come_row,
                 "unit_name": self._get_unit_name(),
+                "userbot_name": self._get_userbot_name(),
             },
         )
         
         on_text = self._safe_format(self._get_config_value("MSG_AFK_ON", self.strings["afk_on"]), {})
         full_text = on_text + "\n" + preview
 
-        if not await self._send_rich(message, full_text, title="AFK Включен"):
-            await self._send_command_response(message, full_text, self._get_config_value("AFK_MEDIA", ""))
+        media_url = self._get_config_value("AFK_MEDIA", "")
+        # Если есть баннер — всегда через _send_command_response (rich-only его пропускает)
+        if media_url:
+            await self._send_command_response(message, full_text, media_url)
+        elif not await self._send_rich(message, full_text, title="AFK Включен"):
+            await self._send_command_response(message, full_text, None)
 
     @loader.command(
         ru_doc="Выключить AFK режим",
@@ -1076,23 +1302,28 @@ class WersUchihaAFKMod(loader.Module):
             {
                 "display_name": display_name,
                 "user_id": user_id,
-                "duration": duration_value,
-                "log_text": "", 
+                "duration": duration_value or "0:00:00",
+                "log_text": log_text if "{log_text}" in template else "",
                 "log_block": log_block,
                 "unit_name": self._get_unit_name(),
+                "userbot_name": self._get_userbot_name(),
             },
         )
 
+        # Дописываем только если в шаблоне нет плейсхолдеров — и всегда в blockquote
         if duration_value and "{duration}" not in template:
             full_text += (
-                f"\n<emoji document_id=5870729937215819584>⏰️</emoji> "
-                f"<b>Был в AFK:</b> <code>{duration_value}</code>"
+                f"\n<blockquote><emoji document_id=5870729937215819584>⏰</emoji> "
+                f"<b>Был в AFK:</b> <code>{duration_value}</code></blockquote>"
             )
         if log_text and "{log_text}" not in template and "{log_block}" not in template:
-            full_text += "\n" + log_text
+            full_text += log_text
 
-        if not await self._send_rich(message, full_text, title="AFK Выключен"):
-            await self._send_command_response(message, full_text, self._get_config_value("AFK_OFF_MEDIA", ""))
+        media_url = self._get_config_value("AFK_OFF_MEDIA", "")
+        if media_url:
+            await self._send_command_response(message, full_text, media_url)
+        elif not await self._send_rich(message, full_text, title="AFK Выключен"):
+            await self._send_command_response(message, full_text, None)
 
         self.chat_messages = {}
         self._db.set(name, "chat_messages", {})
@@ -1155,14 +1386,18 @@ class WersUchihaAFKMod(loader.Module):
                 "wake_time": wake_text_old,
                 "wake_row": wake_row,
                 "unit_name": self._get_unit_name(),
+                "userbot_name": self._get_userbot_name(),
             },
         )
         
         on_text = self._safe_format(self._get_config_value("MSG_SLEEP_ON", self.strings["sleep_on"]), {})
         full_text = on_text + "\n" + preview
 
-        if not await self._send_rich(message, full_text, title="SLEEP Включен"):
-            await self._send_command_response(message, full_text, self._get_config_value("SLEEP_MEDIA", ""))
+        media_url = self._get_config_value("SLEEP_MEDIA", "")
+        if media_url:
+            await self._send_command_response(message, full_text, media_url)
+        elif not await self._send_rich(message, full_text, title="SLEEP Включен"):
+            await self._send_command_response(message, full_text, None)
 
     @loader.command(
         ru_doc="Выключить SLEEP режим",
@@ -1203,23 +1438,27 @@ class WersUchihaAFKMod(loader.Module):
             {
                 "display_name": display_name,
                 "user_id": user_id,
-                "duration": duration_value,
-                "log_text": "",
+                "duration": duration_value or "0:00:00",
+                "log_text": log_text if "{log_text}" in template else "",
                 "log_block": log_block,
                 "unit_name": self._get_unit_name(),
+                "userbot_name": self._get_userbot_name(),
             },
         )
 
         if duration_value and "{duration}" not in template:
             full_text += (
-                f"\n<emoji document_id=5870729937215819584>⏰️</emoji> "
-                f"<b>Спал:</b> <code>{duration_value}</code>"
+                f"\n<blockquote><emoji document_id=5870729937215819584>⏰</emoji> "
+                f"<b>Спал:</b> <code>{duration_value}</code></blockquote>"
             )
         if log_text and "{log_text}" not in template and "{log_block}" not in template:
-            full_text += "\n" + log_text
+            full_text += log_text
 
-        if not await self._send_rich(message, full_text, title="SLEEP Выключен"):
-            await self._send_command_response(message, full_text, self._get_config_value("SLEEP_OFF_MEDIA", ""))
+        media_url = self._get_config_value("SLEEP_OFF_MEDIA", "")
+        if media_url:
+            await self._send_command_response(message, full_text, media_url)
+        elif not await self._send_rich(message, full_text, title="SLEEP Выключен"):
+            await self._send_command_response(message, full_text, None)
 
         self.chat_messages = {}
         self._db.set(name, "chat_messages", {})
@@ -1406,37 +1645,98 @@ class WersUchihaAFKMod(loader.Module):
         return media_url
 
     async def _send_with_invert(self, message, text: str, media_url: str = None, reply_to=None, force_invert=False):
+        """
+        Одна отправка: текст + медиа.
+        Цепочка 🔄 сохранена (для quote/invert).
+        Без дублей — fallback только если основная отправка реально упала.
+        """
         media = await self._prepare_media(media_url)
+        is_rich = any(tag in (text or "") for tag in ("<table", "<details", "<figure", "<h2", "<h3"))
+        should_invert = not force_invert and self._get_config_value("invert_media", False)
 
-        # Проверка на Rich-разметку
-        is_rich = any(tag in text for tag in ("<table", "<details", "<figure", "<h2", "<h3"))
-
+        # --- только текст ---
         if media is None:
             kwargs = {}
             if reply_to:
                 kwargs["reply_to"] = reply_to
-
-                
-            # Если Rich — отправляем с rich=True
             if is_rich:
                 try:
                     await utils.answer(message, text, rich=True, **kwargs)
                     return
                 except Exception as e:
-                    logger.warning(f"Rich in _send_with_invert failed: {e}")
-                    
+                    logger.debug(f"rich text-only: {e}")
             await utils.answer(message, text, **kwargs)
             return
 
-        should_invert = not force_invert and self._get_config_value("invert_media", False)
+        # --- 🔄 цепочка ---
+        try:
+            if reply_to:
+                temp_msg = await self.client.send_message(message.chat_id, "🔄", reply_to=reply_to)
+            else:
+                temp_msg = await utils.answer(message, "🔄")
+        except Exception as e:
+            logger.warning(f"🔄 failed: {e}")
+            temp_msg = message
 
-        if reply_to:
-            temp_msg = await self.client.send_message(message.chat_id, "🔄", reply_to=reply_to)
-        else:
-            temp_msg = await utils.answer(message, "🔄")
+        async def _one_shot(target, invert: bool) -> bool:
+            """True только если отправка прошла без исключения."""
+            kwargs = {"file": media}
+            if invert:
+                kwargs["invert_media"] = True
+            if is_rich:
+                try:
+                    await utils.answer(target, text, rich=True, **kwargs)
+                    return True
+                except TypeError:
+                    pass
+                except Exception as e:
+                    logger.debug(f"rich+file: {e}")
+            try:
+                await utils.answer(target, text, **kwargs)
+                return True
+            except TypeError:
+                kwargs.pop("invert_media", None)
+                try:
+                    await utils.answer(target, text, **kwargs)
+                    return True
+                except Exception as e:
+                    logger.warning(f"answer retry: {e}")
+                    return False
+            except Exception as e:
+                logger.warning(f"answer+file: {e}")
+                return False
 
-        kwargs = {"file": media, "invert_media": should_invert}
-        await utils.answer(temp_msg, text, **kwargs)
+        if await _one_shot(temp_msg, should_invert):
+            return
+        if should_invert and await _one_shot(temp_msg, False):
+            return
+
+        # Fallback ОДИН раз: новое сообщение, 🔄 удаляем
+        try:
+            chat_id = utils.get_chat_id(message)
+            await self.client.send_message(
+                chat_id,
+                text,
+                file=media,
+                reply_to=reply_to,
+                link_preview=bool(self._get_config_value("quote_media", False)),
+            )
+            if temp_msg is not message:
+                try:
+                    await temp_msg.delete()
+                except Exception:
+                    pass
+            else:
+                try:
+                    await message.delete()
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.error(f"fallback media send: {e}")
+            try:
+                await utils.answer(temp_msg, text)
+            except Exception:
+                pass
 
     async def _send_response(self, message, text: str, media_url: str = None):
         await self._send_with_invert(message, text, media_url, reply_to=message.id)
@@ -1654,6 +1954,7 @@ class WersUchihaAFKMod(loader.Module):
                     "wake_time": wake_text_old,
                     "wake_row": wake_row,
                     "unit_name": self._get_unit_name(),
+                    "userbot_name": self._get_userbot_name(),
                 },
             )
             media_url = self._get_config_value("SLEEP_MEDIA", "")
