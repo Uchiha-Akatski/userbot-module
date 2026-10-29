@@ -16,6 +16,17 @@ import hashlib
 import re
 from collections import defaultdict
 
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    try:
+        from pytz import timezone as _pytz_timezone
+        ZoneInfo = None
+    except ImportError:
+        _pytz_timezone = None
+        ZoneInfo = None
+
 try:
     from telethon.tl.types import InputMediaWebPage
 except ImportError:
@@ -42,7 +53,7 @@ except ImportError:
         KeyboardButtonRow = None
         KeyboardButtonCallback = None
 
-__version__ = (1, 20, 5)
+__version__ = (1, 21, 0)
 
 name = "WersUchihaAFK"
 logger = logging.getLogger(name)
@@ -160,6 +171,7 @@ class WersUchihaAFKMod(loader.Module):
             loader.ConfigValue("setPremiumStatus", True, "Ставить премиум-статус при AFK/SLEEP.", validator=loader.validators.Boolean()),
             loader.ConfigValue("customEmojiStatus", 4969889971700761796, "Кастомный премиум-статус для AFK.", validator=loader.validators.Integer()),
             loader.ConfigValue("customSleepEmojiStatus", 5433709773532962414, "Кастомный премиум-статус для SLEEP.", validator=loader.validators.Integer()),
+            loader.ConfigValue("TIMEZONE", "Europe/Moscow", "Часовой пояс для времени в логах. Пример: Europe/Berlin, Europe/Moscow, Asia/Tokyo."),
             loader.ConfigValue("MSG_AFK_REPLY", self.strings["default_afk_message"], "Текст ответа в AFK." + AFK_REPLY_PLACEHOLDERS),
             loader.ConfigValue("MSG_AFK_ON", self.strings["afk_on"], "Текст включения AFK."),
             loader.ConfigValue("AFK_MEDIA", "", "Ссылка на медиа для AFK."),
@@ -197,7 +209,7 @@ class WersUchihaAFKMod(loader.Module):
 
     CONFIG_KEYS_TO_SAVE = [
         "setPremiumStatus", "customEmojiStatus", "customSleepEmojiStatus",
-        "MSG_AFK_REPLY", "MSG_AFK_ON",
+        "TIMEZONE", "MSG_AFK_REPLY", "MSG_AFK_ON",
         "AFK_MEDIA", "AFK_OFF_MEDIA", "MSG_AFK_OFF",
         "MSG_SLEEP_ON", "MSG_SLEEP_REPLY",
         "SLEEP_MEDIA", "SLEEP_OFF_MEDIA", "MSG_SLEEP_OFF",
@@ -337,6 +349,28 @@ class WersUchihaAFKMod(loader.Module):
         except Exception:
             return default
 
+    def _tz(self):
+        tz_name = (self._get_config_value("TIMEZONE", "") or "").strip()
+        if not tz_name:
+            return None
+        try:
+            if ZoneInfo is not None:
+                return ZoneInfo(tz_name)
+            if _pytz_timezone is not None:
+                return _pytz_timezone(tz_name)
+        except Exception as e:
+            logger.warning(f"WersUchihaAFK: неверный TIMEZONE '{tz_name}': {e}")
+        return None
+
+    def _now(self) -> datetime.datetime:
+        tz = self._tz()
+        if tz is not None:
+            return datetime.datetime.now(tz)
+        return datetime.datetime.now()
+
+    def _now_str(self) -> str:
+        return self._now().strftime("%Y-%m-%d %H:%M:%S")                                        
+
     def _validate_cooldown_value(self, value):
         if not isinstance(value, int) or value < 5:
             raise ValueError(self.strings["cooldown_invalid"])
@@ -365,8 +399,9 @@ class WersUchihaAFKMod(loader.Module):
 
     def _log_message(self, user):
         user_id = str(user.id)
+        now_str = self._now_str()
         if user_id not in self.chat_messages:
-            self.chat_messages[user_id] = {"name": "", "count": 0}
+            self.chat_messages[user_id] = {"name": "", "count": 0, "last_time": now_str}
         data = self.chat_messages[user_id]
         data["name"] = utils.escape_html(user.first_name or "Без имени")
         data["count"] += 1
@@ -376,7 +411,7 @@ class WersUchihaAFKMod(loader.Module):
             "id": user.id,
             "name": data["name"],
             "count": data["count"],
-            "last_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            "last_time": now_str,
         }
         self._db.set(name, "last_users", last_users)
 
@@ -384,21 +419,33 @@ class WersUchihaAFKMod(loader.Module):
         if not self.chat_messages:
             return ""
         lines = []
-        for user_id, data in self.chat_messages.items():
+        sorted_items = sorted(
+            self.chat_messages.items(),
+            key=lambda kv: (kv[1].get("count", 0), kv[1].get("last_time", "")),
+            reverse=True,
+        )
+        for user_id, data in sorted_items:
             name = data["name"]
             count = data["count"]
+            last_time = data.get("last_time", "—")
             lines.append(
                 f' <a href="tg://user?id={user_id}">{name}</a> '
-                f"(<code>{user_id}</code>) — <b>{count}</b> сообщений"
+                f"(<code>{user_id}</code>)  — <b>{count}</b> сообщений"
+                f"последнее: <code>{last_time}</code>"
             )
-        return "\n\n<blockquote><b>Пока тебя не было, тебе писали:</b>\n" + "\n".join(lines) + "</blockquote>"
-
+        return"\n\n<blockquote><b>Пока тебя не было, тебе писали:</b>\n" + "\n".join(lines)+ "</blockquote>"
+    
     def _format_afk_log_clean(self):
         """Возвращает строки для вставки в таблицу"""
         if not self.chat_messages:
             return ""
         lines = []
-        for user_id, data in self.chat_messages.items():
+        sorted_items = sorted(
+            self.chat_messages.items(),
+            key=lambda kv: (kv[1].get("count", 0), kv[1].get("last_time", "")),
+            reverse=True,
+        )
+        for user_id, data in sorted_items:
             name = data["name"]
             count = data["count"]
             lines.append(f"<tg-emoji emoji-id=5902335789798265487>👤</tg-emoji> <b>{name}</b> | <tg-emoji emoji-id=6021367625836140615>🪪</tg-emoji> <code>{user_id}</code> | <tg-emoji emoji-id=5219688538106239995>✍️</tg-emoji> <b>{count}</b>")
@@ -410,14 +457,21 @@ class WersUchihaAFKMod(loader.Module):
             return ""
         
         rows = []
+        sorted_items = sorted(
+            self.chat_messages.items(),
+            key=lambda kv: (kv[1].get("count", 0), kv[1].get("last_time", "")),
+            reverse=True,
+        )
         for user_id, data in self.chat_messages.items():
             name = data["name"]
             count = data["count"]
+            last_time = data.get("last_time", "—")
             rows.append(
                 f"<tr>"
                 f"<td><a href=\"tg://user?id={user_id}\">{name}</a></td>"
                 f"<td><code>{user_id}</code></td>"
                 f"<td><b>{count}</b></td>"
+                f"<td><code>{last_time}</code></td>"
                 f"</tr>"
             )
             
@@ -427,6 +481,7 @@ class WersUchihaAFKMod(loader.Module):
             "<th><tg-emoji emoji-id=5902335789798265487>👤</tg-emoji> Ник</th>"
             "<th><tg-emoji emoji-id=6021367625836140615>🪪</tg-emoji> ID</th>"
             "<th><tg-emoji emoji-id=5219688538106239995>✍️</tg-emoji> Сообщений</th>"
+            "<th><tg-emoji emoji-id=5440621591387980068>🔜</tg-emoji> Последнее</th>"
             "</tr>"
             + "".join(rows) +
             "</table>"
