@@ -5,14 +5,10 @@
 
 from .. import loader, utils
 
-# Telethon first, hikkaritl as fallback (Hikka/Heroku forks)
 try:
     from telethon.tl import types, functions
 except ImportError:
-    try:
-        from hikkaritl.tl import types, functions
-    except ImportError:
-        from telethon import types, functions
+    from telethon import types, functions  
 
 import time
 import datetime
@@ -38,10 +34,7 @@ except ImportError:
 try:
     from telethon.tl.types import InputMediaWebPage
 except ImportError:
-    try:
-        from hikkaritl.tl.types import InputMediaWebPage
-    except ImportError:
-        InputMediaWebPage = None
+    InputMediaWebPage = None
 
 try:
     from telethon.tl.types import (
@@ -51,20 +44,12 @@ try:
         KeyboardButtonCallback,
     )
 except ImportError:
-    try:
-        from hikkaritl.tl.types import (
-            KeyboardButtonUrl,
-            ReplyInlineMarkup,
-            KeyboardButtonRow,
-            KeyboardButtonCallback,
-        )
-    except ImportError:
-        KeyboardButtonUrl = None
-        ReplyInlineMarkup = None
-        KeyboardButtonRow = None
-        KeyboardButtonCallback = None
+    KeyboardButtonUrl = None
+    ReplyInlineMarkup = None
+    KeyboardButtonRow = None
+    KeyboardButtonCallback = None
 
-__version__ = (1, 21, 6)
+__version__ = (1, 21, 16)
 
 name = "WersUchihaAFK"
 logger = logging.getLogger(name)
@@ -358,58 +343,170 @@ class WersUchihaAFKMod(loader.Module):
             self._update_task = asyncio.create_task(self._update_loop())
 
     def _detect_userbot(self) -> str:
-        """Определяет юзербот по ядру / модулям системы."""
+        """
+        Детектор юзербота (строгий, без ложных Heroku).
+        Приоритет: Hikkari/Hikari → Heroku → Hikka → остальные.
+        """
         try:
-            mods = {str(m).lower() for m in sys.modules}
-            joined = " ".join(mods)
+            import inspect
+            import os as _os
 
-            # Heroku (форк Hikka)
-            if any(x in joined for x in ("heroku", "herokutl", "heroku.client")):
-                return "Heroku Userbot"
-            # Hikka
-            if any(x in joined for x in ("hikka", "hikka.client", "hikka.loader")):
-                return "Hikka Userbot"
-            # Hikari / hikkaritl
-            if any(x in joined for x in ("hikari", "hikkaritl", "hikari.client")):
+            mod_names = [str(m).lower() for m in sys.modules.keys()]
+            # только «релевантные» модули, не весь joined (иначе heroku/hikka ловятся мусором)
+            interesting = [
+                m for m in mod_names
+                if any(
+                    x in m
+                    for x in (
+                        "hikkari", "hikkaritl", "hikari", "heroku", "herokutl",
+                        "hikka", "fox", "geek", "friendly", "loader", "userbot",
+                    )
+                )
+            ]
+            joined = " ".join(interesting)
+
+            def exact_or_prefix(*needles: str) -> bool:
+                for n in needles:
+                    n = n.lower()
+                    for m in mod_names:
+                        if m == n or m.startswith(n + ".") or m.startswith(n + "_"):
+                            return True
+                return False
+
+            def path_blob() -> str:
+                chunks = []
+                try:
+                    from .. import loader as _ldr
+                    chunks.append(inspect.getfile(_ldr) or "")
+                except Exception:
+                    pass
+                try:
+                    chunks.append(inspect.getfile(self.__class__) or "")
+                except Exception:
+                    pass
+                try:
+                    chunks.append(_os.getcwd() or "")
+                except Exception:
+                    pass
+                for key in ("USERBOT", "USERBOT_NAME", "HIKKA", "HIKKARI", "HEROKU", "HOSTNAME"):
+                    try:
+                        chunks.append(_os.environ.get(key, "") or "")
+                    except Exception:
+                        pass
+                return " ".join(chunks).lower()
+
+            def brand_blob() -> str:
+                parts = []
+                try:
+                    if hasattr(self, "inline") and self.inline is not None:
+                        parts.append(str(getattr(self.inline, "bot_username", "") or ""))
+                        # имя бота из кэша, если есть
+                        for attr in ("bot_name", "_bot_name", "name"):
+                            parts.append(str(getattr(self.inline, attr, "") or ""))
+                        bot = getattr(self.inline, "bot", None)
+                        if bot is not None:
+                            parts.append(str(type(bot)))
+                            # aiogram bot id / token prefix не трогаем
+                            me = getattr(bot, "_me", None) or getattr(bot, "me", None)
+                            if me is not None:
+                                parts.append(str(getattr(me, "username", "") or ""))
+                                parts.append(str(getattr(me, "full_name", "") or ""))
+                                parts.append(str(getattr(me, "first_name", "") or ""))
+                except Exception:
+                    pass
+                try:
+                    parts.append(str(type(getattr(self, "client", None))))
+                except Exception:
+                    pass
+                return " ".join(parts).lower()
+
+            paths = path_blob()
+            brand = brand_blob()
+            all_txt = f"{joined} {paths} {brand}"
+
+            # --- 1) Hikkari (бренд) / Hikari ---
+            # Hikkari — отдельное имя (двойная k), не путать с Hikari
+            if exact_or_prefix("hikkaritl", "hikkari") or any(
+                x in all_txt for x in ("hikkaritl", "hikkari", "hikkari userbot")
+            ):
+                return "Hikkari Userbot"
+            if re.search(r"(^|[\s/_.-])hikkari([\s/_.-]|$)", paths) or re.search(
+                r"(^|[\s/_.-])hikkari([\s/_.-]|$)", brand
+            ):
+                return "Hikkari Userbot"
+
+            if exact_or_prefix("hikari") or "hikari userbot" in all_txt:
                 return "Hikari Userbot"
-            # FoxUserbot / FTG / GeekTG leftovers
-            if "fox" in joined and "userbot" in joined:
+            if re.search(r"(^|[\s/_.-])hikari([\s/_.-]|$)", paths) or re.search(
+                r"(^|[\s/_.-])hikari([\s/_.-]|$)", brand
+            ):
+                return "Hikari Userbot"
+
+            # --- 2) Heroku (только явные маркеры, не любой 'heroku' в мусоре) ---
+            if exact_or_prefix("herokutl", "heroku.client", "heroku.loader"):
+                return "Heroku Userbot"
+            if "herokutl" in all_txt or "heroku userbot" in all_txt:
+                return "Heroku Userbot"
+            if re.search(r"(^|[\s/_.-])heroku([\s/_.-]|$)", paths) and "hikkari" not in paths:
+                return "Heroku Userbot"
+            if re.search(r"(^|[\s/_.-])heroku([\s/_.-]|$)", brand):
+                return "Heroku Userbot"
+
+            # --- 3) Hikka ---
+            # не ловить hikka внутри hikkaritl — hikari уже выше
+            if exact_or_prefix("hikka"):
+                # если в interesting только hikkaritl — already returned
+                return "Hikka Userbot"
+            if re.search(r"(^|[\s/_.-])hikka([\s/_.-]|$)", paths):
+                return "Hikka Userbot"
+
+            # --- 4) прочие ---
+            if exact_or_prefix("foxuserbot") or "foxuserbot" in all_txt:
                 return "Fox Userbot"
-            if "geektg" in joined or "friendly-telegram" in joined:
+            if exact_or_prefix("geektg") or "geektg" in all_txt or "friendly-telegram" in all_txt:
                 return "GeekTG Userbot"
 
-            # По путям установки
+            # --- 5) loader path final ---
             try:
-                import inspect
                 from .. import loader as _ldr
                 p = (inspect.getfile(_ldr) or "").lower()
+                if "hikkari" in p:
+                    return "Hikkari Userbot"
+                if "hikari" in p:
+                    return "Hikari Userbot"
                 if "heroku" in p:
                     return "Heroku Userbot"
                 if "hikka" in p:
                     return "Hikka Userbot"
-                if "hikari" in p:
-                    return "Hikari Userbot"
             except Exception:
                 pass
 
-            # По атрибутам клиента / инлайн
+            # --- 6) inline bot username ---
             try:
                 if hasattr(self, "inline") and self.inline is not None:
                     bot_u = str(getattr(self.inline, "bot_username", "") or "").lower()
+                    if "hikkari" in bot_u:
+                        return "Hikkari Userbot"
+                    if "hikari" in bot_u:
+                        return "Hikari Userbot"
                     if "heroku" in bot_u:
                         return "Heroku Userbot"
+                    if "hikka" in bot_u:
+                        return "Hikka Userbot"
             except Exception:
                 pass
         except Exception as e:
             logger.debug(f"detect userbot: {e}")
-        return "Hikari Userbot"
+        return "Userbot"
 
     def _get_userbot_name(self) -> str:
-        name_ub = getattr(self, "_detected_userbot", None)
-        if not name_ub:
+
+
+        name_ub = getattr(self, "_detected_userbot", None) or ""
+        if not str(name_ub).strip():
             name_ub = self._detect_userbot()
             self._detected_userbot = name_ub
-        return name_ub
+        return str(name_ub).strip() or "Userbot"
 
     def _get_unit_name(self) -> str:
         return self._get_config_value("unit_name", "Unit Delta") or "Unit Delta"
@@ -457,9 +554,18 @@ class WersUchihaAFKMod(loader.Module):
         return value
 
     def _safe_format(self, template: str, data: dict) -> str:
+        data = dict(data or {})
+        # гарантия ключевых полей
+        data.setdefault("unit_name", self._get_unit_name())
+        data.setdefault("userbot_name", self._get_userbot_name())
+        data.setdefault("display_name", self._get_display_name() if hasattr(self, "_me") else "Хозяин")
+        data.setdefault("user_id", getattr(getattr(self, "_me", None), "id", 0) or 0)
+        for k in ("was_online", "duration", "reason_text", "come_time", "wake_time",
+                  "reason_row", "come_row", "wake_row", "log_text", "log_block"):
+            data.setdefault(k, "")
         try:
             return template.format(**data)
-        except (KeyError, IndexError):
+        except (KeyError, IndexError, ValueError):
             safe = defaultdict(str)
             safe.update(data)
             try:
@@ -495,58 +601,71 @@ class WersUchihaAFKMod(loader.Module):
         }
         self._db.set(name, "last_users", last_users)
 
-    def _format_afk_log(self):
+    def _format_afk_log(self, mode: str = "afk"):
+        """
+        Каждый писавший — в своём blockquote.
+        mode: "afk" | "sleep" — разный заголовок.
+        """
         if not self.chat_messages:
             return ""
-        lines = []
         sorted_items = sorted(
             self.chat_messages.items(),
             key=lambda kv: (kv[1].get("count", 0), kv[1].get("last_time", "")),
             reverse=True,
         )
-        for user_id, data in sorted_items:
-            name = data["name"]
-            count = data["count"]
-            last_time = data.get("last_time", "—")
-            lines.append(
-                f'<emoji document_id=5870695289714643076>👤</emoji> <a href="tg://user?id={user_id}">{name}</a> '
-                f'(<code>{user_id}</code>) — <b>{count}</b> сообщ., '
-                f'последнее: <code>{last_time}</code>'
-            )
-        body = "\n".join(lines)
-        return (
+        if mode == "sleep":
+            title = "Пока ты спал, тебе писали:"
+        else:
+            title = "Пока тебя не было, тебе писали:"
+
+        parts = [
             "\n<blockquote><emoji document_id=5260702125708557233>✋</emoji> "
-            "<b>Пока тебя не было, тебе писали:</b>\n"
-            + body
-            + "</blockquote>\n"
-        )
+            f"<b>{title}</b></blockquote>"
+        ]
+        for user_id, data in sorted_items:
+            name = data.get("name") or "User"
+            count = data.get("count", 0)
+            last_time = data.get("last_time", "—")
+            parts.append(
+                "<blockquote>"
+                f'<emoji document_id=5870695289714643076>👤</emoji> '
+                f'<a href="tg://user?id={user_id}"><b>{name}</b></a> — '
+                f'<b>{count}</b> сообщ.\n'
+                f'<emoji document_id=5870729937215819584>⏰</emoji> '
+                f'последнее: <code>{last_time}</code> · <code>{user_id}</code>'
+                "</blockquote>"
+            )
+        return "\n".join(parts) + "\n"
 
-
-
-    def _format_afk_log_rich(self):
-        """Формирует красивую таблицу для {log_block} с премиум-эмодзи"""
+    def _format_afk_log_rich(self, mode: str = "afk"):
+        """Таблица для {log_block}, сортировка по count (убыв.)."""
         if not self.chat_messages:
             return ""
-        
-        rows = []
+
         sorted_items = sorted(
             self.chat_messages.items(),
             key=lambda kv: (kv[1].get("count", 0), kv[1].get("last_time", "")),
             reverse=True,
         )
+        rows = []
         for user_id, data in sorted_items:
-            name = data["name"]
-            count = data["count"]
+            name = data.get("name") or "User"
+            count = data.get("count", 0)
             last_time = data.get("last_time", "—")
             rows.append(
-                f"<tr>"
+                "<tr>"
                 f"<td><a href=\"tg://user?id={user_id}\">{name}</a></td>"
                 f"<td><code>{user_id}</code></td>"
                 f"<td><b>{count}</b></td>"
                 f"<td><code>{last_time}</code></td>"
-                f"</tr>"
+                "</tr>"
             )
-            
+
+        title = (
+            "Пока ты спал, тебе писали"
+            if mode == "sleep"
+            else "Пока тебя не было, тебе писали"
+        )
         table_html = (
             "<table bordered striped compact>"
             "<tr>"
@@ -555,12 +674,11 @@ class WersUchihaAFKMod(loader.Module):
             "<th><tg-emoji emoji-id=5219688538106239995>✍️</tg-emoji> Сообщений</th>"
             "<th><tg-emoji emoji-id=5440621591387980068>🔜</tg-emoji> Последнее</th>"
             "</tr>"
-            + "".join(rows) +
-            "</table>"
+            + "".join(rows)
+            + "</table>"
         )
-        
         return (
-            f"<details><summary><tg-emoji emoji-id=5260702125708557233>✋</tg-emoji> Пока тебя не было, тебе писали</summary>"
+            f"<details><summary><tg-emoji emoji-id=5260702125708557233>✋</tg-emoji> {title}</summary>"
             f"{table_html}"
             f"</details>"
         )
@@ -969,14 +1087,41 @@ class WersUchihaAFKMod(loader.Module):
         buttons = self._build_update_buttons()
         await self._send_update_notify(text, buttons)
 
-    def _build_update_buttons(self):
-        """Инлайн-кнопки Обновить / Игнорировать в формате, который понимает бот."""
-        # 1) Button.inline (Telethon/Hikari)
+    def _build_aiogram_markup(self):
+        """Клавиатура для aiogram-бота (Hikka / Hikari / Heroku)."""
+        # aiogram 3.x
+        try:
+            from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+            return InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(text="🔄 Обновить", callback_data="wersafk_upd"),
+                        InlineKeyboardButton(text="🗑 Игнорировать", callback_data="wersafk_ign"),
+                    ]
+                ]
+            )
+        except Exception as e:
+            logger.debug(f"aiogram3 markup: {e}")
+        # aiogram 2.x
+        try:
+            from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+            kb = InlineKeyboardMarkup(row_width=2)
+            kb.add(
+                InlineKeyboardButton("🔄 Обновить", callback_data="wersafk_upd"),
+                InlineKeyboardButton("🗑 Игнорировать", callback_data="wersafk_ign"),
+            )
+            return kb
+        except Exception as e:
+            logger.debug(f"aiogram2 markup: {e}")
+        return None
+
+    def _build_telethon_buttons(self):
+        """Кнопки для Telethon client."""
         try:
             try:
                 from telethon import Button
             except ImportError:
-                from hikkaritl import Button
+                Button = None
             return [
                 [
                     Button.inline("🔄 Обновить", b"wersafk_upd"),
@@ -984,63 +1129,116 @@ class WersUchihaAFKMod(loader.Module):
                 ]
             ]
         except Exception as e:
-            logger.debug(f"Button.inline failed: {e}")
-
-        # 2) Raw TL markup
+            logger.debug(f"Button.inline: {e}")
         if KeyboardButtonCallback and ReplyInlineMarkup and KeyboardButtonRow:
             try:
-                return ReplyInlineMarkup(rows=[
-                    KeyboardButtonRow(buttons=[
-                        KeyboardButtonCallback(text="🔄 Обновить", data=b"wersafk_upd"),
-                        KeyboardButtonCallback(text="🗑 Игнорировать", data=b"wersafk_ign"),
-                    ])
-                ])
-            except Exception as e:
-                logger.debug(f"ReplyInlineMarkup failed: {e}")
-        return None
-
-    async def _send_update_notify(self, text: str, buttons=None):
-        """Шлём уведомление с кнопками (от бота предпочтительно)."""
-        # От инлайн-бота
-        try:
-            if hasattr(self, "inline") and self.inline and getattr(self.inline, "bot", None):
-                bot = self.inline.bot
-                try:
-                    await bot.send_message(self._me.id, text, buttons=buttons, link_preview=False)
-                    return
-                except TypeError:
-                    await bot.send_message(self._me.id, text, reply_markup=buttons, link_preview=False)
-                    return
-                except Exception as e:
-                    logger.warning(f"bot.send_message with buttons failed: {e}")
-                    try:
-                        await bot.send_message(self._me.id, text, link_preview=False)
-                        # кнопки не прикрепились — попробуем через client
-                    except Exception:
-                        pass
-        except Exception as e:
-            logger.warning(f"Inline bot notify failed: {e}")
-
-        # Fallback: от аккаунта юзербота, но С кнопками
-        try:
-            await self.client.send_message(self._me.id, text, buttons=buttons, link_preview=False)
-            return
-        except TypeError:
-            try:
-                await self.client.send_message(self._me.id, text, reply_markup=buttons, link_preview=False)
-                return
+                return ReplyInlineMarkup(
+                    rows=[
+                        KeyboardButtonRow(
+                            buttons=[
+                                KeyboardButtonCallback(text="🔄 Обновить", data=b"wersafk_upd"),
+                                KeyboardButtonCallback(text="🗑 Игнорировать", data=b"wersafk_ign"),
+                            ]
+                        )
+                    ]
+                )
             except Exception:
                 pass
-        except Exception as e:
-            logger.warning(f"client notify with buttons failed: {e}")
+        return None
 
+    def _build_update_buttons(self):
+        # legacy alias
+        return self._build_telethon_buttons()
+
+    async def _send_update_notify(self, text: str, buttons=None):
+        """
+        Уведомление об обновлении С кнопками.
+        Hikka/Hikari бот = aiogram → reply_markup=InlineKeyboardMarkup.
+        Telethon client → buttons=[[Button.inline...]].
+        """
+        chat_id = self._me.id
+        aiogram_kb = self._build_aiogram_markup()
+        tl_buttons = buttons or self._build_telethon_buttons()
+
+        # --- 1) Инлайн-бот юзербота (aiogram) ---
+        bot = None
         try:
-            await self.client.send_message("me", text, buttons=buttons)
+            if hasattr(self, "inline") and self.inline:
+                bot = getattr(self.inline, "bot", None)
         except Exception:
-            try:
-                await self.client.send_message("me", text)
-            except Exception as e:
-                logger.error(f"Fallback notify failed: {e}")
+            bot = None
+
+        if bot is not None:
+            # aiogram reply_markup
+            if aiogram_kb is not None:
+                for kwargs in (
+                    {"reply_markup": aiogram_kb, "disable_web_page_preview": True},
+                    {"reply_markup": aiogram_kb, "link_preview": False},
+                    {"reply_markup": aiogram_kb},
+                ):
+                    try:
+                        await bot.send_message(chat_id, text, **kwargs)
+                        logger.info("Update notify sent via aiogram bot + keyboard")
+                        return
+                    except TypeError:
+                        continue
+                    except Exception as e:
+                        logger.warning(f"aiogram bot+kb failed: {e}")
+                        break
+
+            # telethon-style buttons on bot (на всякий)
+            if tl_buttons is not None:
+                for kwargs in (
+                    {"buttons": tl_buttons, "link_preview": False},
+                    {"reply_markup": tl_buttons, "link_preview": False},
+                    {"buttons": tl_buttons},
+                    {"reply_markup": tl_buttons},
+                ):
+                    try:
+                        await bot.send_message(chat_id, text, **kwargs)
+                        logger.info("Update notify sent via bot + telethon buttons")
+                        return
+                    except TypeError:
+                        continue
+                    except Exception as e:
+                        logger.debug(f"bot telethon buttons: {e}")
+                        break
+
+            # бот без кнопок — НЕ return, попробуем client
+            logger.warning("Bot available but keyboard attach failed, trying client")
+
+        # --- 2) От аккаунта (Telethon buttons) ---
+        if tl_buttons is not None:
+            for send, cid in (
+                (self.client.send_message, chat_id),
+                (self.client.send_message, "me"),
+            ):
+                for kwargs in (
+                    {"buttons": tl_buttons, "link_preview": False},
+                    {"reply_markup": tl_buttons, "link_preview": False},
+                    {"buttons": tl_buttons},
+                ):
+                    try:
+                        await send(cid, text, **kwargs)
+                        logger.info("Update notify sent via client + buttons")
+                        return
+                    except TypeError:
+                        continue
+                    except Exception as e:
+                        logger.debug(f"client buttons {cid}: {e}")
+                        break
+
+        # --- 3) Текст без кнопок (последний шанс) ---
+        try:
+            if bot is not None:
+                await bot.send_message(chat_id, text)
+                return
+        except Exception:
+            pass
+        try:
+            await self.client.send_message("me", text)
+        except Exception as e:
+            logger.error(f"Fallback notify failed: {e}")
 
     async def _install_update(self):
         try:
@@ -1096,36 +1294,66 @@ class WersUchihaAFKMod(loader.Module):
     @loader.callback_handler()
     async def update_callback_handler(self, call):
         try:
-            data = call.data
+            data = getattr(call, "data", None)
+            if data is None and hasattr(call, "data"):
+                data = call.data
             if isinstance(data, bytes):
                 data = data.decode("utf-8", errors="ignore")
+            data = (data or "").strip()
 
-            if data == "wersafk_upd":
-                await call.answer("Обновляю…")
-                ok = await self._install_update()
+            async def _answer(msg: str):
                 try:
-                    if ok:
-                        await call.edit(self.strings["update_success"])
-                    else:
-                        await call.edit(self.strings["update_failed"])
+                    await call.answer(msg)
+                except Exception:
+                    try:
+                        # aiogram
+                        await call.answer(text=msg, show_alert=False)
+                    except Exception:
+                        pass
+
+            async def _edit(msg: str):
+                try:
+                    await call.edit(msg)
+                    return
                 except Exception:
                     pass
+                try:
+                    await call.message.edit_text(msg)
+                except Exception:
+                    try:
+                        if hasattr(call, "edit_message_text"):
+                            await call.edit_message_text(msg)
+                    except Exception:
+                        pass
+
+            async def _delete():
+                try:
+                    await call.delete()
+                    return
+                except Exception:
+                    pass
+                try:
+                    await call.message.delete()
+                except Exception:
+                    pass
+
+            if data == "wersafk_upd":
+                await _answer("Обновляю…")
+                ok = await self._install_update()
+                await _edit(self.strings["update_success"] if ok else self.strings["update_failed"])
                 return
 
             if data == "wersafk_ign":
-                await call.answer("Игнорирую")
+                await _answer("Игнорирую")
                 try:
-                    await call.delete()
+                    await _delete()
                 except Exception:
-                    try:
-                        await call.edit(self.strings["update_ignored"])
-                    except Exception:
-                        pass
+                    await _edit(self.strings["update_ignored"])
                 return
         except Exception as e:
             logger.error(f"Callback error: {e}")
 
- 
+
     # ====================== КОМАНДЫ ======================
 
     @loader.command(
@@ -1414,8 +1642,8 @@ class WersUchihaAFKMod(loader.Module):
         self.sleep_cooldowns = {}
         self._db.set(name, "sleep_cooldowns", self.sleep_cooldowns)
 
-        log_text = self._format_afk_log()
-        log_block = self._format_afk_log_rich()
+        log_text = self._format_afk_log("sleep")
+        log_block = self._format_afk_log_rich("sleep")
 
         if self._get_config_value("setPremiumStatus", True) and self._old_status:
             try:
@@ -1999,6 +2227,7 @@ class WersUchihaAFKMod(loader.Module):
                     "reason_row": reason_row,
                     "come_row": come_row,
                     "unit_name": self._get_unit_name(),
+                    "userbot_name": self._get_userbot_name(),
                 },
             )
             media_url = self._get_config_value("AFK_MEDIA", "")
