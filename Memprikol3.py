@@ -371,3 +371,16 @@ class  Memprikol3(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+
+    async def картошкуcmd(self, message):
+        """| Дын дын дын мы жарим картошку"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/464",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )    
+        return
