@@ -49,7 +49,7 @@ except ImportError:
     KeyboardButtonRow = None
     KeyboardButtonCallback = None
 
-__version__ = (1, 21, 16)
+__version__ = (1, 21, 17)
 
 name = "WersUchihaAFK"
 logger = logging.getLogger(name)
@@ -591,6 +591,7 @@ class WersUchihaAFKMod(loader.Module):
         data = self.chat_messages[user_id]
         data["name"] = utils.escape_html(user.first_name or "Без имени")
         data["count"] += 1
+        data["last_time"] = now_str 
         self._db.set(name, "chat_messages", self.chat_messages)
         last_users = self._db.get(name, "last_users", {})
         last_users[user_id] = {
