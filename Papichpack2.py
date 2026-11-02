@@ -228,3 +228,16 @@ class Papichpack2(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+
+    async def олдcmd(self, message):
+        """| Всем ку! Олды на месте! Это я, Олд! Это я, Олд!"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/465",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
