@@ -49,7 +49,12 @@ except ImportError:
     KeyboardButtonRow = None
     KeyboardButtonCallback = None
 
-__version__ = (1, 21, 17)
+try:
+    from telethon.tl.types import EmojiStatusCollectible
+except ImportError:
+    EmojiStatusCollectible = None
+
+__version__ = (1, 22, 0)
 
 name = "WersUchihaAFK"
 logger = logging.getLogger(name)
@@ -313,12 +318,10 @@ class WersUchihaAFKMod(loader.Module):
         saved_status = self._db.get(name, "old_status", None)
         if saved_status:
             try:
-                if isinstance(saved_status, dict):
-                    self._old_status = types.EmojiStatus(**saved_status)
-                else:
-                    self._old_status = saved_status
+                self._old_status = self._build_status_from_db(saved_status)
             except Exception as e:
                 logger.error(f"Не удалось восстановить _old_status из БД: {e}")
+                self._old_status = None    
 
         self._old_first_name = self._db.get(name, "old_first_name", None)
         self._old_photo_path = self._db.get(name, "old_photo_path", None)
@@ -575,13 +578,84 @@ class WersUchihaAFKMod(loader.Module):
 
     def _save_old_status(self, status):
         self._old_status = status
-        if status:
-            if hasattr(status, "document_id"):
-                self._db.set(name, "old_status", {"document_id": status.document_id})
-            else:
-                self._db.set(name, "old_status", status)
-        else:
+        if not status:
             self._db.set(name, "old_status", None)
+            return
+
+        try:
+        # Коллекционный подарок в статусе
+            if EmojiStatusCollectible is not None and isinstance(status, EmojiStatusCollectible):
+                data = {
+                    "_type": "collectible",
+                    "collectible_id": getattr(status, "collectible_id", None),
+                    "until": getattr(status, "until", None),
+                }
+                return
+
+        # Обычный EmojiStatus
+            if hasattr(status, "document_id"):
+                data = {"_type": "emoji", "document_id": status.document_id}
+                until = getattr(status, "until", None)
+                if until is not None:
+                    data["until"] = until
+                self._db.set(name, "old_status", data)
+                return
+
+        # Фоллбек — как было
+            self._db.set(name, "old_status", status)
+        except Exception as e:
+            logger.error(f"_save_old_status: {e}")
+            self._db.set(name, "old_status", None)
+
+
+
+    def _build_status_from_db(self, data):
+        """Превращает сохранённый dict в объект статуса для UpdateEmojiStatusRequest."""
+        if not data:
+            return None
+
+        # новый формат (dict с _type)
+        if isinstance(data, dict):
+            stype = data.get("_type")
+
+            if stype == "collectible":
+                try:
+                    return types.InputEmojiStatusCollectible(
+                        collectible_id=int(data["collectible_id"]),
+                        until=data.get("until"),
+                    )
+                except Exception as e:
+                    logger.error(f"collectible restore: {e}")
+                    return None        
+
+            if stype == "emoji" and data.get("document_id"):
+                try:
+                    return types.EmojiStatus(document_id=int(data["document_id"]))
+                except Exception as e:
+                    logger.error(f"emoji restore: {e}")
+                    return None
+
+            # старый формат — {"document_id": ...} без _type
+            if "document_id" in data and data.get("document_id"):
+                try:
+                    return types.EmojiStatus(document_id=int(data["document_id"]))
+                except Exception:
+                    return None
+
+        # совсем старый формат — объект
+        if isinstance(data, types.EmojiStatus):
+            return data
+        if EmojiStatusCollectible is not None and isinstance(data, EmojiStatusCollectible):
+            try:
+                return types.InputEmojiStatusCollectible(
+                    collectible_id=data.collectible_id,
+                    until=getattr(data, "until", None),
+                )
+            except Exception as e:
+                logger.error(f"convert legacy collectible: {e}")
+                return None
+
+        return None
 
     def _log_message(self, user):
         user_id = str(user.id)
@@ -1509,14 +1583,27 @@ class WersUchihaAFKMod(loader.Module):
 
         log_text = self._format_afk_log()
         log_block = self._format_afk_log_rich()
-
-        if self._get_config_value("setPremiumStatus", True) and self._old_status:
-            try:
-                await self.client(
-                    functions.account.UpdateEmojiStatusRequest(emoji_status=self._old_status)
-                )
-            except Exception as e:
-                logger.error(f"Не удалось восстановить статус: {e}")
+        
+        if self._get_config_value("setPremiumStatus", True):
+            status_to_restore = self._old_status
+            # Если это EmojiStatusCollectible, принудительно преобразовать в InputEmojiStatusCollectible
+            if EmojiStatusCollectible is not None and isinstance(status_to_restore, EmojiStatusCollectible):
+                try:
+                    status_to_restore = types.InputEmojiStatusCollectible(
+                        collectible_id=status_to_restore.collectible_id,
+                        until=getattr(status_to_restore, "until", None),
+                    )
+                except Exception as e:
+                    logger.error(f"convert collectible to input failed: {e}")
+                    status_to_restore = None
+            if status_to_restore:
+                try:
+                    await self.client(
+                        functions.account.UpdateEmojiStatusRequest(emoji_status=status_to_restore)
+                    )
+                except Exception as e:
+                    logger.error(f"Не удалось восстановить статус: {e}")
+        self._old_status = None
         self._save_old_status(None)
 
         await self._restore_nickname()
@@ -1646,13 +1733,26 @@ class WersUchihaAFKMod(loader.Module):
         log_text = self._format_afk_log("sleep")
         log_block = self._format_afk_log_rich("sleep")
 
-        if self._get_config_value("setPremiumStatus", True) and self._old_status:
-            try:
-                await self.client(
-                    functions.account.UpdateEmojiStatusRequest(emoji_status=self._old_status)
-                )
-            except Exception as e:
-                logger.error(f"Не удалось восстановить статус: {e}")
+        if self._get_config_value("setPremiumStatus", True):
+            status_to_restore = self._old_status
+            # Если это EmojiStatusCollectible, принудительно преобразовать в InputEmojiStatusCollectible
+            if EmojiStatusCollectible is not None and isinstance(status_to_restore, EmojiStatusCollectible):
+                try:
+                    status_to_restore = types.InputEmojiStatusCollectible(
+                        collectible_id=status_to_restore.collectible_id,
+                        until=getattr(status_to_restore, "until", None),
+                    )
+                except Exception as e:
+                    logger.error(f"convert collectible to input failed: {e}")
+                    status_to_restore = None
+            if status_to_restore:
+                try:
+                    await self.client(
+                        functions.account.UpdateEmojiStatusRequest(emoji_status=status_to_restore)
+                    )
+                except Exception as e:
+                    logger.error(f"Не удалось восстановить статус: {e}")
+        self._old_status = None
         self._save_old_status(None)
 
         await self._restore_nickname()
