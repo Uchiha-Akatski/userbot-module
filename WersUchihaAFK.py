@@ -54,7 +54,7 @@ try:
 except ImportError:
     EmojiStatusCollectible = None
 
-__version__ = (1, 22, 0)
+__version__ = (1, 22, 5)
 
 name = "WersUchihaAFK"
 logger = logging.getLogger(name)
@@ -312,16 +312,34 @@ class WersUchihaAFKMod(loader.Module):
         self._me = await client.get_me()
         self.client = client
         self.username = self._me.username or self._me.first_name
-        self.afk_cooldowns = self._db.get(name, "afk_cooldowns", {})
-        self.sleep_cooldowns = self._db.get(name, "sleep_cooldowns", {})
 
+        # --- Безопасная загрузка кулдаунов из БД ---
+        raw_afk_cd = self._db.get(name, "afk_cooldowns", {})
+        self.afk_cooldowns = {}
+        if isinstance(raw_afk_cd, dict):
+            for uid, val in raw_afk_cd.items():
+                try:
+                    self.afk_cooldowns[uid] = float(val)
+                except (TypeError, ValueError):
+                    pass
+
+        raw_sleep_cd = self._db.get(name, "sleep_cooldowns", {})
+        self.sleep_cooldowns = {}
+        if isinstance(raw_sleep_cd, dict):
+            for uid, val in raw_sleep_cd.items():
+                try:
+                    self.sleep_cooldowns[uid] = float(val)
+                except (TypeError, ValueError):
+                    pass
+
+        # --- Восстановление старого премиум-статуса ---
         saved_status = self._db.get(name, "old_status", None)
         if saved_status:
             try:
                 self._old_status = self._build_status_from_db(saved_status)
             except Exception as e:
                 logger.error(f"Не удалось восстановить _old_status из БД: {e}")
-                self._old_status = None    
+                self._old_status = None
 
         self._old_first_name = self._db.get(name, "old_first_name", None)
         self._old_photo_path = self._db.get(name, "old_photo_path", None)
@@ -330,12 +348,10 @@ class WersUchihaAFKMod(loader.Module):
         saved_messages = self._db.get(name, "chat_messages", {})
         self.chat_messages = saved_messages if isinstance(saved_messages, dict) else {}
 
-        try:
-            if self.config["cooldown_seconds"] < 5:
-                self.config["cooldown_seconds"] = 60
-        except Exception:
-            self.config["cooldown_seconds"] = 60
-
+        # --- Нормализация cooldown_seconds (int ≥ 5), с записью обратно в конфиг ---
+        self.config["cooldown_seconds"] = self._get_config_int(
+            "cooldown_seconds", 60, minimum=5
+        )
 
 
  
@@ -528,6 +544,21 @@ class WersUchihaAFKMod(loader.Module):
             return self.config.get(key, default)
         except Exception:
             return default
+
+    def _get_config_int(self, key, default=0, minimum=None):
+        """Безопасно приводит значение из конфига к int.
+        Работает, даже если в конфиге лежит строка ('30'), float (30.5) или мусор.
+        """
+        try:
+            val = int(float(self._get_config_value(key, default)))
+        except (TypeError, ValueError):
+            try:
+                val = int(default)
+            except (TypeError, ValueError):
+                val = 0
+        if minimum is not None and val < minimum:
+            val = minimum
+        return val
 
     def _tz(self):
         tz_name = (self._get_config_value("TIMEZONE", "") or "").strip()
@@ -1801,12 +1832,16 @@ class WersUchihaAFKMod(loader.Module):
     async def afkcooldown(self, message):
         args = utils.get_args_raw(message)
         try:
-            new_cooldown = int(args)
+        # float на случай "30.0" / " 30 ", int — чтобы гарантировать целое
+            new_cooldown = int(float(args))
             self._validate_cooldown_value(new_cooldown)
-            self.config["cooldown_seconds"] = new_cooldown
-            await utils.answer(message, self.strings["cooldown_set"].format(new_cooldown))
-        except ValueError:
+        except (TypeError, ValueError):
             await utils.answer(message, self.strings["cooldown_invalid"])
+            return
+
+    # сохраняем именно int — чтобы в конфиг не утекла строка
+        self.config["cooldown_seconds"] = new_cooldown
+        await utils.answer(message, self.strings["cooldown_set"].format(new_cooldown))
 
     @loader.command(ru_doc="Ответь на медиа — баннер AFK", alias="addafk")
     async def add_afk_banner(self, message):
@@ -2074,15 +2109,25 @@ class WersUchihaAFKMod(loader.Module):
         await self._send_with_invert(message, text, media_url, reply_to=None)
 
     def _check_cooldown(self, cooldown_dict, user_id, mode="afk"):
-        cooldown_seconds = self._get_config_value("cooldown_seconds", 60)
-        last_reply_time = cooldown_dict.get(user_id, 0)
+        cooldown_seconds = self._get_config_int("cooldown_seconds", 60, minimum=5)
+
+        raw_last_time = cooldown_dict.get(user_id, 0)
+        try:
+            last_reply_time = float(raw_last_time)
+        except (TypeError, ValueError):
+            last_reply_time = 0.0
+            cooldown_dict[user_id] = 0.0
+
         current_time = time.time()
         if current_time - last_reply_time >= cooldown_seconds:
             return True, current_time
         return False, None
 
     def _update_cooldown(self, cooldown_dict, user_id, current_time):
-        cooldown_dict[user_id] = current_time
+        try:
+            cooldown_dict[user_id] = float(current_time)
+        except (TypeError, ValueError):
+            cooldown_dict[user_id] = time.time()
         return cooldown_dict
 
     async def _upload_media(self, file_path: str, ext: str):
@@ -2261,6 +2306,10 @@ class WersUchihaAFKMod(loader.Module):
 
         if sleep_state:
             sleep_start = self._db.get(name, "sleep_start")
+            try:
+                sleep_start = float(sleep_start) if sleep_start else None
+            except (TypeError, ValueError):
+                sleep_start = None    
             diff_seconds = int(time.time() - sleep_start) if sleep_start else 0
             if diff_seconds < 0:
                 diff_seconds = 0
@@ -2291,6 +2340,10 @@ class WersUchihaAFKMod(loader.Module):
             self._db.set(name, "sleep_cooldowns", self.sleep_cooldowns)
         else:
             gone = self._db.get(name, "gone")
+            try:
+                gone = float(gone) if gone else None
+            except (TypeError, ValueError):
+                gone = None    
             diff_seconds = int(time.time() - gone) if gone else 0
             if diff_seconds < 0:
                 diff_seconds = 0
