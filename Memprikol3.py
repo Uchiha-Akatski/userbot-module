@@ -165,7 +165,7 @@ class  Memprikol3(loader.Module):
         return
     
     async def тракторcmd(self, message):
-        """| Я трактор виганяю, до неї під'їжджаю"""
+        """| Я трактор виганяю, до неї підїжджаю"""
 
         reply = await message.get_reply_message()
         await message.delete()
