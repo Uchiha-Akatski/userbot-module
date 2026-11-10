@@ -54,7 +54,7 @@ try:
 except ImportError:
     EmojiStatusCollectible = None
 
-__version__ = (1, 22, 5)
+__version__ = (1, 23, 0)
 
 name = "WersUchihaAFK"
 logger = logging.getLogger(name)
@@ -313,7 +313,6 @@ class WersUchihaAFKMod(loader.Module):
         self.client = client
         self.username = self._me.username or self._me.first_name
 
-        # --- Безопасная загрузка кулдаунов из БД ---
         raw_afk_cd = self._db.get(name, "afk_cooldowns", {})
         self.afk_cooldowns = {}
         if isinstance(raw_afk_cd, dict):
@@ -332,7 +331,6 @@ class WersUchihaAFKMod(loader.Module):
                 except (TypeError, ValueError):
                     pass
 
-        # --- Восстановление старого премиум-статуса ---
         saved_status = self._db.get(name, "old_status", None)
         if saved_status:
             try:
@@ -348,7 +346,6 @@ class WersUchihaAFKMod(loader.Module):
         saved_messages = self._db.get(name, "chat_messages", {})
         self.chat_messages = saved_messages if isinstance(saved_messages, dict) else {}
 
-        # --- Нормализация cooldown_seconds (int ≥ 5), с записью обратно в конфиг ---
         self.config["cooldown_seconds"] = self._get_config_int(
             "cooldown_seconds", 60, minimum=5
         )
@@ -371,7 +368,6 @@ class WersUchihaAFKMod(loader.Module):
             import os as _os
 
             mod_names = [str(m).lower() for m in sys.modules.keys()]
-            # только «релевантные» модули, не весь joined (иначе heroku/hikka ловятся мусором)
             interesting = [
                 m for m in mod_names
                 if any(
@@ -425,7 +421,6 @@ class WersUchihaAFKMod(loader.Module):
                         bot = getattr(self.inline, "bot", None)
                         if bot is not None:
                             parts.append(str(type(bot)))
-                            # aiogram bot id / token prefix не трогаем
                             me = getattr(bot, "_me", None) or getattr(bot, "me", None)
                             if me is not None:
                                 parts.append(str(getattr(me, "username", "") or ""))
@@ -443,8 +438,6 @@ class WersUchihaAFKMod(loader.Module):
             brand = brand_blob()
             all_txt = f"{joined} {paths} {brand}"
 
-            # --- 1) Hikkari (бренд) / Hikari ---
-            # Hikkari — отдельное имя (двойная k), не путать с Hikari
             if exact_or_prefix("hikkaritl", "hikkari") or any(
                 x in all_txt for x in ("hikkaritl", "hikkari", "hikkari userbot")
             ):
@@ -461,7 +454,6 @@ class WersUchihaAFKMod(loader.Module):
             ):
                 return "Hikari Userbot"
 
-            # --- 2) Heroku (только явные маркеры, не любой 'heroku' в мусоре) ---
             if exact_or_prefix("herokutl", "heroku.client", "heroku.loader"):
                 return "Heroku Userbot"
             if "herokutl" in all_txt or "heroku userbot" in all_txt:
@@ -471,21 +463,16 @@ class WersUchihaAFKMod(loader.Module):
             if re.search(r"(^|[\s/_.-])heroku([\s/_.-]|$)", brand):
                 return "Heroku Userbot"
 
-            # --- 3) Hikka ---
-            # не ловить hikka внутри hikkaritl — hikari уже выше
             if exact_or_prefix("hikka"):
-                # если в interesting только hikkaritl — already returned
                 return "Hikka Userbot"
             if re.search(r"(^|[\s/_.-])hikka([\s/_.-]|$)", paths):
                 return "Hikka Userbot"
 
-            # --- 4) прочие ---
             if exact_or_prefix("foxuserbot") or "foxuserbot" in all_txt:
                 return "Fox Userbot"
             if exact_or_prefix("geektg") or "geektg" in all_txt or "friendly-telegram" in all_txt:
                 return "GeekTG Userbot"
 
-            # --- 5) loader path final ---
             try:
                 from .. import loader as _ldr
                 p = (inspect.getfile(_ldr) or "").lower()
@@ -589,7 +576,6 @@ class WersUchihaAFKMod(loader.Module):
 
     def _safe_format(self, template: str, data: dict) -> str:
         data = dict(data or {})
-        # гарантия ключевых полей
         data.setdefault("unit_name", self._get_unit_name())
         data.setdefault("userbot_name", self._get_userbot_name())
         data.setdefault("display_name", self._get_display_name() if hasattr(self, "_me") else "Хозяин")
@@ -614,16 +600,20 @@ class WersUchihaAFKMod(loader.Module):
             return
 
         try:
-        # Коллекционный подарок в статусе
             if EmojiStatusCollectible is not None and isinstance(status, EmojiStatusCollectible):
+                collectible_id = getattr(status, "collectible_id", None)
+                if collectible_id is None:
+                    self._db.set(name, "old_status", None)
+                    return
                 data = {
                     "_type": "collectible",
-                    "collectible_id": getattr(status, "collectible_id", None),
+                    "collectible_id": collectible_id,
                     "until": getattr(status, "until", None),
                 }
+                self._db.set(name, "old_status", data)   
                 return
 
-        # Обычный EmojiStatus
+        
             if hasattr(status, "document_id"):
                 data = {"_type": "emoji", "document_id": status.document_id}
                 until = getattr(status, "until", None)
@@ -632,7 +622,6 @@ class WersUchihaAFKMod(loader.Module):
                 self._db.set(name, "old_status", data)
                 return
 
-        # Фоллбек — как было
             self._db.set(name, "old_status", status)
         except Exception as e:
             logger.error(f"_save_old_status: {e}")
@@ -877,7 +866,6 @@ class WersUchihaAFKMod(loader.Module):
             if not os.path.exists(tmp_path) or os.path.getsize(tmp_path) == 0:
                 return False
 
-            # Запоминаем текущую верхнюю аватарку (на всякий случай — backup файлом)
             if not self._old_photo_path:
                 try:
                     photos = await self.client.get_profile_photos("me", limit=1)
@@ -890,7 +878,6 @@ class WersUchihaAFKMod(loader.Module):
                 except Exception as e:
                     logger.warning(f"Не удалось сохранить старую аватарку: {e}")
 
-            # Запоминаем id текущей верхней фотки ДО загрузки (чтобы отличить новую)
             before_ids = set()
             try:
                 before = await self.client.get_profile_photos("me", limit=5)
@@ -901,12 +888,10 @@ class WersUchihaAFKMod(loader.Module):
             file = await self.client.upload_file(tmp_path)
             await self.client(functions.photos.UploadProfilePhotoRequest(file=file))
 
-            # Находим id только что загруженной AFK/SLEEP аватарки
             try:
                 after = await self.client.get_profile_photos("me", limit=5)
                 for p in after:
                     if p.id not in before_ids:
-                        # Это новая аватарка режима — сохраняем, чтобы потом удалить
                         self._db.set(name, "mode_photo_id", {
                             "id": p.id,
                             "access_hash": p.access_hash,
@@ -914,7 +899,6 @@ class WersUchihaAFKMod(loader.Module):
                         })
                         break
                 else:
-                    # Fallback: берём самую верхнюю
                     if after:
                         p = after[0]
                         self._db.set(name, "mode_photo_id", {
@@ -947,7 +931,6 @@ class WersUchihaAFKMod(loader.Module):
         mode_data = self._db.get(name, "mode_photo_id", None)
         avatar_was_set = bool(self._db.get(name, "avatar_was_set", False))
 
-        # Не ставили mode-аву — выходим, свою аватарку НЕ трогаем
         if not avatar_was_set and not (isinstance(mode_data, dict) and mode_data.get("id")):
             self._db.set(name, "mode_photo_id", None)
             self._db.set(name, "avatar_was_set", False)
@@ -979,7 +962,6 @@ class WersUchihaAFKMod(loader.Module):
                 except Exception as e:
                     logger.warning(f"Не удалось удалить mode-аватарку по id: {e}")
 
-            # Fallback удаления верхней ТОЛЬКО если mode-ава точно ставилась
             if not deleted and avatar_was_set:
                 try:
                     photos = await self.client.get_profile_photos("me", limit=1)
@@ -1019,7 +1001,6 @@ class WersUchihaAFKMod(loader.Module):
             return
         url = (self._get_config_value("AFK_AVATAR" if mode == "afk" else "SLEEP_AVATAR", "") or "").strip()
         if not url:
-            # Явно сбрасываем флаги — чтобы restore ничего не удалял
             self._db.set(name, "avatar_was_set", False)
             self._db.set(name, "mode_photo_id", None)
             return
@@ -1062,7 +1043,6 @@ class WersUchihaAFKMod(loader.Module):
         if headers:
             hdrs.update(headers)
 
-        # 1) requests
         try:
             import requests
             r = requests.get(url, timeout=timeout, headers=hdrs)
@@ -1070,7 +1050,6 @@ class WersUchihaAFKMod(loader.Module):
         except Exception as e:
             logger.debug(f"requests GET {url}: {e}")
 
-        # 2) urllib
         try:
             import urllib.request
             req = urllib.request.Request(url, headers=hdrs)
@@ -1102,7 +1081,6 @@ class WersUchihaAFKMod(loader.Module):
             )
             msg = (msg or "").strip()
             if not msg:
-                # sha как запасной идентификатор
                 sha = item.get("sha") or (item.get("commit") or {}).get("tree", {}).get("sha")
                 if sha:
                     return f"sha {str(sha)[:7]}"
@@ -1123,14 +1101,13 @@ class WersUchihaAFKMod(loader.Module):
                 data = json.loads(body)
                 msg = self._extract_commit_from_api_json(data)
                 if msg:
-                    msg = msg.split("\n")[0].strip()  # первая строка
+                    msg = msg.split("\n")[0].strip()  
                     if len(msg) > 200:
                         msg = msg[:200] + "…"
                     return msg
             except Exception as e:
                 logger.debug(f"commit fetch {url}: {e}")
 
-        # Fallback: коммит из комментария в самом файле (# meta / # commit)
         return ""
 
     def _fetch_module_source(self):
@@ -1152,7 +1129,6 @@ class WersUchihaAFKMod(loader.Module):
             version = self._parse_remote_version(content)
             commit_msg = self._fetch_commit_message() or "—"
 
-            # Если API молчит — попробуем вытащить из шапки файла
             if commit_msg == "—":
                 m = re.search(r"#\s*meta\s+commit:\s*(.+)", content, re.I)
                 if m:
@@ -1195,7 +1171,6 @@ class WersUchihaAFKMod(loader.Module):
 
     def _build_aiogram_markup(self):
         """Клавиатура для aiogram-бота (Hikka / Hikari / Heroku)."""
-        # aiogram 3.x
         try:
             from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
             return InlineKeyboardMarkup(
@@ -1208,7 +1183,6 @@ class WersUchihaAFKMod(loader.Module):
             )
         except Exception as e:
             logger.debug(f"aiogram3 markup: {e}")
-        # aiogram 2.x
         try:
             from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
             kb = InlineKeyboardMarkup(row_width=2)
@@ -1253,7 +1227,6 @@ class WersUchihaAFKMod(loader.Module):
         return None
 
     def _build_update_buttons(self):
-        # legacy alias
         return self._build_telethon_buttons()
 
     async def _send_update_notify(self, text: str, buttons=None):
@@ -1266,7 +1239,6 @@ class WersUchihaAFKMod(loader.Module):
         aiogram_kb = self._build_aiogram_markup()
         tl_buttons = buttons or self._build_telethon_buttons()
 
-        # --- 1) Инлайн-бот юзербота (aiogram) ---
         bot = None
         try:
             if hasattr(self, "inline") and self.inline:
@@ -1275,7 +1247,6 @@ class WersUchihaAFKMod(loader.Module):
             bot = None
 
         if bot is not None:
-            # aiogram reply_markup
             if aiogram_kb is not None:
                 for kwargs in (
                     {"reply_markup": aiogram_kb, "disable_web_page_preview": True},
@@ -1292,7 +1263,6 @@ class WersUchihaAFKMod(loader.Module):
                         logger.warning(f"aiogram bot+kb failed: {e}")
                         break
 
-            # telethon-style buttons on bot (на всякий)
             if tl_buttons is not None:
                 for kwargs in (
                     {"buttons": tl_buttons, "link_preview": False},
@@ -1310,10 +1280,8 @@ class WersUchihaAFKMod(loader.Module):
                         logger.debug(f"bot telethon buttons: {e}")
                         break
 
-            # бот без кнопок — НЕ return, попробуем client
             logger.warning("Bot available but keyboard attach failed, trying client")
 
-        # --- 2) От аккаунта (Telethon buttons) ---
         if tl_buttons is not None:
             for send, cid in (
                 (self.client.send_message, chat_id),
@@ -1334,7 +1302,6 @@ class WersUchihaAFKMod(loader.Module):
                         logger.debug(f"client buttons {cid}: {e}")
                         break
 
-        # --- 3) Текст без кнопок (последний шанс) ---
         try:
             if bot is not None:
                 await bot.send_message(chat_id, text)
@@ -1499,7 +1466,6 @@ class WersUchihaAFKMod(loader.Module):
             logger.warning(f"WersUchihaAFK: utils.answer(rich=True) failed: {e}")    
 
 
-        # 2. Фоллбек — utils.answer с rich=True
         try:
             await utils.answer(m, html)
             return True
@@ -1617,7 +1583,6 @@ class WersUchihaAFKMod(loader.Module):
         
         if self._get_config_value("setPremiumStatus", True):
             status_to_restore = self._old_status
-            # Если это EmojiStatusCollectible, принудительно преобразовать в InputEmojiStatusCollectible
             if EmojiStatusCollectible is not None and isinstance(status_to_restore, EmojiStatusCollectible):
                 try:
                     status_to_restore = types.InputEmojiStatusCollectible(
@@ -1657,7 +1622,6 @@ class WersUchihaAFKMod(loader.Module):
             },
         )
 
-        # Дописываем только если в шаблоне нет плейсхолдеров — и всегда в blockquote
         if duration_value and "{duration}" not in template:
             full_text += (
                 f"\n<blockquote><emoji document_id=5870729937215819584>⏰</emoji> "
@@ -1832,14 +1796,12 @@ class WersUchihaAFKMod(loader.Module):
     async def afkcooldown(self, message):
         args = utils.get_args_raw(message)
         try:
-        # float на случай "30.0" / " 30 ", int — чтобы гарантировать целое
             new_cooldown = int(float(args))
             self._validate_cooldown_value(new_cooldown)
         except (TypeError, ValueError):
             await utils.answer(message, self.strings["cooldown_invalid"])
             return
 
-    # сохраняем именно int — чтобы в конфиг не утекла строка
         self.config["cooldown_seconds"] = new_cooldown
         await utils.answer(message, self.strings["cooldown_set"].format(new_cooldown))
 
@@ -2018,7 +1980,6 @@ class WersUchihaAFKMod(loader.Module):
         is_rich = any(tag in (text or "") for tag in ("<table", "<details", "<figure", "<h2", "<h3"))
         should_invert = not force_invert and self._get_config_value("invert_media", False)
 
-        # --- только текст ---
         if media is None:
             kwargs = {}
             if reply_to:
@@ -2032,7 +1993,6 @@ class WersUchihaAFKMod(loader.Module):
             await utils.answer(message, text, **kwargs)
             return
 
-        # --- 🔄 цепочка ---
         try:
             if reply_to:
                 temp_msg = await self.client.send_message(message.chat_id, "🔄", reply_to=reply_to)
@@ -2075,7 +2035,6 @@ class WersUchihaAFKMod(loader.Module):
         if should_invert and await _one_shot(temp_msg, False):
             return
 
-        # Fallback ОДИН раз: новое сообщение, 🔄 удаляем
         try:
             chat_id = utils.get_chat_id(message)
             await self.client.send_message(
@@ -2263,7 +2222,6 @@ class WersUchihaAFKMod(loader.Module):
         else:
             await utils.answer(message, f"{text}\n\n<code>{url}</code>")
 
-    # ====================== WATCHER AFK ======================
 
     async def watcher(self, message):
         if not isinstance(message, types.Message):
