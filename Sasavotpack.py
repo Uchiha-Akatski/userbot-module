@@ -72,3 +72,16 @@ class Sasavotpack(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+        
+    async def осуждаю3cmd(self, message):
+        """| Осуждаю от Sasavota 2 версия"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/466",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return    
