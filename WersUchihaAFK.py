@@ -54,7 +54,7 @@ try:
 except ImportError:
     EmojiStatusCollectible = None
 
-__version__ = (1, 23, 0)
+__version__ = (1, 23, 1)
 
 name = "WersUchihaAFK"
 logger = logging.getLogger(name)
@@ -415,7 +415,6 @@ class WersUchihaAFKMod(loader.Module):
                 try:
                     if hasattr(self, "inline") and self.inline is not None:
                         parts.append(str(getattr(self.inline, "bot_username", "") or ""))
-                        # имя бота из кэша, если есть
                         for attr in ("bot_name", "_bot_name", "name"):
                             parts.append(str(getattr(self.inline, attr, "") or ""))
                         bot = getattr(self.inline, "bot", None)
@@ -487,7 +486,6 @@ class WersUchihaAFKMod(loader.Module):
             except Exception:
                 pass
 
-            # --- 6) inline bot username ---
             try:
                 if hasattr(self, "inline") and self.inline is not None:
                     bot_u = str(getattr(self.inline, "bot_username", "") or "").lower()
@@ -634,7 +632,6 @@ class WersUchihaAFKMod(loader.Module):
         if not data:
             return None
 
-        # новый формат (dict с _type)
         if isinstance(data, dict):
             stype = data.get("_type")
 
@@ -655,14 +652,12 @@ class WersUchihaAFKMod(loader.Module):
                     logger.error(f"emoji restore: {e}")
                     return None
 
-            # старый формат — {"document_id": ...} без _type
             if "document_id" in data and data.get("document_id"):
                 try:
                     return types.EmojiStatus(document_id=int(data["document_id"]))
                 except Exception:
                     return None
 
-        # совсем старый формат — объект
         if isinstance(data, types.EmojiStatus):
             return data
         if EmojiStatusCollectible is not None and isinstance(data, EmojiStatusCollectible):
@@ -774,7 +769,7 @@ class WersUchihaAFKMod(loader.Module):
         )
         return (
             f"<details><summary><tg-emoji emoji-id=5260702125708557233>✋</tg-emoji> {title}</summary>"
-            f"{table_html}"
+            f"<blockquote>{table_html}</blockquote>"
             f"</details>"
         )
 
@@ -1379,7 +1374,6 @@ class WersUchihaAFKMod(loader.Module):
                     await call.answer(msg)
                 except Exception:
                     try:
-                        # aiogram
                         await call.answer(text=msg, show_alert=False)
                     except Exception:
                         pass
@@ -1557,7 +1551,6 @@ class WersUchihaAFKMod(loader.Module):
         full_text = on_text + "\n" + preview
 
         media_url = self._get_config_value("AFK_MEDIA", "")
-        # Если есть баннер — всегда через _send_command_response (rich-only его пропускает)
         if media_url:
             await self._send_command_response(message, full_text, media_url)
         elif not await self._send_rich(message, full_text, title="AFK Включен"):
@@ -1730,7 +1723,6 @@ class WersUchihaAFKMod(loader.Module):
 
         if self._get_config_value("setPremiumStatus", True):
             status_to_restore = self._old_status
-            # Если это EmojiStatusCollectible, принудительно преобразовать в InputEmojiStatusCollectible
             if EmojiStatusCollectible is not None and isinstance(status_to_restore, EmojiStatusCollectible):
                 try:
                     status_to_restore = types.InputEmojiStatusCollectible(
