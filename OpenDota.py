@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 4, 2)
+__version__ = (2, 5, 0)
 # -- version --
 
 # meta developer: @Itachi_Uchiha_sss
@@ -334,7 +334,15 @@ class DotaStatsMod(loader.Module):
             "Crown": '<tg-emoji emoji-id="5467598594506775207">🤩</tg-emoji>',
             "Wizard Hat": '<tg-emoji emoji-id="5389046430096728598">🤍</tg-emoji>',
             "Foragers Mana": '<tg-emoji emoji-id="5389065267823282566">👩‍🍼</tg-emoji>',
-            "Foragers Health": '<tg-emoji emoji-id="5389097630401859068">😐</tg-emoji>'
+            "Foragers Health": '<tg-emoji emoji-id="5389097630401859068">😐</tg-emoji>',
+            "Bloodslinger": '<tg-emoji emoji-id="6048855493839954456">👍</tg-emoji>',
+            "Quarterstaff": '<tg-emoji emoji-id="5467803829519015024">🤩</tg-emoji>',
+            "Caduceus": '<tg-emoji emoji-id="6048875358063698230">👍</tg-emoji',
+            "Ristuls Devotion": '<tg-emoji emoji-id="6048604968397578132">👍</tg-emoji>',
+            "Berserkers Sabatons": '<tg-emoji emoji-id="6050836130893406892">👍</tg-emoji>',
+            "Skypiercer": '<tg-emoji emoji-id="6048641887936455478">👍</tg-emoji>',
+            "Starforge": '<tg-emoji emoji-id="6048814983708417341">👍</tg-emoji>',
+            "Horn Of Battle Greater": '<tg-emoji emoji-id="5474502947708645623">⭐️</tg-emoji>'
         }
         self.rank_emojis = {
             "Herald": '<tg-emoji emoji-id="5963157659195542640">🎖</tg-emoji>',
