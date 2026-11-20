@@ -384,3 +384,81 @@ class  Memprikol3(loader.Module):
             reply_to=reply.id if reply else None,
         )    
         return
+        
+    async def пошутилcmd(self, message):
+        """| Ха ха ха Я пошутил"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/468",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def вредноcmd(self, message):
+        """| познавая мир, предупреждает. Ебаться вредно, сперма ядовита, сиськи отвратительны"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/469",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def письки2cmd(self, message):
+        """| Письки, жопы, какашки, писи-писи, жопы, попы каки-сраки, пуки каки(Ленин)"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/470",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def тильт2cmd(self, message):
+        """| Всё, блять, это тильт! Анлак!"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/471",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def ахуелиcmd(self, message):
+        """| Вы чё, похуевали, блядь? Вы чё, ёбнутый нахуй?(Пятёрка)"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/472",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return
+
+    async def приветcmd(self, message):
+        """| Кстати, вам тут привет от трёх лиц. От каких? От хуя и двух яиц. Ах ты сука! Стой!"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/473",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return                          
