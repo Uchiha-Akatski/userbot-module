@@ -631,3 +631,16 @@ class Dota2pack(loader.Module):
             reply_to=reply.id if reply else None,
         )
         return
+
+    async def руинcmd(self, message):
+        """| Вы увидите то, чего никогда не видели, тотальный Фит полный отсос, страшный руин все это будет вместе, Ну в этот момент в этой игре(Дурачьё)"""
+
+        reply = await message.get_reply_message()
+        await message.delete()
+        await message.client.send_file(
+            message.to_id,
+            "https://t.me/gachi_mych/467",
+            voice_note=True,
+            reply_to=reply.id if reply else None,
+        )
+        return    
