@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 6, 3)
+__version__ = (2, 6, 4)
 # -- version --
 
 # meta developer: @Itachi_Uchiha_sss
@@ -1500,8 +1500,9 @@ class DotaStatsMod(loader.Module):
         if start_time:
             fallback = escape(self._format_match_time(start_time))
             time_line = (
-                f'<p><tg-emoji emoji-id=5373236586760651455>⏱️</tg-emoji> <tg-time unix="{int(start_time)}" format="wDt">{fallback}</tg-time>'
-                f' · <tg-time unix="{int(start_time)}" format="r">{fallback}</tg-time></p>'
+                f'<p><tg-emoji emoji-id=5373236586760651455>⏱️</tg-emoji> '
+                f'<tg-time unix="{int(start_time)}" format="wDt">время</tg-time>'
+                f' · <tg-time unix="{int(start_time)}" format="r">недавно</tg-time>'
             )
 
         winner_icon = (
