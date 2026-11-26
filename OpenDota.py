@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 6, 4)
+__version__ = (2, 7, 0)
 # -- version --
 
 # meta developer: @Itachi_Uchiha_sss
@@ -22,8 +22,22 @@ API_URL = "https://api.opendota.com/api"
 class DotaStatsMod(loader.Module):
     strings = {"name": "OpenDota"}
 
-    async def _rich(self, message, html: str):
-        return await utils.answer(message, rich_message=html)
+    def _rich_enabled(self) -> bool:
+        return bool(self.config["rich_mode"])
+
+    async def _reply(self, message, rich, legacy):
+        """rich_mode = True — rich-формат, False — обычное HTML-сообщение как раньше."""
+        if self._rich_enabled():
+            html = rich() if callable(rich) else rich
+            return await utils.answer(message, rich_message=html)
+        text = legacy() if callable(legacy) else legacy
+        return await utils.answer(message, text, parse_mode="html")
+
+    async def _rich(self, message, html: str, legacy=None):
+        if legacy is None:
+            m = re.fullmatch(r"<p>(.*)</p>", html, flags=re.S)
+            legacy = m.group(1) if m and "<p>" not in m.group(1) else html
+        return await self._reply(message, html, legacy)
 
     def _acc(self, pid):
         try:
@@ -167,6 +181,12 @@ class DotaStatsMod(loader.Module):
                 0,
                 "Часовой пояс (0=UTC+0, 1=UTC+1, 2=UTC+2, 3=UTC+3, 4=UTC+4, 5=UTC+5, 6=UTC+6, 7=UTC+7, 8=UTC+8, 9=UTC+9, 10=UTC+10, 11=UTC+11, 12=UTC+12, -1=UTC-1... -12=UTC-12)",
                 validator=loader.validators.Choice([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12])
+            ),
+            loader.ConfigValue(
+                "rich_mode",
+                True,
+                "Rich-формат ответов: True — включён, False — выключен (обычный вид сообщений)",
+                validator=loader.validators.Boolean()
             )
         )
         self.heroes = {}
@@ -676,7 +696,21 @@ class DotaStatsMod(loader.Module):
                 self._url_btn("<tg-emoji emoji-id=5818715087237549366>👤</tg-emoji> Мой профиль", self._player_opendota_url(self._acc(pid))),
             )
 
-        await self._rich(message, html)
+        legacy_lines = ["<b>Проверка OpenDota</b>\n"]
+        for label, result in checks:
+            if result["ok"]:
+                legacy_lines.append(
+                    f"✅ {label}: <code>{result['status']}</code> за <code>{result['elapsed']}s</code>"
+                )
+            else:
+                error = escape(str(result.get("error", "неизвестная ошибка")))
+                legacy_lines.append(
+                    f"❌ {label}: <code>{result['status']}</code> за <code>{result['elapsed']}s</code> | {error}"
+                )
+        if not pid:
+            legacy_lines.append('\n<tg-emoji emoji-id="5390972675684337321">🤐</tg-emoji> PLAYER_ID не задан, проверка матчей игрока пропущена')
+
+        await self._rich(message, html, "\n".join(legacy_lines))
 
     async def _send_profile(self, message: Message, pid: str):
         try:
@@ -730,7 +764,15 @@ class DotaStatsMod(loader.Module):
                     self._copy_btn("<tg-emoji emoji-id=5408946052961170713>📋</tg-emoji> Скопировать Steam ID", str(pid)),
                 )
             )
-            await self._rich(message, html)
+            legacy = (
+                f'<blockquote><tg-emoji emoji-id="5235611059909323996">⭐️</tg-emoji> Профиль: <code>{persona}</code></blockquote>\n'
+                f'<blockquote><tg-emoji emoji-id="5422683699130933153">🪪</tg-emoji> Steam ID: <code>{escape(str(pid))}</code></blockquote>\n'
+                f'<blockquote><tg-emoji emoji-id="5456498809875995940">🏆</tg-emoji> Ранг: {rank_info}</blockquote>\n'
+                f'<blockquote><tg-emoji emoji-id="5429381339851796035">✅</tg-emoji> Победы: {win}</blockquote>\n'
+                f'<blockquote><tg-emoji emoji-id="5465225015190367274">👎</tg-emoji> Поражения: {lose}</blockquote>\n'
+                f'<blockquote><tg-emoji emoji-id="5364265190353286344">📊</tg-emoji> Винрейт: {wr}%</blockquote>\n'
+            )
+            await self._rich(message, html, legacy)
         except Exception as e:
             await self._rich(message, self._rich_note(f"Ошибка загрузки профиля: {escape(str(e))}"))
 
@@ -835,9 +877,27 @@ class DotaStatsMod(loader.Module):
     async def _send_match_info(self, message: Message, match_id: str):
         try:
             r = await asyncio.to_thread(self._get_match_data, match_id)
-            await self._rich(message, self._format_match_text(r, str(match_id)))
+            await self._reply(
+                message,
+                lambda: self._format_match_text(r, str(match_id)),
+                lambda: self._format_match_text_legacy(r, str(match_id)),
+            )
         except Exception as e:
             await self._rich(message, self._rich_note(f"Ошибка загрузки матча: {escape(str(e))}"))
+
+    def _hero_legacy(self, icon, name, period, games, wins, losses, wr, wr_color, kda, kda_label) -> str:
+        return (
+            f"─────── ✦ ───────\n"
+            f"<b>Герой: {icon} <code>{escape(str(name))}</code></b>\n\n"
+            f"─────── ✦ ───────\n\n"
+            f'<b>〚<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji>〛 {period}:</b>\n'
+            f'〚<tg-emoji emoji-id="5375437280758496345">🎮</tg-emoji>〛 Матчей➛ <b>{games}</b>\n'
+            f'〚<tg-emoji emoji-id="5429381339851796035">✅</tg-emoji>〛 Побед➛ <b>{wins}</b>\n'
+            f'〚<tg-emoji emoji-id="5352703271536454445">❌</tg-emoji>〛 Поражений➛ <b>{losses}</b>\n'
+            f'〚<tg-emoji emoji-id="5244837092042750681">📈</tg-emoji>〛 Винрейт➛ {wr_color} <b>{wr}%</b>\n'
+            f'<b>〚<tg-emoji emoji-id="5240271820979981346">⚔️</tg-emoji>〛 {kda_label}</b>\n'
+            f"{kda}"
+        )
 
     def _hero_buttons(self, account_id, hero_name) -> str:
         acc = self._acc(account_id)
@@ -949,7 +1009,11 @@ class DotaStatsMod(loader.Module):
                     f"{avg_k} / {avg_d} / {avg_a}", "Средний KDA (≈100 игр)",
                     buttons=self._hero_buttons(account_id, hero_name),
                 )
-                return await self._rich(message, html)
+                return await self._rich(message, html, self._hero_legacy(
+                    hero_icon, hero_name, "Вся статистика",
+                    games, wins, losses, total_wr, total_wr_color,
+                    f"{avg_k} / {avg_d} / {avg_a}", "Средний KDA (≈100 игр)",
+                ))
 
             matches = await self._get_json_async(
                 f"/players/{account_id}/matches",
@@ -983,7 +1047,11 @@ class DotaStatsMod(loader.Module):
                 f"{avg_k} / {avg_d} / {avg_a}", "Средний KDA",
                 buttons=self._hero_buttons(account_id, hero_name),
             )
-            return await self._rich(message, html)
+            return await self._rich(message, html, self._hero_legacy(
+                hero_icon, hero_name, "Последние 20 игр",
+                total, wins, losses, recent_wr, recent_wr_color,
+                f"{avg_k} / {avg_d} / {avg_a}", "Средний KDA",
+            ))
 
         except Exception as e:
             return await self._rich(message, self._rich_note(f"Ошибка hero: {escape(str(e))}"))
@@ -1052,7 +1120,19 @@ class DotaStatsMod(loader.Module):
                 + self._btn_row(self._copy_btn("<tg-emoji emoji-id=5408946052961170713>📋</tg-emoji> Скопировать ID оппонента", str(other_id)))
             )
 
-            await self._rich(message, html)
+            legacy = (
+                f'<blockquote><tg-emoji emoji-id="5240271820979981346">⚔️</tg-emoji> СРАВНЕНИЕ ИГРОКОВ\n'
+                f'<tg-emoji emoji-id="5425013375291629746">😳</tg-emoji> <b>Ты</b>\n'
+                f'<tg-emoji emoji-id="5375437280758496345">🎮</tg-emoji> Матчей: {my_games}\n'
+                f'<tg-emoji emoji-id="5456498809875995940">🏆</tg-emoji> Побед: {my_wins} ({my_wr}%)\n'
+                f'<tg-emoji emoji-id="5240271820979981346">⚔️</tg-emoji> KDA: {my_kda}\n\n'
+                f'<tg-emoji emoji-id="6021829047057652150">🧍‍♀️</tg-emoji> <b>Оппонент</b>\n'
+                f'<tg-emoji emoji-id="5375437280758496345">🎮</tg-emoji> Матчей: {o_games}\n'
+                f'<tg-emoji emoji-id="5456498809875995940">🏆</tg-emoji> Побед: {o_wins} ({o_wr}%)\n'
+                f'<tg-emoji emoji-id="5240271820979981346">⚔️</tg-emoji> KDA: {o_kda}\n'
+                f"</blockquote>"
+            )
+            await self._rich(message, html, legacy)
 
         except Exception as e:
             await self._rich(message, self._rich_note(f"Ошибка compare: {escape(str(e))}"))
@@ -1298,6 +1378,149 @@ class DotaStatsMod(loader.Module):
             raise ValueError("Матч не найден")
         return data
 
+    def _format_match_text_legacy(self, match_data, match_id: str):
+        duration = f"{match_data['duration'] // 60}:{match_data['duration'] % 60:02d}"
+        radiant_win = match_data.get("radiant_win", False)
+        result = (
+            '<tg-emoji emoji-id="5368338090660209672">🌿</tg-emoji> Radiant Победа'
+            if radiant_win
+            else '<tg-emoji emoji-id="5397751602956239123">🔥</tg-emoji> Dire Победа'
+        )
+
+        radiant, dire = [], []
+        for p in match_data.get("players", []):
+            hero_name = self.heroes.get(p["hero_id"], f"Unknown({p['hero_id']})")
+            hero_icon = self.hero_emojis.get(hero_name, "")
+            kda = f"{p['kills']}/{p['deaths']}/{p['assists']}"
+            gpm = p.get("gold_per_min", 0)
+            xpm = p.get("xp_per_min", 0)
+            net = p.get("total_gold", 0)
+            hero_damage = p.get("hero_damage", 0)
+            account_id = p.get("account_id", "N/A")
+
+            def _extract_items(player):
+                main = [0] * 6
+                backpack = [0] * 3
+
+                def set_slot(idx, val):
+                    if val in (None, 0):
+                        return
+                    if 0 <= idx <= 5 and not main[idx]:
+                        main[idx] = val
+                    elif 6 <= idx <= 8 and not backpack[idx - 6]:
+                        backpack[idx - 6] = val
+
+                for i in range(6):
+                    set_slot(i, player.get(f"item_{i}"))
+                    set_slot(i, player.get(f"item{i}"))
+
+                for i in range(3):
+                    set_slot(6 + i, player.get(f"item_{6 + i}"))
+                    set_slot(6 + i, player.get(f"backpack_{i}"))
+                    set_slot(6 + i, player.get(f"backpack{i}"))
+
+                for k, v in player.items():
+                    if v in (None, 0) or not isinstance(k, str):
+                        continue
+                    if k.startswith("item_") and k[5:].isdigit():
+                        set_slot(int(k[5:]), v)
+                    elif k.startswith("item") and k[4:].isdigit():
+                        set_slot(int(k[4:]), v)
+                    elif k.startswith("backpack_") and k[9:].isdigit():
+                        set_slot(6 + int(k[9:]), v)
+                    elif k.startswith("backpack") and k[8:].isdigit():
+                        set_slot(6 + int(k[8:]), v)
+
+                items_list = player.get("items")
+                if isinstance(items_list, list) and items_list:
+                    for x in items_list:
+                        if isinstance(x, int):
+                            if x and x not in main and len([v for v in main if v]) < 6:
+                                idx = main.index(0)
+                                main[idx] = x
+                            elif x and x not in backpack and len([v for v in backpack if v]) < 3:
+                                idx = backpack.index(0)
+                                backpack[idx] = x
+                        elif isinstance(x, dict):
+                            iid = x.get("item_id") or x.get("itemId") or x.get("id")
+                            if iid in (None, 0):
+                                continue
+                            slot = x.get("slot") or x.get("item_slot")
+                            is_backpack = x.get("backpack") or x.get("is_backpack") or x.get("in_backpack")
+                            if isinstance(slot, int):
+                                set_slot(slot, iid)
+                            elif is_backpack:
+                                if 0 in backpack:
+                                    backpack[backpack.index(0)] = iid
+                            else:
+                                if 0 in main:
+                                    main[main.index(0)] = iid
+
+                backpack_list = player.get("backpack")
+                if isinstance(backpack_list, list) and backpack_list:
+                    for x in backpack_list:
+                        if isinstance(x, int):
+                            if x and x not in backpack and 0 in backpack:
+                                backpack[backpack.index(0)] = x
+                        elif isinstance(x, dict):
+                            iid = x.get("item_id") or x.get("itemId") or x.get("id")
+                            if iid in (None, 0):
+                                continue
+                            if 0 in backpack:
+                                backpack[backpack.index(0)] = iid
+
+                return main, backpack
+
+            main_item_ids, backpack_item_ids = _extract_items(p)
+
+            def format_items(ids):
+                out = []
+                for iid in ids:
+                    if not iid or iid == 0:
+                        continue
+                    key = iid
+                    item_name = None
+                    if key in self.items:
+                        item_name = self.items[key]
+                    else:
+                        str_key = str(key)
+                        if str_key in self.items:
+                            item_name = self.items[str_key]
+                    if item_name:
+                        item_icon = self.item_emojis.get(
+                            item_name,
+                            self.item_emojis_norm.get(self._norm_item_name(item_name), "🧩"),
+                        )
+                        out.append(f"{item_icon} {item_name}")
+                    else:
+                        out.append(f"🧩 Unknown({iid})")
+                return " | ".join(out) if out else "Нет предметов"
+
+            main_items_str = format_items(main_item_ids)
+            backpack_items_str = format_items(backpack_item_ids)
+
+            line = (
+                f"- <code>{hero_name}</code> {hero_icon} | {kda} | GPM: {gpm} | "
+                f"XPM: {xpm} | Net: {net} | Урон: {hero_damage} | Steam ID: <code>{account_id}</code>\n"
+                f'  <tg-emoji emoji-id="5445221832074483553">💼</tg-emoji> {main_items_str}\n'
+                f"  🎒 {backpack_items_str}"
+            )
+
+            if p["player_slot"] < 128:
+                radiant.append(line)
+            else:
+                dire.append(line)
+
+        return (
+            f'<blockquote><tg-emoji emoji-id="5217703082099498813">🤬</tg-emoji> Матч <code>{match_id}</code>\n'
+            f'<tg-emoji emoji-id="5373236586760651455">⏱️</tg-emoji> Длительность: <code>{duration}</code>\n'
+            f"Результат: {result}\n\n"
+            f'<tg-emoji emoji-id="5368338090660209672">🌿</tg-emoji> Radiant:\n' + "\n".join(radiant) +
+            f'\n\n<tg-emoji emoji-id="5397751602956239123">🔥</tg-emoji> Dire:\n' + "\n".join(dire) +
+            f"</blockquote>"
+        )
+
+
     def _format_match_text(self, match_data, match_id: str):
         duration = f"{match_data['duration'] // 60}:{match_data['duration'] % 60:02d}"
         radiant_win = match_data.get("radiant_win", False)
@@ -1502,7 +1725,7 @@ class DotaStatsMod(loader.Module):
             time_line = (
                 f'<p><tg-emoji emoji-id=5373236586760651455>⏱️</tg-emoji> '
                 f'<tg-time unix="{int(start_time)}" format="wDt">время</tg-time>'
-                f' · <tg-time unix="{int(start_time)}" format="r">недавно</tg-time>'
+                f' · <tg-time unix="{int(start_time)}" format="r">недавно</tg-time></p>'
             )
 
         winner_icon = (
