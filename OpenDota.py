@@ -1,5 +1,5 @@
 # -- version --
-__version__ = (2, 7, 0)
+__version__ = (2, 8, 5)
 # -- version --
 
 # meta developer: @Itachi_Uchiha_sss
@@ -712,6 +712,79 @@ class DotaStatsMod(loader.Module):
 
         await self._rich(message, html, "\n".join(legacy_lines))
 
+    STEAM64_BASE = 76561197960265728
+
+    _MONTHS_RU = {
+        "jan": "января", "feb": "февраля", "mar": "марта", "apr": "апреля",
+        "may": "мая", "jun": "июня", "jul": "июля", "aug": "августа",
+        "sep": "сентября", "oct": "октября", "nov": "ноября", "dec": "декабря",
+    }
+
+    def _pretty_steam_date(self, raw: str) -> str:
+        """'7 Sep, 2024 @ 1:57pm' -> '7 сентября 2024 · 13:57'."""
+        m = re.fullmatch(r"\s*(\d{1,2})\s+(\w{3})\w*,?\s+(\d{4})\s*@\s*(\d{1,2}):(\d{2})\s*([ap]m)\s*", raw, flags=re.I)
+        if m:
+            day, mon, year, hour, minute, ampm = m.groups()
+            month = self._MONTHS_RU.get(mon.lower())
+            if month:
+                h = int(hour) % 12 + (12 if ampm.lower() == "pm" else 0)
+                return f"{int(day)} {month} {year} · {h:02d}:{minute}"
+        return raw.replace(" @ ", " · ").replace("@", "·")
+
+    def _fetch_aliases(self, steam64: int):
+        """Неофициальный эндпоинт Steam Community: прошлые ники, новые сверху."""
+        resp = requests.get(
+            f"https://steamcommunity.com/profiles/{steam64}/ajaxaliases/",
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=8,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data if isinstance(data, list) else []
+
+    async def _get_nick_history(self, pid, current_name: str, limit: int = 5):
+        """Прошлые ники: ([(ник, дата)] не больше limit, всего прошлых ников). При ошибке — ([], 0)."""
+        try:
+            steam64 = int(self._acc(pid)) + self.STEAM64_BASE
+            data = await asyncio.to_thread(self._fetch_aliases, steam64)
+        except Exception:
+            return [], 0
+
+        history, seen = [], set()
+        for entry in data:
+            if not isinstance(entry, dict):
+                continue
+            name = str(entry.get("newname", "")).strip()
+            if not name or name == current_name or name == str(steam64) or name in seen:
+                continue
+            seen.add(name)
+            if len(history) < limit:
+                history.append((name, self._pretty_steam_date(str(entry.get("timechanged", "")).strip())))
+        return history, len(seen)
+
+    def _nick_history_html(self, current_name: str, history, total: int) -> str:
+        rows = (
+            f'<tr><td align="center"><tg-emoji emoji-id="5429381339851796035">✅</tg-emoji> <b>{escape(current_name)}</b></td>'
+            f'<td align="center"><tg-emoji emoji-id="5979054952360711289">✔️</tg-emoji> <b>сейчас</b></td></tr>'
+        )
+        for name, when in history:
+            rows += (
+                f'<tr><td align="center"><tg-emoji emoji-id="6114060708075277880">✅</tg-emoji> {escape(name)}</td>'
+                f'<td align="center"><tg-emoji emoji-id="5402336377465500574">🗓</tg-emoji> <i>{escape(when)}<tg-emoji emoji-id="5316575093269214796">⏰</tg-emoji></i></td></tr>'
+            )
+        shown = len(history)
+        footer = f"<tg-emoji emoji-id=5188463524568926712>⚠️</tg-emoji> Показаны последние {shown} из {total} <tg-emoji emoji-id=5188463524568926712>⚠️</tg-emoji>" if total > shown else f"Всего прошлых ников: {total}"
+        return (
+            f'<p><b><tg-emoji emoji-id="5267470401461564700">✍️</tg-emoji> История ников</b></p>'
+            "<table bordered striped compact>"
+            f'<tr><th align="center"><tg-emoji emoji-id="5422683699130933153">🪪</tg-emoji> Ник</th>'
+            f'<th align="center"><tg-emoji emoji-id="5237814653010076467">🗓</tg-emoji> Когда сменил</th></tr>'
+            + rows +
+            "</table>"
+            f"<p><sub>{footer}</sub></p>"
+            "<cite>Steam Community</cite>"
+        )
+
     async def _send_profile(self, message: Message, pid: str):
         try:
             r = await self._get_json_async(f"/players/{pid}")
@@ -744,11 +817,25 @@ class DotaStatsMod(loader.Module):
                     else:
                         rank_info = f"{rank_name} {rank_icon}"
 
-            persona = escape(str(profile.get("personaname", "Unknown")))
+            raw_name = str(profile.get("personaname", "Unknown"))
+            persona = escape(raw_name)
             wr_icon = "🟢" if wr >= 55 else "🟡" if wr >= 50 else "🔴"
 
+            avatar_html = ""
+            avatar_url = str(profile.get("avatarfull") or profile.get("avatarmedium") or "")
+            if avatar_url.startswith(("http://", "https://")):
+                avatar_html = f'<img src="{escape(avatar_url, quote=True)}"/>'
+
+            history_inner = ""
+            if self._rich_enabled():
+                history, total = await self._get_nick_history(pid, raw_name)
+                if history:
+                    history_inner = self._nick_history_html(raw_name, history, total)
+            history_html = f"<blockquote>{history_inner}</blockquote>" if history_inner else ""
+
             html = (
-                f'<h2><tg-emoji emoji-id="5235611059909323996">⭐️</tg-emoji> {persona}</h2>'
+                avatar_html
+                + f'<h2><tg-emoji emoji-id="5235611059909323996">⭐️</tg-emoji> {persona}</h2>'
                 "<table bordered compact>"
                 f'<tr><td><tg-emoji emoji-id="5422683699130933153">🪪</tg-emoji> Steam ID</td><td><code>{escape(str(pid))}</code></td></tr>'
                 f'<tr><td><tg-emoji emoji-id="5456498809875995940">🏆</tg-emoji> Ранг</td><td>{rank_info}</td></tr>'
@@ -756,6 +843,7 @@ class DotaStatsMod(loader.Module):
                 f'<tr><td><tg-emoji emoji-id="5465225015190367274">👎</tg-emoji> Поражения</td><td><b>{lose}</b></td></tr>'
                 f'<tr><td><tg-emoji emoji-id="5364265190353286344">📊</tg-emoji> Винрейт</td><td>{wr_icon} <b>{wr}%</b></td></tr>'
                 "</table>"
+                + history_html
                 + self._btn_row(
                     self._url_btn("<tg-emoji emoji-id=5231200819986047254>📊</tg-emoji> OpenDota", self._player_opendota_url(self._acc(pid)), "primary"),
                     self._url_btn("<tg-emoji emoji-id=5233425260858066110>📈</tg-emoji> Dotabuff", f"https://www.dotabuff.com/players/{self._acc(pid)}", "success"),
@@ -772,7 +860,12 @@ class DotaStatsMod(loader.Module):
                 f'<blockquote><tg-emoji emoji-id="5465225015190367274">👎</tg-emoji> Поражения: {lose}</blockquote>\n'
                 f'<blockquote><tg-emoji emoji-id="5364265190353286344">📊</tg-emoji> Винрейт: {wr}%</blockquote>\n'
             )
-            await self._rich(message, html, legacy)
+            try:
+                await self._rich(message, html, legacy)
+            except Exception:
+                if not history_inner:
+                    raise
+                await self._rich(message, html.replace(history_html, history_inner), legacy)
         except Exception as e:
             await self._rich(message, self._rich_note(f"Ошибка загрузки профиля: {escape(str(e))}"))
 
